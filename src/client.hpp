@@ -3,7 +3,10 @@
 
 namespace openlwm2m {
 
-class Client {};
+class Client {
+public:
+    Client();
+};
 
 }  // namespace openlwm2m
 

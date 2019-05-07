@@ -36,6 +36,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
 add_subdirectory(src)
 add_subdirectory(example/${LWM2M_PLATFORM})
+add_subdirectory(example/${LWM2M_PLATFORM}/platform)
 
 if(WITH_TEST)
 	enable_testing()
