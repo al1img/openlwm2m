@@ -3,51 +3,47 @@
 
 namespace openlwm2m {
 
-template <class T>
 class List;
 
-template <class T>
 class Node {
 public:
-    Node(T data) : mData(data), mPrev(nullptr), mNext(nullptr) {}
-    T get() { return mData; }
+    Node(void* data) : mData(data), mPrev(nullptr), mNext(nullptr) {}
+    void* get() { return mData; }
     Node* next() { return mNext; }
 
 private:
-    friend class List<T>;
+    friend class List;
 
-    T mData;
+    void* mData;
     Node* mPrev;
     Node* mNext;
 };
 
-template <class T>
 class List {
 public:
     List() : mStart(nullptr), mEnd(nullptr) {}
     ~List()
     {
-        Node<T>* node = mStart;
+        Node* node = mStart;
 
         while (node != nullptr) {
-            Node<T>* tmp = node;
+            Node* tmp = node;
             node = node->mNext;
             delete tmp;
         }
     }
 
-    Node<T>* begin() { return mStart; }
+    Node* begin() { return mStart; }
 
-    void append(T data)
+    void append(void* data)
     {
-        Node<T>* newNode = new Node<T>(data);
-
+        Node* newNode = new Node(data);
         mEnd = mEnd->mNext = newNode;
     }
 
 private:
-    Node<T>* mStart;
-    Node<T>* mEnd;
+    Node* mStart;
+    Node* mEnd;
 };
 
 }  // namespace openlwm2m

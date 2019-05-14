@@ -11,10 +11,10 @@ Client::~Client()
 {
     LOG_INFO("Delete client");
 
-    Node<Object*>* node = mObjectList.begin();
+    Node* node = mObjectList.begin();
 
     while (node != nullptr) {
-        delete node->get();
+        delete static_cast<Object*>(node->get());
         node = node->next();
     }
 }

@@ -16,7 +16,7 @@ public:
     Object* createObject(uint16_t id, int maxInstances, bool mandatory, uint16_t interfaces);
 
 private:
-    List<Object*> mObjectList;
+    List mObjectList;
 };
 
 }  // namespace openlwm2m
