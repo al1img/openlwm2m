@@ -12,6 +12,7 @@ include_directories(
 
 set(SOURCES
 	client.cpp
+	object.cpp
 )
 
 ################################################################################
