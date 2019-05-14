@@ -38,7 +38,16 @@ public:
     void append(void* data)
     {
         Node* newNode = new Node(data);
-        mEnd = mEnd->mNext = newNode;
+        if (!mStart) {
+            mStart = newNode;
+        }
+
+        if (mEnd) {
+            mEnd->mNext = newNode;
+            newNode->mPrev = mEnd;
+        }
+
+        mEnd = newNode;
     }
 
 private:
