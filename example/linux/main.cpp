@@ -5,7 +5,8 @@
 
 using namespace openlwm2m;
 
-int main() {
+int main()
+{
     LOG_INFO("Start lwm2m client");
 
     Client client;

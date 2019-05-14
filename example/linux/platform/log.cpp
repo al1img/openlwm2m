@@ -16,7 +16,8 @@
 
 static size_t sMaxModuleLen = 0;
 
-void platformLog(int logLevel, const char* module, const char* format, ...) {
+void platformLog(int logLevel, const char* module, const char* format, ...)
+{
     time_t curTime;
 
     time(&curTime);
@@ -26,8 +27,7 @@ void platformLog(int logLevel, const char* module, const char* format, ...) {
 
     strftime(timeStr, 32, "%d.%m.%Y %H:%M:%S", tmInfo);
 
-    static const char* logLevelStr[] = {"",    "CRI", "ERR", "WRN",
-                                        "INF", "DBG", "UNK"};
+    static const char* logLevelStr[] = {"", "CRI", "ERR", "WRN", "INF", "DBG", "UNK"};
 
     static const char* logLevelColor[] = {"",
                                           ANSI_COLOR_BRIGHT_RED,
@@ -49,8 +49,7 @@ void platformLog(int logLevel, const char* module, const char* format, ...) {
 
     printf("%s", logLevelColor[logLevel]);
 
-    printf("%s | %s | %*s | ", timeStr, logLevelStr[logLevel],
-           static_cast<int>(-sMaxModuleLen), module);
+    printf("%s | %s | %*s | ", timeStr, logLevelStr[logLevel], static_cast<int>(-sMaxModuleLen), module);
 
     va_list args;
 
