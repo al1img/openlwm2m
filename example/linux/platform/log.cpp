@@ -54,7 +54,7 @@ void platformLog(int logLevel, const char* module, const char* format, ...)
     va_list args;
 
     va_start(args, format);
-    printf(format, args);
+    vprintf(format, args);
     va_end(args);
 
     printf("\n" ANSI_COLOR_RESET);
