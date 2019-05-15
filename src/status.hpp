@@ -3,7 +3,7 @@
 
 namespace openlwm2m {
 
-enum class Status { STATUS_OK, STATUS_UNKNOWN_ERROR, STATUS_NOT_ENOUGH_MEM };
+enum class Status { STS_OK, STS_UNKNOWN_ERROR, STS_NOT_ENOUGH_MEM };
 
 }  // namespace openlwm2m
 

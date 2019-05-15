@@ -10,8 +10,17 @@ Client::Client()
 {
     LOG_INFO("Create client");
 
-    // Create security object
-    Object* object = createObject(0, 0, true, BOOTSTRAP_ITF);
+    // LwM2M Object: LwM2M Security
+    Object* object = createObject(0, 0, true, ITF_BOOTSTRAP);
+    // LWM2M Server URI
+    object->createResource(0, OP_NONE, 1, true, TYPE_STRING, 0, 255);
+    // Bootstrap-Server
+    object->createResource(1, OP_NONE, 1, true, TYPE_BOOL);
+    // Security Mode
+    object->createResource(2, OP_NONE, 1, true, TYPE_INT8, 0, 4);
+
+    // LLwM2M Object: LwM2M Server
+    object = createObject(1, 0, true, ITF_ALL);
 }
 
 Client::~Client()
