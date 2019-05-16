@@ -6,7 +6,12 @@
 namespace openlwm2m {
 
 Object::Object(uint16_t id, Instance instance, size_t maxInstances, Mandatory mandatory, uint16_t interfaces)
-    : mId(id), mInstance(instance), mMaxInstances(maxInstances), mMandatory(mandatory), mInterfaces(interfaces)
+    : mId(id),
+      mInstance(instance),
+      mMaxInstances(maxInstances),
+      mMandatory(mandatory),
+      mInterfaces(interfaces),
+      mStarted(false)
 {
     LOG_DEBUG("Create object %d", id);
 }
@@ -19,12 +24,18 @@ Object::~Object()
     deleteResources();
 }
 
-void Object::createResource(uint16_t id, uint16_t operations, Resource::Instance instance, size_t maxInstances,
-                            Resource::Mandatory mandatory, Resource::Type type, int min, int max)
+Status Object::createResource(uint16_t id, uint16_t operations, Resource::Instance instance, size_t maxInstances,
+                              Resource::Mandatory mandatory, Resource::Type type, int min, int max)
 {
+    if (mStarted) {
+        return STS_ERR_STATE;
+    }
+
     ResourceDesc* resourceDesc = new ResourceDesc(id, operations, instance, maxInstances, mandatory, type, min, max);
 
     mResourceDescList.insert(resourceDesc);
+
+    return STS_OK;
 }
 
 Status Object::start()

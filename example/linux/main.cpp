@@ -11,7 +11,7 @@ int main()
 
     Client client;
 
-    Status status = client.start();
+    Status status = client.startBootstrap();
 
     if (status != STS_OK) {
         LOG_ERROR("Can't start client, status %d", status);

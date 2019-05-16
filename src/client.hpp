@@ -15,12 +15,15 @@ public:
     ~Client();
 
     Object* createObject(uint16_t id, Object::Instance instance, size_t maxInstances, Object::Mandatory mandatory,
-                         uint16_t interfaces);
+                         uint16_t interfaces, Status* status = NULL);
 
-    Status start();
+    Status startBootstrap();
 
 private:
+    enum State { STATE_INIT, STATE_BOOTSTRAP };
+
     List mObjectList;
+    State mState;
 };
 
 }  // namespace openlwm2m

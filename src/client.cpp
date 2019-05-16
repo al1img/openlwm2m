@@ -6,7 +6,7 @@
 
 namespace openlwm2m {
 
-Client::Client()
+Client::Client() : mState(STATE_INIT)
 {
     LOG_DEBUG("Create client");
 
@@ -40,8 +40,16 @@ Client::~Client()
 }
 
 Object* Client::createObject(uint16_t id, Object::Instance instance, size_t maxInstances, Object::Mandatory mandatory,
-                             uint16_t interfaces)
+                             uint16_t interfaces, Status* status)
 {
+    if (mState != STATE_INIT) {
+        if (status) {
+            *status = STS_ERR_STATE;
+        }
+
+        return NULL;
+    }
+
     if (instance == Object::SINGLE) {
         maxInstances = 1;
     }
@@ -53,7 +61,7 @@ Object* Client::createObject(uint16_t id, Object::Instance instance, size_t maxI
     return object;
 }
 
-Status Client::start()
+Status Client::startBootstrap()
 {
     LOG_DEBUG("Start client");
     Node* node = mObjectList.begin();

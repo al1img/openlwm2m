@@ -17,8 +17,8 @@ public:
 
     enum Instance { SINGLE, MULTIPLE };
 
-    void createResource(uint16_t id, uint16_t operations, Resource::Instance instance, size_t maxInstances,
-                        Resource::Mandatory mandatory, Resource::Type type, int min = 0, int max = 0);
+    Status createResource(uint16_t id, uint16_t operations, Resource::Instance instance, size_t maxInstances,
+                          Resource::Mandatory mandatory, Resource::Type type, int min = 0, int max = 0);
 
 private:
     friend class Client;
@@ -28,6 +28,8 @@ private:
     size_t mMaxInstances;
     Mandatory mMandatory;
     uint16_t mInterfaces;
+
+    bool mStarted;
 
     List mResourceDescList;
     List mInstanceList;
