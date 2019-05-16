@@ -5,6 +5,7 @@
 
 #include "list.hpp"
 #include "object.hpp"
+#include "status.hpp"
 
 namespace openlwm2m {
 
@@ -13,8 +14,10 @@ public:
     Client();
     ~Client();
 
-    Object* createObject(uint16_t id, ObjectInstance instance, int maxInstances, ObjectMandatory mandatory,
+    Object* createObject(uint16_t id, Object::Instance instance, size_t maxInstances, Object::Mandatory mandatory,
                          uint16_t interfaces);
+
+    Status start();
 
 private:
     List mObjectList;

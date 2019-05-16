@@ -5,8 +5,8 @@
 
 namespace openlwm2m {
 
-ResourceDesc::ResourceDesc(uint16_t id, uint16_t operations, ResourceInstance instance, int maxInstances,
-                           ResourceMandatory mandatory, ResourceType type, int min, int max)
+ResourceDesc::ResourceDesc(uint16_t id, uint16_t operations, Resource::Instance instance, size_t maxInstances,
+                           Resource::Mandatory mandatory, Resource::Type type, int min, int max)
     : mId(id),
       mOperations(operations),
       mInstance(instance),

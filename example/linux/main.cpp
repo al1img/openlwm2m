@@ -11,6 +11,12 @@ int main()
 
     Client client;
 
+    Status status = client.start();
+
+    if (status != STS_OK) {
+        LOG_ERROR("Can't start client, status %d", status);
+    }
+
     LOG_INFO("Stop lwm2m client");
 
     return 0;

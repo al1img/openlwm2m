@@ -13,6 +13,7 @@ include_directories(
 set(SOURCES
 	client.cpp
 	object.cpp
+	objectinstance.cpp
 	resource.cpp
 )
 

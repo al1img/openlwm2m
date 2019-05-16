@@ -1,10 +1,13 @@
+#ifndef OPENLWM2M_INTERFACE_HPP_
+#define OPENLWM2M_INTERFACE_HPP_
+
 #include <stdint.h>
 
 namespace openlwm2m {
 
 #define ITF_ALL (ITF_BOOTSTRAP | ITF_REGISTER | ITF_DEVICE | ITF_REPORTTING)
 
-enum Interfaces { ITF_BOOTSTRAP = 0x00, ITF_REGISTER = 0x01, ITF_DEVICE = 0x02, ITF_REPORTTING = 0x04 };
+enum Interface { ITF_USER = 0x00, ITF_BOOTSTRAP = 0x01, ITF_REGISTER = 0x02, ITF_DEVICE = 0x04, ITF_REPORTTING = 0x08 };
 
 class BootstrapUlItf {
 public:
@@ -70,3 +73,5 @@ public:
 };
 
 }  // namespace openlwm2m
+
+#endif /* OPENLWM2M_INTERFACE_HPP_ */

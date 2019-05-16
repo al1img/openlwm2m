@@ -3,33 +3,45 @@
 
 #include <stdint.h>
 
+#include "interface.hpp"
 #include "list.hpp"
+#include "objectinstance.hpp"
 #include "resource.hpp"
+#include "status.hpp"
 
 namespace openlwm2m {
 
-enum ObjectMandatory { OBJ_MANDATORY, OBJ_OPTIONAL };
-
-enum ObjectInstance { OBJ_SINGLE, OBJ_MULTIPLE };
-
 class Object {
 public:
-    void createResource(uint16_t id, uint16_t operations, ResourceInstance instance, int maxInstances,
-                        ResourceMandatory mandatory, ResourceType type, int min = 0, int max = 0);
+    enum Mandatory { MANDATORY, OPTIONAL };
+
+    enum Instance { SINGLE, MULTIPLE };
+
+    void createResource(uint16_t id, uint16_t operations, Resource::Instance instance, size_t maxInstances,
+                        Resource::Mandatory mandatory, Resource::Type type, int min = 0, int max = 0);
 
 private:
     friend class Client;
 
     uint16_t mId;
-    ObjectInstance mInstance;
-    int mMaxInstances;
-    ObjectMandatory mMandatory;
+    Instance mInstance;
+    size_t mMaxInstances;
+    Mandatory mMandatory;
     uint16_t mInterfaces;
 
     List mResourceDescList;
+    List mInstanceList;
 
-    Object(uint16_t id, ObjectInstance instance, int maxInstances, ObjectMandatory mandatory, uint16_t interfaces);
+    Object(uint16_t id, Instance instance, size_t maxInstances, Mandatory mandatory, uint16_t interfaces);
     ~Object();
+
+    Status start();
+
+    int getInstanceCount();
+    ObjectInstance *createInstance(Interface interface, Status *status = NULL);
+
+    void deleteInstances();
+    void deleteResources();
 };
 
 }  // namespace openlwm2m

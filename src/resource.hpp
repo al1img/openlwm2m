@@ -2,34 +2,45 @@
 #define OPENLWM2M_RESOURCE_HPP_
 
 #include <stdint.h>
+#include <cstddef>
 
 namespace openlwm2m {
 
-enum ResourceMandatory { RES_MANDATORY, RES_OPTIONAL };
+class ResourceDesc;
 
-enum ResourceInstance { RES_SINGLE, RES_MULTIPLE };
+class Resource {
+public:
+    enum Mandatory { MANDATORY, OPTIONAL };
 
-enum ResourceType {
-    TYPE_STRING,
-    TYPE_INT8,
-    TYPE_INT16,
-    TYPE_INT32,
-    TYPE_INT64,
-    TYPE_UINT8,
-    TYPE_UINT16,
-    TYPE_UINT32,
-    TYPE_UINT64,
-    TYPE_FLOAT32,
-    TYPE_FLOAT64,
-    TYPE_BOOL,
-    TYPE_OPAQUE,
-    TYPE_TIME,
-    TYPE_OBJLINK,
-    TYPE_CORELINK,
-    TYPE_NONE
+    enum Instance { SINGLE, MULTIPLE };
+
+    enum Type {
+        TYPE_STRING,
+        TYPE_INT8,
+        TYPE_INT16,
+        TYPE_INT32,
+        TYPE_INT64,
+        TYPE_UINT8,
+        TYPE_UINT16,
+        TYPE_UINT32,
+        TYPE_UINT64,
+        TYPE_FLOAT32,
+        TYPE_FLOAT64,
+        TYPE_BOOL,
+        TYPE_OPAQUE,
+        TYPE_TIME,
+        TYPE_OBJLINK,
+        TYPE_CORELINK,
+        TYPE_NONE
+    };
+
+    enum Operation { OP_NONE = 0x00, OP_READ = 0x01, OP_WRITE = 0x02, OP_READWRITE = 0x03, OP_EXECUTE = 0x04 };
+
+    Resource(ResourceDesc* desc);
+
+private:
+    ResourceDesc* mDesc;
 };
-
-enum ResourceOperation { OP_NONE = 0x00, OP_READ = 0x01, OP_WRITE = 0x02, OP_READWRITE = 0x03, OP_EXECUTE = 0x04 };
 
 class ResourceDesc {
 private:
@@ -37,24 +48,16 @@ private:
 
     uint16_t mId;
     uint16_t mOperations;
-    ResourceInstance mInstance;
-    int mMaxInstances;
-    ResourceMandatory mMandatory;
-    ResourceType mType;
+    Resource::Instance mInstance;
+    size_t mMaxInstances;
+    Resource::Mandatory mMandatory;
+    Resource::Type mType;
     int mMin;
     int mMax;
 
-    ResourceDesc(uint16_t id, uint16_t operations, ResourceInstance instance, int maxInstances,
-                 ResourceMandatory mandatory, ResourceType type, int min, int max);
+    ResourceDesc(uint16_t id, uint16_t operations, Resource::Instance instance, size_t maxInstances,
+                 Resource::Mandatory mandatory, Resource::Type type, int min, int max);
     ~ResourceDesc();
-};
-
-class Resource {
-public:
-    Resource(ResourceDesc* desc);
-
-private:
-    ResourceDesc* mDesc;
 };
 
 }  // namespace openlwm2m
