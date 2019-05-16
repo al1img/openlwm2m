@@ -13,18 +13,20 @@ Client::Client() : mState(STATE_INIT)
     // LwM2M Object: LwM2M Security
     Object* object = createObject(0, Object::MULTIPLE, CONFIG_MAX_OBJ_SECURITY, Object::MANDATORY, ITF_BOOTSTRAP);
     // LWM2M Server URI
-    object->createResource(0, Resource::OP_NONE, Resource::SINGLE, 0, Resource::MANDATORY, Resource::TYPE_STRING, 0,
-                           255);
+    object->createResource(0, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
+                           ResourceDesc::TYPE_STRING, 0, 255);
     // Bootstrap-Server
-    object->createResource(1, Resource::OP_NONE, Resource::SINGLE, 0, Resource::MANDATORY, Resource::TYPE_BOOL);
+    object->createResource(1, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
+                           ResourceDesc::TYPE_BOOL);
     // Security Mode
-    object->createResource(2, Resource::OP_NONE, Resource::SINGLE, 0, Resource::MANDATORY, Resource::TYPE_INT8, 0, 4);
+    object->createResource(2, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
+                           ResourceDesc::TYPE_INT8, 0, 4);
 
     // LLwM2M Object: LwM2M Server
     object = createObject(1, Object::MULTIPLE, CONFIG_MAX_OBJ_SERVER, Object::MANDATORY, ITF_ALL);
     // Short Server ID
-    object->createResource(0, Resource::OP_READ, Resource::SINGLE, 0, Resource::MANDATORY, Resource::TYPE_UINT16, 1,
-                           65535);
+    object->createResource(0, ResourceDesc::OP_READ, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
+                           ResourceDesc::TYPE_UINT16, 1, 65535);
 
     // LLwM2M Object: Device
     object = createObject(3, Object::SINGLE, 0, Object::MANDATORY, ITF_ALL);

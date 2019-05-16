@@ -15,6 +15,7 @@ set(SOURCES
 	object.cpp
 	objectinstance.cpp
 	resource.cpp
+	resourcedesc.cpp
 )
 
 ################################################################################

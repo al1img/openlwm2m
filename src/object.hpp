@@ -6,7 +6,7 @@
 #include "interface.hpp"
 #include "list.hpp"
 #include "objectinstance.hpp"
-#include "resource.hpp"
+#include "resourcedesc.hpp"
 #include "status.hpp"
 #ifdef RESERVE_MEMORY
 #include "storage.hpp"
@@ -22,8 +22,8 @@ public:
 
     uint16_t getId() const { return mId; }
 
-    Status createResource(uint16_t id, uint16_t operations, Resource::Instance instance, size_t maxInstances,
-                          Resource::Mandatory mandatory, Resource::Type type, int min = 0, int max = 0);
+    Status createResource(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
+                          ResourceDesc::Mandatory mandatory, ResourceDesc::Type type, int min = 0, int max = 0);
 
     ObjectInstance *createInstance(Interface interface, Status *status = NULL);
 

@@ -28,14 +28,14 @@ Object::~Object()
     deleteResources();
 }
 
-Status Object::createResource(uint16_t id, uint16_t operations, Resource::Instance instance, size_t maxInstances,
-                              Resource::Mandatory mandatory, Resource::Type type, int min, int max)
+Status Object::createResource(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
+                              ResourceDesc::Mandatory mandatory, ResourceDesc::Type type, int min, int max)
 {
     if (mStarted) {
         return STS_ERR_STATE;
     }
 
-    if (instance == Resource::SINGLE) {
+    if (instance == ResourceDesc::SINGLE) {
         maxInstances = 1;
     }
 
