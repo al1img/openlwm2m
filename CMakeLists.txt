@@ -6,6 +6,8 @@ project(openlwm2m)
 # Options
 ################################################################################
 
+OPTION(RESERVE_MEMORY "Allocate memory for all objects" OFF)
+
 OPTION(WITH_TEST "build with test" OFF)
 OPTION(WITH_DOC "build with documenation" OFF)
 
@@ -18,6 +20,7 @@ message(STATUS "${PROJECT_NAME} Configuration:")
 message(STATUS "CMAKE_BUILD_TYPE              = ${CMAKE_BUILD_TYPE}")
 message(STATUS)
 message(STATUS "LWM2M_PLATFORM                = ${LWM2M_PLATFORM}")
+message(STATUS "RESERVE_MEMORY                = ${RESERVE_MEMORY}")
 message(STATUS)
 message(STATUS "WITH_DOC                      = ${WITH_DOC}")
 message(STATUS "WITH_TEST                     = ${WITH_TEST}")
@@ -29,6 +32,10 @@ message(STATUS)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -std=c++98 -Wall")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+
+if(RESERVE_MEMORY)
+add_definitions(-DRESERVE_MEMORY)
+endif()
 
 ################################################################################
 # Sources

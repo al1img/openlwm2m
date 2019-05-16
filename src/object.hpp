@@ -8,6 +8,9 @@
 #include "objectinstance.hpp"
 #include "resource.hpp"
 #include "status.hpp"
+#ifdef RESERVE_MEMORY
+#include "storage.hpp"
+#endif
 
 namespace openlwm2m {
 
@@ -38,7 +41,11 @@ private:
     bool mStarted;
 
     List mResourceDescList;
+#ifdef RESERVE_MEMORY
+    Storage mInstanceStorage;
+#else
     List mInstanceList;
+#endif
 
     Object(uint16_t id, Instance instance, size_t maxInstances, Mandatory mandatory, uint16_t interfaces);
     ~Object();
