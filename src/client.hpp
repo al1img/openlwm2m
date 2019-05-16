@@ -13,7 +13,8 @@ public:
     Client();
     ~Client();
 
-    Object* createObject(uint16_t id, int maxInstances, bool mandatory, uint16_t interfaces);
+    Object* createObject(uint16_t id, ObjectInstance instance, int maxInstances, ObjectMandatory mandatory,
+                         uint16_t interfaces);
 
 private:
     List mObjectList;

@@ -5,19 +5,20 @@
 
 namespace openlwm2m {
 
-Resource::Resource(uint16_t id, uint16_t operations, int maxInstances, bool mandatory, ResourceType type, int min,
-                   int max)
+ResourceDesc::ResourceDesc(uint16_t id, uint16_t operations, ResourceInstance instance, int maxInstances,
+                           ResourceMandatory mandatory, ResourceType type, int min, int max)
     : mId(id),
       mOperations(operations),
+      mInstance(instance),
       mMaxInstances(maxInstances),
       mMandatory(mandatory),
       mType(type),
       mMin(min),
       mMax(max)
 {
-    LOG_DEBUG("Create resource %d", id);
+    LOG_DEBUG("Create resource %d", mId);
 }
 
-Resource::~Resource() { LOG_DEBUG("Delete resource %d", mId); }
+ResourceDesc::~ResourceDesc() { LOG_DEBUG("Delete resource %d", mId); }
 
 }  // namespace openlwm2m

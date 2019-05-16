@@ -11,23 +11,23 @@ Client::Client()
     LOG_INFO("Create client");
 
     // LwM2M Object: LwM2M Security
-    Object* object = createObject(0, 0, true, ITF_BOOTSTRAP);
+    Object* object = createObject(0, OBJ_MULTIPLE, CONFIG_MAX_OBJ_SECURITY, OBJ_MANDATORY, ITF_BOOTSTRAP);
     // LWM2M Server URI
-    object->createResource(0, OP_NONE, 1, true, TYPE_STRING, 0, 255);
+    object->createResource(0, OP_NONE, RES_SINGLE, 0, RES_MANDATORY, TYPE_STRING, 0, 255);
     // Bootstrap-Server
-    object->createResource(1, OP_NONE, 1, true, TYPE_BOOL);
+    object->createResource(1, OP_NONE, RES_SINGLE, 0, RES_MANDATORY, TYPE_BOOL);
     // Security Mode
-    object->createResource(2, OP_NONE, 1, true, TYPE_INT8, 0, 4);
+    object->createResource(2, OP_NONE, RES_SINGLE, 0, RES_MANDATORY, TYPE_INT8, 0, 4);
 
     // LLwM2M Object: LwM2M Server
-    object = createObject(1, 0, true, ITF_ALL);
+    object = createObject(1, OBJ_MULTIPLE, CONFIG_MAX_OBJ_SERVER, OBJ_MANDATORY, ITF_ALL);
 }
 
 Client::~Client()
 {
     Node* node = mObjectList.begin();
 
-    while (node != nullptr) {
+    while (node) {
         delete static_cast<Object*>(node->get());
         node = node->next();
     }
@@ -35,9 +35,10 @@ Client::~Client()
     LOG_INFO("Delete client");
 }
 
-Object* Client::createObject(uint16_t id, int maxInstances, bool mandatory, uint16_t interfaces)
+Object* Client::createObject(uint16_t id, ObjectInstance instance, int maxInstances, ObjectMandatory mandatory,
+                             uint16_t interfaces)
 {
-    Object* object = new Object(id, maxInstances, mandatory, interfaces);
+    Object* object = new Object(id, instance, maxInstances, mandatory, interfaces);
 
     mObjectList.append(object);
 

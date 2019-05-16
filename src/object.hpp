@@ -8,22 +8,27 @@
 
 namespace openlwm2m {
 
+enum ObjectMandatory { OBJ_MANDATORY, OBJ_OPTIONAL };
+
+enum ObjectInstance { OBJ_SINGLE, OBJ_MULTIPLE };
+
 class Object {
 public:
-    Resource* createResource(uint16_t id, uint16_t operations, int maxInstances, bool mandatory, ResourceType type,
-                             int min = 0, int max = 0);
+    void createResource(uint16_t id, uint16_t operations, ResourceInstance instance, int maxInstances,
+                        ResourceMandatory mandatory, ResourceType type, int min = 0, int max = 0);
 
 private:
     friend class Client;
 
     uint16_t mId;
+    ObjectInstance mInstance;
     int mMaxInstances;
-    bool mMandatory;
+    ObjectMandatory mMandatory;
     uint16_t mInterfaces;
 
-    List mResourceList;
+    List mResourceDescList;
 
-    Object(uint16_t id, int maxInstances, bool mandatory, uint16_t interfaces);
+    Object(uint16_t id, ObjectInstance instance, int maxInstances, ObjectMandatory mandatory, uint16_t interfaces);
     ~Object();
 };
 

@@ -5,6 +5,10 @@
 
 namespace openlwm2m {
 
+enum ResourceMandatory { RES_MANDATORY, RES_OPTIONAL };
+
+enum ResourceInstance { RES_SINGLE, RES_MULTIPLE };
+
 enum ResourceType {
     TYPE_STRING,
     TYPE_INT8,
@@ -27,21 +31,30 @@ enum ResourceType {
 
 enum ResourceOperation { OP_NONE = 0x00, OP_READ = 0x01, OP_WRITE = 0x02, OP_READWRITE = 0x03, OP_EXECUTE = 0x04 };
 
-class Resource {
-public:
+class ResourceDesc {
 private:
     friend class Object;
 
     uint16_t mId;
     uint16_t mOperations;
+    ResourceInstance mInstance;
     int mMaxInstances;
-    bool mMandatory;
+    ResourceMandatory mMandatory;
     ResourceType mType;
     int mMin;
     int mMax;
 
-    Resource(uint16_t id, uint16_t operations, int maxInstances, bool mandatory, ResourceType type, int min, int max);
-    ~Resource();
+    ResourceDesc(uint16_t id, uint16_t operations, ResourceInstance instance, int maxInstances,
+                 ResourceMandatory mandatory, ResourceType type, int min, int max);
+    ~ResourceDesc();
+};
+
+class Resource {
+public:
+    Resource(ResourceDesc* desc);
+
+private:
+    ResourceDesc* mDesc;
 };
 
 }  // namespace openlwm2m

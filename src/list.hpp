@@ -1,13 +1,15 @@
 #ifndef OPENLWM2M_LIST_HPP_
 #define OPENLWM2M_LIST_HPP_
 
+#include <cstddef>
+
 namespace openlwm2m {
 
 class List;
 
 class Node {
 public:
-    Node(void* data) : mData(data), mPrev(nullptr), mNext(nullptr) {}
+    Node(void* data) : mData(data), mPrev(NULL), mNext(NULL) {}
     void* get() { return mData; }
     Node* next() { return mNext; }
 
@@ -21,12 +23,12 @@ private:
 
 class List {
 public:
-    List() : mStart(nullptr), mEnd(nullptr) {}
+    List() : mStart(NULL), mEnd(NULL) {}
     ~List()
     {
         Node* node = mStart;
 
-        while (node != nullptr) {
+        while (node) {
             Node* tmp = node;
             node = node->mNext;
             delete tmp;

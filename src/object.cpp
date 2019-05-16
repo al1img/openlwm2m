@@ -5,32 +5,30 @@
 
 namespace openlwm2m {
 
-Object::Object(uint16_t id, int maxInstances, bool mandatory, uint16_t interfaces)
-    : mId(id), mMaxInstances(maxInstances), mMandatory(mandatory), mInterfaces(interfaces)
+Object::Object(uint16_t id, ObjectInstance instance, int maxInstances, ObjectMandatory mandatory, uint16_t interfaces)
+    : mId(id), mInstance(instance), mMaxInstances(maxInstances), mMandatory(mandatory), mInterfaces(interfaces)
 {
     LOG_DEBUG("Create object %d", id);
 }
 
 Object::~Object()
 {
-    Node* node = mResourceList.begin();
+    Node* node = mResourceDescList.begin();
 
-    while (node != nullptr) {
-        delete static_cast<Resource*>(node->get());
+    while (node) {
+        delete static_cast<ResourceDesc*>(node->get());
         node = node->next();
     }
 
     LOG_DEBUG("Delete object %d", mId);
 }
 
-Resource* Object::createResource(uint16_t id, uint16_t operations, int maxInstances, bool mandatory, ResourceType type,
-                                 int min, int max)
+void Object::createResource(uint16_t id, uint16_t operations, ResourceInstance instance, int maxInstances,
+                            ResourceMandatory mandatory, ResourceType type, int min, int max)
 {
-    Resource* resource = new Resource(id, operations, maxInstances, mandatory, type, min, max);
+    ResourceDesc* resourceDesc = new ResourceDesc(id, operations, instance, maxInstances, mandatory, type, min, max);
 
-    mResourceList.append(resource);
-
-    return resource;
+    mResourceDescList.append(resourceDesc);
 }
 
 }  // namespace openlwm2m
