@@ -17,6 +17,8 @@ public:
     Object* createObject(uint16_t id, Object::Instance instance, size_t maxInstances, Object::Mandatory mandatory,
                          uint16_t interfaces, Status* status = NULL);
 
+    Object* getObject(uint16_t id, Status* status = NULL);
+
     Status startBootstrap();
 
 private:

@@ -36,17 +36,21 @@ public:
 
     enum Operation { OP_NONE = 0x00, OP_READ = 0x01, OP_WRITE = 0x02, OP_READWRITE = 0x03, OP_EXECUTE = 0x04 };
 
-    Resource(ResourceDesc* desc);
+    Resource(uint16_t objectInstanceId, ResourceDesc& desc);
+    ~Resource();
 
 private:
-    ResourceDesc* mDesc;
+    uint16_t mObjectInstanceId;
+    ResourceDesc& mDesc;
 };
 
 class ResourceDesc {
 private:
     friend class Object;
+    friend class Resource;
 
     uint16_t mId;
+    uint16_t mObjectId;
     uint16_t mOperations;
     Resource::Instance mInstance;
     size_t mMaxInstances;
@@ -55,7 +59,7 @@ private:
     int mMin;
     int mMax;
 
-    ResourceDesc(uint16_t id, uint16_t operations, Resource::Instance instance, size_t maxInstances,
+    ResourceDesc(uint16_t id, uint16_t objectId, uint16_t operations, Resource::Instance instance, size_t maxInstances,
                  Resource::Mandatory mandatory, Resource::Type type, int min, int max);
     ~ResourceDesc();
 };

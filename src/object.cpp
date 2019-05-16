@@ -13,12 +13,12 @@ Object::Object(uint16_t id, Instance instance, size_t maxInstances, Mandatory ma
       mInterfaces(interfaces),
       mStarted(false)
 {
-    LOG_DEBUG("Create object %d", id);
+    LOG_DEBUG("Create object /%d", mId);
 }
 
 Object::~Object()
 {
-    LOG_DEBUG("Delete object %d", mId);
+    LOG_DEBUG("Delete object /%d", mId);
 
     deleteInstances();
     deleteResources();
@@ -31,22 +31,27 @@ Status Object::createResource(uint16_t id, uint16_t operations, Resource::Instan
         return STS_ERR_STATE;
     }
 
-    ResourceDesc* resourceDesc = new ResourceDesc(id, operations, instance, maxInstances, mandatory, type, min, max);
+    if (instance == Resource::SINGLE) {
+        maxInstances = 1;
+    }
 
-    mResourceDescList.insert(resourceDesc);
+    ResourceDesc* resourceDesc =
+        new ResourceDesc(id, mId, operations, instance, maxInstances, mandatory, type, min, max);
+
+    mResourceDescList.append(resourceDesc);
 
     return STS_OK;
 }
 
 Status Object::start()
 {
-    LOG_DEBUG("Start object %d", mId);
+    LOG_DEBUG("Start object /%d", mId);
 
     // Appendix D.1
     // Create single mandatory instance
     if (mInstance == SINGLE && mMandatory == MANDATORY) {
         if (getInstanceCount() == 0) {
-            Status status = STS_OK;
+            Status status;
 
             if (createInstance(ITF_BOOTSTRAP, &status) == NULL) {
                 return status;
@@ -57,7 +62,9 @@ Status Object::start()
     return STS_OK;
 }
 
-int Object::getInstanceCount() { return mInstanceList.size(); }
+bool Object::hasFreeInstance() { return mMaxInstances == 0 || mInstanceList.size() < mMaxInstances; }
+
+size_t Object::getInstanceCount() { return mInstanceList.size(); }
 
 ObjectInstance* Object::createInstance(Interface interface, Status* status)
 {
@@ -73,7 +80,7 @@ ObjectInstance* Object::createInstance(Interface interface, Status* status)
     }
 
     // Check size
-    if (mMaxInstances != 0 && mInstanceList.size() == mMaxInstances) {
+    if (!hasFreeInstance()) {
         retStatus = STS_ERR_MEM;
         goto error;
     }
@@ -93,9 +100,14 @@ ObjectInstance* Object::createInstance(Interface interface, Status* status)
     }
 
     // Create instance
-    instance = new ObjectInstance(id, mResourceDescList);
+    instance = new ObjectInstance(id, mId, mResourceDescList);
 
-    mInstanceList.insert(instance, node);
+    if (node) {
+        mInstanceList.insert(instance, node);
+    }
+    else {
+        mInstanceList.append(instance);
+    }
 
     return instance;
 

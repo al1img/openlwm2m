@@ -17,8 +17,14 @@ public:
 
     enum Instance { SINGLE, MULTIPLE };
 
+    uint16_t getId() const { return mId; }
+
     Status createResource(uint16_t id, uint16_t operations, Resource::Instance instance, size_t maxInstances,
                           Resource::Mandatory mandatory, Resource::Type type, int min = 0, int max = 0);
+
+    ObjectInstance *createInstance(Interface interface, Status *status = NULL);
+
+    bool hasFreeInstance();
 
 private:
     friend class Client;
@@ -39,8 +45,7 @@ private:
 
     Status start();
 
-    int getInstanceCount();
-    ObjectInstance *createInstance(Interface interface, Status *status = NULL);
+    size_t getInstanceCount();
 
     void deleteInstances();
     void deleteResources();

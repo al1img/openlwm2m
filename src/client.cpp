@@ -22,6 +22,9 @@ Client::Client() : mState(STATE_INIT)
 
     // LLwM2M Object: LwM2M Server
     object = createObject(1, Object::MULTIPLE, CONFIG_MAX_OBJ_SERVER, Object::MANDATORY, ITF_ALL);
+    // Short Server ID
+    object->createResource(0, Resource::OP_READ, Resource::SINGLE, 0, Resource::MANDATORY, Resource::TYPE_UINT16, 1,
+                           65535);
 
     // LLwM2M Object: Device
     object = createObject(3, Object::SINGLE, 0, Object::MANDATORY, ITF_ALL);
@@ -56,14 +59,34 @@ Object* Client::createObject(uint16_t id, Object::Instance instance, size_t maxI
 
     Object* object = new Object(id, instance, maxInstances, mandatory, interfaces);
 
-    mObjectList.insert(object);
+    mObjectList.append(object);
 
     return object;
 }
 
+Object* Client::getObject(uint16_t id, Status* status)
+{
+    Node* node = mObjectList.begin();
+
+    while (node) {
+        Object* object = static_cast<Object*>(node->get());
+
+        if (object->mId == id) {
+            return object;
+        }
+
+        node = node->next();
+    }
+
+    if (status) {
+        *status = STS_ERR_EXIST;
+    }
+    return NULL;
+}
+
 Status Client::startBootstrap()
 {
-    LOG_DEBUG("Start client");
+    LOG_DEBUG("Start bootstrap");
     Node* node = mObjectList.begin();
 
     while (node) {

@@ -42,10 +42,10 @@ public:
 
         // List is empty
         if (!mStart) {
-            mStart = newNode;
+            mStart = mEnd = newNode;
         }
         // Insert at the beginning
-        else if (node == mStart) {
+        else if (node == mStart || !node) {
             newNode->mNext = mStart;
             mStart = newNode;
         }
@@ -64,10 +64,26 @@ public:
         mSize++;
     }
 
+    void append(void* data)
+    {
+        Node* newNode = new Node(data);
+
+        if (!mStart) {
+            mStart = mEnd = newNode;
+        }
+        else {
+            mEnd->mNext = newNode;
+            mEnd = newNode;
+        }
+
+        mSize++;
+    }
+
     size_t size() const { return mSize; }
 
 private:
     Node* mStart;
+    Node* mEnd;
     size_t mSize;
 };
 
