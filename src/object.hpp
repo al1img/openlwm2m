@@ -15,6 +15,9 @@
 
 namespace openlwm2m {
 
+/**
+ * lwm2m object.
+ */
 class Object : public Lwm2mBase {
 public:
     enum Mandatory { MANDATORY, OPTIONAL };

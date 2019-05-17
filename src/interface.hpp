@@ -1,3 +1,7 @@
+/** \file interface.hpp
+ * LWM2M Interfaces.
+ */
+
 #ifndef OPENLWM2M_INTERFACE_HPP_
 #define OPENLWM2M_INTERFACE_HPP_
 
@@ -5,9 +9,22 @@
 
 namespace openlwm2m {
 
-#define ITF_ALL (ITF_BOOTSTRAP | ITF_REGISTER | ITF_DEVICE | ITF_REPORTTING)
+/**
+ * Define LWM2M Interfaces.
+ *
+ * See: 6. Interfaces.
+ */
+enum Interface {
+    ITF_BOOTSTRAP = 0x01,  ///< Bootstrap interface.
+    ITF_REGISTER = 0x02,   ///< Client registration interface.
+    ITF_DEVICE = 0x04,     ///< Device Management and Service Enablement Interface.
+    ITF_REPORTTING = 0x08  ///< Information Reporting Interface.
+};
 
-enum Interface { ITF_BOOTSTRAP = 0x01, ITF_REGISTER = 0x02, ITF_DEVICE = 0x04, ITF_REPORTTING = 0x08 };
+/**
+ * Defines all interfaces.
+ */
+#define ITF_ALL (ITF_BOOTSTRAP | ITF_REGISTER | ITF_DEVICE | ITF_REPORTTING)
 
 class BootstrapUlItf {
 public:
