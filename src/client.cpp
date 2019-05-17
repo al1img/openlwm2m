@@ -6,12 +6,19 @@
 
 namespace openlwm2m {
 
+/*******************************************************************************
+ * Client
+ ******************************************************************************/
+
 Client::Client() : mState(STATE_INIT)
 {
     LOG_DEBUG("Create client");
 
-    // LwM2M Object: LwM2M Security
-    Object* object = createObject(0, Object::MULTIPLE, CONFIG_MAX_OBJ_SECURITY, Object::MANDATORY, ITF_BOOTSTRAP);
+    /***************************************************************************
+     * E.1 LwM2M Object: LwM2M Security
+     **************************************************************************/
+    Object* object = createObject(0, Object::MULTIPLE, CONFIG_NUM_SERVERS + CONFIG_BOOTSTRAP_SERVER, Object::MANDATORY,
+                                  ITF_BOOTSTRAP);
     // LWM2M Server URI
     object->createResource(0, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
                            ResourceDesc::TYPE_STRING, 0, 255);
@@ -21,18 +28,49 @@ Client::Client() : mState(STATE_INIT)
     // Security Mode
     object->createResource(2, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
                            ResourceDesc::TYPE_INT8, 0, 4);
+    // Public Key or Identity
+    object->createResource(3, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
+                           ResourceDesc::TYPE_OPAQUE, 0, CONFIG_CLIENT_PUBLIC_KEY_MAX_LEN);
+    // Server Public Key
+    object->createResource(4, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
+                           ResourceDesc::TYPE_OPAQUE, 0, CONFIG_SERVER_PUBLIC_KEY_MAX_LEN);
+    // Secret Key
+    object->createResource(5, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
+                           ResourceDesc::TYPE_OPAQUE, 0, CONFIG_CLIENT_PRIVATE_KEY_MAX_LEN);
 
-    // LLwM2M Object: LwM2M Server
-    object = createObject(1, Object::MULTIPLE, CONFIG_MAX_OBJ_SERVER, Object::MANDATORY, ITF_ALL);
+    /***************************************************************************
+     * E.2 LwM2M Object: LwM2M Server
+     **************************************************************************/
+    object = createObject(1, Object::MULTIPLE, CONFIG_NUM_SERVERS, Object::MANDATORY, ITF_ALL);
     // Short Server ID
     object->createResource(0, ResourceDesc::OP_READ, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
                            ResourceDesc::TYPE_UINT16, 1, 65535);
+    // Lifetime
+    object->createResource(1, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
+                           ResourceDesc::TYPE_INT32);
+    // Notification Storing When Disabled or Offline
+    object->createResource(6, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
+                           ResourceDesc::TYPE_BOOL);
+    // Binding
+    object->createResource(7, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
+                           ResourceDesc::TYPE_STRING, 0, CONFIG_BINDING_STR_MAX_LEN);
+    // Registration Update Trigger
+    object->createResource(8, ResourceDesc::OP_EXECUTE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
+                           ResourceDesc::TYPE_NONE);
 
-    // LLwM2M Object: Device
+    /***************************************************************************
+     * E.4 LwM2M Object: Device
+     **************************************************************************/
     object = createObject(3, Object::SINGLE, 0, Object::MANDATORY, ITF_ALL);
     // Reboot
     object->createResource(4, ResourceDesc::OP_EXECUTE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
                            ResourceDesc::TYPE_NONE);
+    // Error Code
+    object->createResource(11, ResourceDesc::OP_EXECUTE, ResourceDesc::MULTIPLE, CONFIG_ERR_CODE_MAX_SIZE,
+                           ResourceDesc::MANDATORY, ResourceDesc::TYPE_INT8, 0, 8);
+    // Error Code
+    object->createResource(11, ResourceDesc::OP_EXECUTE, ResourceDesc::MULTIPLE, CONFIG_ERR_CODE_MAX_SIZE,
+                           ResourceDesc::MANDATORY, ResourceDesc::TYPE_INT8, 0, 8);
 }
 
 Client::~Client()
@@ -46,6 +84,10 @@ Client::~Client()
         node = node->next();
     }
 }
+
+/*******************************************************************************
+ * Public
+ ******************************************************************************/
 
 Object* Client::createObject(uint16_t id, Object::Instance instance, size_t maxInstances, Object::Mandatory mandatory,
                              uint16_t interfaces, Status* status)
