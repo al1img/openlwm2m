@@ -35,6 +35,12 @@ Status Object::createResource(uint16_t id, uint16_t operations, ResourceDesc::In
         return STS_ERR_STATE;
     }
 
+    // Appendix D.1
+    // Resource which supports “Execute”operation MUST have “Single” as value of the “Instances” field.
+    if (operations & ResourceDesc::OP_EXECUTE && instance != ResourceDesc::SINGLE) {
+        return STS_ERR_VALUE;
+    }
+
     if (instance == ResourceDesc::SINGLE) {
         maxInstances = 1;
     }
@@ -59,12 +65,13 @@ Status Object::start()
 #endif
 
     // Appendix D.1
-    // Create single mandatory instance
+    // If the Object field “Mandatory” is “Mandatory” and the Object field “Instances” is “Single”then, the number of
+    // Object Instance MUST be 1.
     if (mInstance == SINGLE && mMandatory == MANDATORY) {
         if (getInstanceCount() == 0) {
             Status status;
 
-            if (createInstance(ITF_BOOTSTRAP, &status) == NULL) {
+            if (createInstance(&status) == NULL) {
                 return status;
             }
         }
@@ -73,72 +80,52 @@ Status Object::start()
     return STS_OK;
 }
 
-#ifdef RESERVE_MEMORY
-bool Object::hasFreeInstance() { return mInstanceStorage.size() < mInstanceStorage.maxSize(); }
-#else
-bool Object::hasFreeInstance() { return mMaxInstances == 0 || mInstanceList.size() < mMaxInstances; }
-#endif
-
-#ifdef RESERVE_MEMORY
-size_t Object::getInstanceCount() { return mInstanceStorage.size(); }
-#else
-size_t Object::getInstanceCount() { return mInstanceList.size(); }
-#endif
-
-#ifdef RESERVE_MEMORY
-ObjectInstance* Object::createInstance(Interface interface, Status* status)
+bool Object::hasFreeInstance()
 {
-    Status retStatus = STS_OK;
-    ObjectInstance* instance;
-
-    // Check interface
-    if ((interface & mInterfaces) == 0) {
-        retStatus = STS_ERR_ACCESS;
-        goto error;
-    }
-
-    // Check size
-    if (!hasFreeInstance()) {
-        retStatus = STS_ERR_MEM;
-        goto error;
-    }
-
-    instance = static_cast<ObjectInstance*>(mInstanceStorage.newItem(&retStatus));
-    if (!instance) {
-        goto error;
-    }
-
-    LOG_DEBUG("Create object instance /%d/%d", getId(), instance->getId());
-
-    return instance;
-
-error:
-
-    if (status) {
-        *status = retStatus;
-    }
-
-    return NULL;
+#ifdef RESERVE_MEMORY
+    return mInstanceStorage.size() < mInstanceStorage.maxSize();
+#else
+    return mMaxInstances == 0 || mInstanceList.size() < mMaxInstances;
+#endif
 }
-#else
-ObjectInstance* Object::createInstance(Interface interface, Status* status)
-{
-    Status retStatus = STS_OK;
-    uint16_t id = 0;
-    Node* node;
-    ObjectInstance* instance;
 
-    // Check interface
-    if ((interface & mInterfaces) == 0) {
-        retStatus = STS_ERR_ACCESS;
-        goto error;
+size_t Object::getInstanceCount()
+{
+#ifdef RESERVE_MEMORY
+    return mInstanceStorage.size();
+#else
+    return mInstanceList.size();
+#endif
+}
+
+ObjectInstance* Object::createInstance(Status* status)
+{
+    if (status) {
+        *status = STS_OK;
     }
 
     // Check size
     if (!hasFreeInstance()) {
-        retStatus = STS_ERR_MEM;
-        goto error;
+        if (status) {
+            *status = STS_ERR_MEM;
+        }
+
+        return NULL;
     }
+
+    ObjectInstance* instance;
+
+#ifdef RESERVE_MEMORY
+
+    instance = static_cast<ObjectInstance*>(mInstanceStorage.newItem(status));
+
+    if (instance) {
+        LOG_DEBUG("Create object instance /%d/%d", getId(), instance->getId());
+    }
+
+#else
+    Node* node;
+    uint16_t id = 0;
 
     // Get free id
     node = mInstanceList.begin();
@@ -164,39 +151,29 @@ ObjectInstance* Object::createInstance(Interface interface, Status* status)
         mInstanceList.append(instance);
     }
 
-    return instance;
-
-error:
-
-    if (status) {
-        *status = retStatus;
-    }
-
-    return NULL;
-}
 #endif
 
-#ifdef RESERVE_MEMORY
+    return instance;
+}
+
 void Object::deleteInstances()
 {
+#ifdef RESERVE_MEMORY
     ObjectInstance* instance = static_cast<ObjectInstance*>(mInstanceStorage.begin(true));
 
     while (instance) {
         delete instance;
         instance = static_cast<ObjectInstance*>(mInstanceStorage.next(true));
     }
-}
 #else
-void Object::deleteInstances()
-{
     Node* node = mInstanceList.begin();
 
     while (node) {
         delete static_cast<ObjectInstance*>(node->get());
         node = node->next();
     }
-}
 #endif
+}
 
 void Object::deleteResources()
 {

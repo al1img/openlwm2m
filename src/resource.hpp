@@ -6,20 +6,33 @@
 #include "resourcedesc.hpp"
 #include "resourceinstance.hpp"
 #include "status.hpp"
+#ifdef RESERVE_MEMORY
+#include "storage.hpp"
+#else
+#include "list.hpp"
+#endif
 
 namespace openlwm2m {
 
 class Resource : public Lwm2mBase {
-    ResourceInstance* createInstance(Interface interface, Status* status = NULL);
+public:
+    ResourceInstance* createInstance(Status* status = NULL);
     bool hasFreeInstance();
 
 private:
     friend class ObjectInstance;
 
     ResourceDesc& mDesc;
+#ifdef RESERVE_MEMORY
+    Storage mInstanceStorage;
+#else
+    List mInstanceList;
+#endif
 
     Resource(Lwm2mBase* parent, ResourceDesc& desc);
     ~Resource();
+
+    void deleteInstances();
 };
 
 }  // namespace openlwm2m

@@ -24,7 +24,7 @@ public:
     Status createResource(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
                           ResourceDesc::Mandatory mandatory, ResourceDesc::Type type, int min = 0, int max = 0);
 
-    ObjectInstance *createInstance(Interface interface, Status *status = NULL);
+    ObjectInstance *createInstance(Status *status = NULL);
 
     bool hasFreeInstance();
 

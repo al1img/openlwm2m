@@ -30,6 +30,9 @@ Client::Client() : mState(STATE_INIT)
 
     // LLwM2M Object: Device
     object = createObject(3, Object::SINGLE, 0, Object::MANDATORY, ITF_ALL);
+    // Reboot
+    object->createResource(4, ResourceDesc::OP_EXECUTE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
+                           ResourceDesc::TYPE_NONE);
 }
 
 Client::~Client()
@@ -47,6 +50,10 @@ Client::~Client()
 Object* Client::createObject(uint16_t id, Object::Instance instance, size_t maxInstances, Object::Mandatory mandatory,
                              uint16_t interfaces, Status* status)
 {
+    if (status) {
+        *status = STS_OK;
+    }
+
     if (mState != STATE_INIT) {
         if (status) {
             *status = STS_ERR_STATE;
@@ -66,14 +73,18 @@ Object* Client::createObject(uint16_t id, Object::Instance instance, size_t maxI
     return object;
 }
 
-Object* Client::getObject(uint16_t id, Status* status)
+Object* Client::getObject(uint16_t id, Interface interface, Status* status)
 {
+    if (status) {
+        *status = STS_OK;
+    }
+
     Node* node = mObjectList.begin();
 
     while (node) {
         Object* object = static_cast<Object*>(node->get());
 
-        if (object->getId() == id) {
+        if (object->getId() == id && (object->mInterfaces & interface)) {
             return object;
         }
 
@@ -83,6 +94,7 @@ Object* Client::getObject(uint16_t id, Status* status)
     if (status) {
         *status = STS_ERR_EXIST;
     }
+
     return NULL;
 }
 

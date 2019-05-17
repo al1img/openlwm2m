@@ -41,10 +41,10 @@ private:
     friend class Resource;
 
     uint16_t mOperations;
-    ResourceDesc::Instance mInstance;
+    Instance mInstance;
     size_t mMaxInstances;
-    ResourceDesc::Mandatory mMandatory;
-    ResourceDesc::Type mType;
+    Mandatory mMandatory;
+    Type mType;
     int mMin;
     int mMax;
 

@@ -16,12 +16,12 @@ int main()
         LOG_ERROR("Can't start client, status %d", status);
     }
 
-    Object *object = client.getObject(1, &status);
+    Object *object = client.getObject(1, ITF_BOOTSTRAP, &status);
     if (!object) {
         LOG_ERROR("Can't get object, status %d", status);
     }
 
-    object->createInstance(ITF_BOOTSTRAP, &status);
+    object->createInstance(&status);
     if (status != STS_OK) {
         LOG_ERROR("Can't create instance, status %d", status);
     }
