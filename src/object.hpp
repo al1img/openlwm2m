@@ -5,6 +5,7 @@
 
 #include "interface.hpp"
 #include "list.hpp"
+#include "lwm2mbase.hpp"
 #include "objectinstance.hpp"
 #include "resourcedesc.hpp"
 #include "status.hpp"
@@ -14,13 +15,11 @@
 
 namespace openlwm2m {
 
-class Object {
+class Object : public Lwm2mBase {
 public:
     enum Mandatory { MANDATORY, OPTIONAL };
 
     enum Instance { SINGLE, MULTIPLE };
-
-    uint16_t getId() const { return mId; }
 
     Status createResource(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
                           ResourceDesc::Mandatory mandatory, ResourceDesc::Type type, int min = 0, int max = 0);
@@ -32,7 +31,6 @@ public:
 private:
     friend class Client;
 
-    uint16_t mId;
     Instance mInstance;
     size_t mMaxInstances;
     Mandatory mMandatory;

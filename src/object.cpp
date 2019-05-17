@@ -6,7 +6,7 @@
 namespace openlwm2m {
 
 Object::Object(uint16_t id, Instance instance, size_t maxInstances, Mandatory mandatory, uint16_t interfaces)
-    : mId(id),
+    : Lwm2mBase(NULL, id),
       mInstance(instance),
       mMaxInstances(maxInstances),
       mMandatory(mandatory),
@@ -17,12 +17,12 @@ Object::Object(uint16_t id, Instance instance, size_t maxInstances, Mandatory ma
       mInstanceStorage(maxInstances)
 #endif
 {
-    LOG_DEBUG("Create object /%d", mId);
+    LOG_DEBUG("Create object /%d", getId());
 }
 
 Object::~Object()
 {
-    LOG_DEBUG("Delete object /%d", mId);
+    LOG_DEBUG("Delete object /%d", getId());
 
     deleteInstances();
     deleteResources();
@@ -40,7 +40,7 @@ Status Object::createResource(uint16_t id, uint16_t operations, ResourceDesc::In
     }
 
     ResourceDesc* resourceDesc =
-        new ResourceDesc(id, mId, operations, instance, maxInstances, mandatory, type, min, max);
+        new ResourceDesc(this, id, operations, instance, maxInstances, mandatory, type, min, max);
 
     mResourceDescList.append(resourceDesc);
 
@@ -49,12 +49,11 @@ Status Object::createResource(uint16_t id, uint16_t operations, ResourceDesc::In
 
 Status Object::start()
 {
-    LOG_DEBUG("Start object /%d", mId);
+    LOG_DEBUG("Start object /%d", getId());
 
 #ifdef RESERVE_MEMORY
     for (size_t i = 0; i < mMaxInstances; i++) {
-        ObjectInstance* instance = new ObjectInstance(i, mId, mResourceDescList);
-
+        ObjectInstance* instance = new ObjectInstance(this, i, mResourceDescList);
         mInstanceStorage.pushItem(instance);
     }
 #endif
@@ -109,7 +108,7 @@ ObjectInstance* Object::createInstance(Interface interface, Status* status)
         goto error;
     }
 
-    LOG_DEBUG("Create object instance /%d/%d", mId, instance->getId());
+    LOG_DEBUG("Create object instance /%d/%d", getId(), instance->getId());
 
     return instance;
 
@@ -156,7 +155,7 @@ ObjectInstance* Object::createInstance(Interface interface, Status* status)
     }
 
     // Create instance
-    instance = new ObjectInstance(id, mId, mResourceDescList);
+    instance = new ObjectInstance(this, id, mResourceDescList);
 
     if (node) {
         mInstanceList.insert(instance, node);
@@ -180,11 +179,11 @@ error:
 #ifdef RESERVE_MEMORY
 void Object::deleteInstances()
 {
-    ObjectInstance* instance = static_cast<ObjectInstance*>(mInstanceStorage.begin());
+    ObjectInstance* instance = static_cast<ObjectInstance*>(mInstanceStorage.begin(true));
 
     while (instance) {
         delete instance;
-        instance = static_cast<ObjectInstance*>(mInstanceStorage.next());
+        instance = static_cast<ObjectInstance*>(mInstanceStorage.next(true));
     }
 }
 #else

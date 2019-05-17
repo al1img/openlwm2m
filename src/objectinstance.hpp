@@ -4,21 +4,17 @@
 #include <stdint.h>
 
 #include "list.hpp"
+#include "lwm2mbase.hpp"
 
 namespace openlwm2m {
 
-class ObjectInstance {
-public:
-    uint16_t getId() const { return mId; }
-
+class ObjectInstance : public Lwm2mBase {
 private:
     friend class Object;
 
-    uint16_t mId;
-    uint16_t mObjectId;
     List mResourceList;
 
-    ObjectInstance(uint16_t id, uint16_t objectId, List& resourceDescList);
+    ObjectInstance(Lwm2mBase* parent, uint16_t id, List& resourceDescList);
     ~ObjectInstance();
 };
 

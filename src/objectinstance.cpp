@@ -6,14 +6,14 @@
 
 namespace openlwm2m {
 
-ObjectInstance::ObjectInstance(uint16_t id, uint16_t objectId, List& resourceDescList) : mId(id), mObjectId(objectId)
+ObjectInstance::ObjectInstance(Lwm2mBase* parent, uint16_t id, List& resourceDescList) : Lwm2mBase(parent, id)
 {
-    LOG_DEBUG("Create object instance /%d/%d", mObjectId, mId);
+    LOG_DEBUG("Create object instance /%d/%d", getParent()->getId(), getId());
 
     Node* node = resourceDescList.begin();
 
     while (node) {
-        Resource* resource = new Resource(mId, *static_cast<ResourceDesc*>(node->get()));
+        Resource* resource = new Resource(this, *static_cast<ResourceDesc*>(node->get()));
 
         mResourceList.append(resource);
         node = node->next();
@@ -22,7 +22,7 @@ ObjectInstance::ObjectInstance(uint16_t id, uint16_t objectId, List& resourceDes
 
 ObjectInstance::~ObjectInstance()
 {
-    LOG_DEBUG("Delete object instance /%d/%d", mObjectId, mId);
+    LOG_DEBUG("Delete object instance /%d/%d", getParent()->getId(), getId());
 
     Node* node = mResourceList.begin();
 

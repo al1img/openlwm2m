@@ -1,18 +1,24 @@
 #ifndef OPENLWM2M_RESOURCE_HPP_
 #define OPENLWM2M_RESOURCE_HPP_
 
+#include "interface.hpp"
+#include "lwm2mbase.hpp"
 #include "resourcedesc.hpp"
+#include "resourceinstance.hpp"
+#include "status.hpp"
 
 namespace openlwm2m {
 
-class Resource {
+class Resource : public Lwm2mBase {
+    ResourceInstance* createInstance(Interface interface, Status* status = NULL);
+    bool hasFreeInstance();
+
 private:
     friend class ObjectInstance;
 
-    uint16_t mObjectInstanceId;
     ResourceDesc& mDesc;
 
-    Resource(uint16_t objectInstanceId, ResourceDesc& desc);
+    Resource(Lwm2mBase* parent, ResourceDesc& desc);
     ~Resource();
 };
 

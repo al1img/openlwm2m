@@ -4,9 +4,11 @@
 #include <stdint.h>
 #include <cstddef>
 
+#include "lwm2mbase.hpp"
+
 namespace openlwm2m {
 
-class ResourceDesc {
+class ResourceDesc : public Lwm2mBase {
 public:
     enum Mandatory { MANDATORY, OPTIONAL };
 
@@ -38,8 +40,6 @@ private:
     friend class Object;
     friend class Resource;
 
-    uint16_t mId;
-    uint16_t mObjectId;
     uint16_t mOperations;
     ResourceDesc::Instance mInstance;
     size_t mMaxInstances;
@@ -48,7 +48,7 @@ private:
     int mMin;
     int mMax;
 
-    ResourceDesc(uint16_t id, uint16_t objectId, uint16_t operations, ResourceDesc::Instance instance,
+    ResourceDesc(Lwm2mBase* parent, uint16_t id, uint16_t operations, ResourceDesc::Instance instance,
                  size_t maxInstances, ResourceDesc::Mandatory mandatory, ResourceDesc::Type type, int min, int max);
     ~ResourceDesc();
 };

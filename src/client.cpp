@@ -73,7 +73,7 @@ Object* Client::getObject(uint16_t id, Status* status)
     while (node) {
         Object* object = static_cast<Object*>(node->get());
 
-        if (object->mId == id) {
+        if (object->getId() == id) {
             return object;
         }
 
