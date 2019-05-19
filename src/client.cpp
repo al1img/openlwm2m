@@ -10,7 +10,7 @@ namespace openlwm2m {
  * Client
  ******************************************************************************/
 
-Client::Client() : mState(STATE_INIT)
+Client::Client(TransportItf& transport) : mTransport(transport), mState(STATE_INIT)
 {
     LOG_DEBUG("Create client");
 
@@ -140,9 +140,14 @@ Object* Client::getObject(uint16_t id, Interface interface, Status* status)
     return NULL;
 }
 
-Status Client::startBootstrap()
+Status Client::bootstrapStart()
 {
     LOG_DEBUG("Start bootstrap");
+
+    if (mState != STATE_INIT) {
+        return STS_ERR_STATE;
+    }
+
     Node* node = mObjectList.begin();
 
     while (node) {
@@ -153,7 +158,42 @@ Status Client::startBootstrap()
         node = node->next();
     }
 
+    mState = STATE_BOOTSTRAP;
+
     return STS_OK;
 }
+
+Status Client::bootstrapFinish()
+{
+    LOG_DEBUG("Finish bootstrap");
+
+    if (mState != STATE_BOOTSTRAP) {
+        return STS_ERR_STATE;
+    }
+
+    mState = STATE_REGISTERING;
+
+    return STS_OK;
+}
+
+void Client::bootstrapDiscover() {}
+void Client::bootstrapRead() {}
+void Client::bootstrapWrite() {}
+void Client::bootstrapDelete() {}
+
+void Client::deviceRead() {}
+void Client::deviceDiscover() {}
+void Client::deviceWrite() {}
+void Client::deviceWriteAttributes() {}
+void Client::deviceExecute() {}
+void Client::deviceCreate() {}
+void Client::deviceDelete() {}
+void Client::readComposite() {}
+void Client::writeComposite() {}
+
+void Client::reportingObserve() {}
+void Client::reportingCancelObservation() {}
+void Client::reportingObserveComposite() {}
+void Client::reportingCancelObserveComposite() {}
 
 }  // namespace openlwm2m

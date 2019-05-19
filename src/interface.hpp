@@ -7,6 +7,8 @@
 
 #include <stdint.h>
 
+#include "status.hpp"
+
 namespace openlwm2m {
 
 /**
@@ -26,45 +28,48 @@ enum Interface {
  */
 #define ITF_ALL (ITF_BOOTSTRAP | ITF_REGISTER | ITF_DEVICE | ITF_REPORTTING)
 
-class BootstrapUlItf {
+class TransportItf {
 public:
-    typedef void (*RequestHandler)(void* context);
+    virtual void createConnection() = 0;
+    virtual void deleteConnection() = 0;
 
-    virtual void bootstrapRequest(RequestHandler handler, void* context) = 0;
+    // Bootstrap
+    typedef void (*BootstrapRequestHandler)(void* context);
+
+    virtual void bootstrapRequest(BootstrapRequestHandler handler, void* context) = 0;
+
+    // Registration
+    typedef void (*RegistrationRequestHandler)(void* context);
+    typedef void (*RegistrationUpdateHandler)(void* context);
+    typedef void (*RegistrationDeregisterHandler)(void* context);
+
+    virtual void registrationRequest(const char* clientName, uint32_t lifetime, const char* version,
+                                     const char* bindingMode, bool queueMode, const char* smsNumber,
+                                     const char* objects, RegistrationRequestHandler handler, void* context) = 0;
+    virtual void registrationUpdate(const uint32_t* lifetime, const char* bindingMode, const char* smsNumber,
+                                    const char* objects, RegistrationUpdateHandler handler, void* context) = 0;
+    virtual void registrationDeregister(RegistrationDeregisterHandler handler, void* context) = 0;
+
+    // Device
+    typedef void (*DeviceSendHandler)(void* context);
+
+    virtual void deviceSend(DeviceSendHandler handler, void* context) = 0;
+
+    // Reporting
+    virtual void reportingNotify() = 0;
 };
 
-class BootstrapDlItf {
+class ClientItf {
 public:
-    virtual void bootstrapFinish() = 0;
+    // Bootstrap
+    virtual Status bootstrapStart() = 0;
+    virtual Status bootstrapFinish() = 0;
     virtual void bootstrapDiscover() = 0;
     virtual void bootstrapRead() = 0;
     virtual void bootstrapWrite() = 0;
     virtual void bootstrapDelete() = 0;
-};
 
-class RegisterUlItf {
-public:
-    typedef void (*RequestHandler)(void* context);
-    typedef void (*UpdateHandler)(void* context);
-    typedef void (*DeregisterHandler)(void* context);
-
-    virtual void registrationRequest(const char* clientName, uint32_t lifetime, const char* version,
-                                     const char* bindingMode, bool queueMode, const char* smsNumber,
-                                     const char* objects, RequestHandler handler, void* context) = 0;
-    virtual void registrationUpdate(const uint32_t* lifetime, const char* bindingMode, const char* smsNumber,
-                                    const char* objects, UpdateHandler handler, void* context) = 0;
-    virtual void registrationDeregister(DeregisterHandler handler, void* context) = 0;
-};
-
-class DeviceUlItf {
-public:
-    typedef void (*SendHandler)(void* context);
-
-    virtual void deviceSend(SendHandler handler, void* context) = 0;
-};
-
-class DeviceDlItf {
-public:
+    // Device
     virtual void deviceRead() = 0;
     virtual void deviceDiscover() = 0;
     virtual void deviceWrite() = 0;
@@ -74,15 +79,8 @@ public:
     virtual void deviceDelete() = 0;
     virtual void readComposite() = 0;
     virtual void writeComposite() = 0;
-};
 
-class ReportingUlItf {
-public:
-    virtual void reportingNotify() = 0;
-};
-
-class ReportingDlItf {
-public:
+    // Reporting
     virtual void reportingObserve() = 0;
     virtual void reportingCancelObservation() = 0;
     virtual void reportingObserveComposite() = 0;

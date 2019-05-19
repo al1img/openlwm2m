@@ -13,6 +13,7 @@ include_directories(
 
 set(SOURCES
 	main.cpp
+	coaptransport.cpp
 )
 
 ################################################################################
