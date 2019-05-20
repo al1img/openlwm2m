@@ -5,6 +5,8 @@
 
 namespace openlwm2m {
 
+#define LWM2M_INVALID_ID 0xFFFF
+
 class Lwm2mBase {
 public:
     Lwm2mBase* getParent() const { return mParent; }
@@ -12,6 +14,9 @@ public:
 
 protected:
     Lwm2mBase(Lwm2mBase* parent, uint16_t id) : mParent(parent), mId(id) {}
+
+    virtual void create() {}
+    virtual void release() {}
 
 private:
     Lwm2mBase* mParent;

@@ -6,30 +6,25 @@
 
 namespace openlwm2m {
 
-ObjectInstance::ObjectInstance(Lwm2mBase* parent, uint16_t id, List& resourceDescList) : Lwm2mBase(parent, id)
-{
-    LOG_DEBUG("Create object instance /%d/%d", getParent()->getId(), getId());
+/*******************************************************************************
+ * Private
+ ******************************************************************************/
 
-    Node* node = resourceDescList.begin();
+ObjectInstance::ObjectInstance(Lwm2mBase* parent, uint16_t id, ResourceDesc::Storage& resourceDescStorage)
+    : Lwm2mBase(parent, id), mResourceStorage(this)
+{
+    Node<ResourceDesc>* node = resourceDescStorage.begin();
 
     while (node) {
-        Resource* resource = new Resource(this, *static_cast<ResourceDesc*>(node->get()));
-
-        mResourceList.append(resource);
+        Resource* resource = mResourceStorage.newItem(node->get()->getId(), *node->get());
+        LWM2M_ASSERT(resource);
         node = node->next();
     }
 }
 
-ObjectInstance::~ObjectInstance()
-{
-    LOG_DEBUG("Delete object instance /%d/%d", getParent()->getId(), getId());
+ObjectInstance::~ObjectInstance() {}
 
-    Node* node = mResourceList.begin();
-
-    while (node) {
-        delete static_cast<Resource*>(node->get());
-        node = node->next();
-    }
-}
+void ObjectInstance::create() { LOG_DEBUG("Create object instance /%d/%d", getParent()->getId(), getId()); }
+void ObjectInstance::release() { LOG_DEBUG("Delete object instance /%d/%d", getParent()->getId(), getId()); }
 
 }  // namespace openlwm2m

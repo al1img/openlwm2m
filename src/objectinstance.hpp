@@ -3,19 +3,27 @@
 
 #include <stdint.h>
 
-#include "list.hpp"
 #include "lwm2mbase.hpp"
+#include "lwm2mstorage.hpp"
+#include "resource.hpp"
+#include "resourcedesc.hpp"
 
 namespace openlwm2m {
 
 class ObjectInstance : public Lwm2mBase {
 private:
     friend class Object;
+    friend class Lwm2mStorage<ObjectInstance, ResourceDesc::Storage&>;
 
-    List mResourceList;
+    typedef Lwm2mStorage<ObjectInstance, ResourceDesc::Storage&> Storage;
 
-    ObjectInstance(Lwm2mBase* parent, uint16_t id, List& resourceDescList);
-    ~ObjectInstance();
+    Resource::Storage mResourceStorage;
+
+    ObjectInstance(Lwm2mBase* parent, uint16_t id, ResourceDesc::Storage& resourceDescStorage);
+    virtual ~ObjectInstance();
+
+    void create();
+    void release();
 };
 
 }  // namespace openlwm2m

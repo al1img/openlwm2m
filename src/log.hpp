@@ -44,4 +44,16 @@
 extern void platformLog(int logLevel, const char* module, const char* format, ...);
 #endif
 
+#define LWM2M_ASSERT(condition)                        \
+    if (!(condition)) {                                \
+        platformAssert(__PRETTY_FUNCTION__, __LINE__); \
+    }
+
+#define LWM2M_ASSERT_MESSAGE(condition, message)                \
+    if (!(condition)) {                                         \
+        platformAssert(__PRETTY_FUNCTION__, __LINE__, message); \
+    }
+
+extern void platformAssert(const char* function, int line, const char* message = NULL);
+
 #endif /* OPENLWM2M_LOG_HPP_ */

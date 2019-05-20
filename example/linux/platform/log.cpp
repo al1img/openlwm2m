@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <cstdlib>
 
 #include "log.hpp"
 
@@ -58,4 +59,16 @@ void platformLog(int logLevel, const char* module, const char* format, ...)
     va_end(args);
 
     printf("\n" ANSI_COLOR_RESET);
+}
+
+void platformAssert(const char* function, int line, const char* message)
+{
+    if (!message) {
+        printf(ANSI_COLOR_RED "Assert failed in function: %s, line: %d\n", function, line);
+    }
+    else {
+        printf(ANSI_COLOR_RED "%s at function: %s, line: %d\n", message, function, line);
+    }
+
+    exit(1);
 }

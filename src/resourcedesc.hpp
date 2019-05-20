@@ -5,6 +5,7 @@
 #include <cstddef>
 
 #include "lwm2mbase.hpp"
+#include "lwm2mstorage.hpp"
 
 namespace openlwm2m {
 
@@ -37,20 +38,28 @@ public:
     enum Operation { OP_NONE = 0x00, OP_READ = 0x01, OP_WRITE = 0x02, OP_READWRITE = 0x03, OP_EXECUTE = 0x04 };
 
 private:
+    struct Params {
+        uint16_t mOperations;
+        Instance mInstance;
+        Mandatory mMandatory;
+        Type mType;
+        int mMin;
+        int mMax;
+        size_t mMaxInstances;
+    };
+
     friend class Object;
+    friend class ObjectInstance;
     friend class Resource;
+    friend class ResourceInstance;
+    friend class Lwm2mStorage<ResourceDesc, Params>;
 
-    uint16_t mOperations;
-    Instance mInstance;
-    size_t mMaxInstances;
-    Mandatory mMandatory;
-    Type mType;
-    int mMin;
-    int mMax;
+    typedef Lwm2mStorage<ResourceDesc, Params> Storage;
 
-    ResourceDesc(Lwm2mBase* parent, uint16_t id, uint16_t operations, ResourceDesc::Instance instance,
-                 size_t maxInstances, ResourceDesc::Mandatory mandatory, ResourceDesc::Type type, int min, int max);
-    ~ResourceDesc();
+    Params mParams;
+
+    ResourceDesc(Lwm2mBase* parent, uint16_t id, Params params);
+    virtual ~ResourceDesc();
 };
 
 }  // namespace openlwm2m

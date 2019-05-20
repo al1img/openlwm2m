@@ -8,7 +8,6 @@
 #include <stdint.h>
 
 #include "interface.hpp"
-#include "list.hpp"
 #include "object.hpp"
 #include "status.hpp"
 
@@ -56,6 +55,8 @@ public:
      */
     Object* getObject(uint16_t id, Interface interface, Status* status = NULL);
 
+    Status init();
+
     // Bootstrap
 
     /**
@@ -93,7 +94,7 @@ private:
 
     TransportItf& mTransport;
 
-    List mObjectList;
+    Object::Storage mObjectStorage;
     State mState;
 };
 

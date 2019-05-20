@@ -4,14 +4,11 @@
 #include <stdint.h>
 
 #include "interface.hpp"
-#include "list.hpp"
 #include "lwm2mbase.hpp"
+#include "lwm2mstorage.hpp"
 #include "objectinstance.hpp"
 #include "resourcedesc.hpp"
 #include "status.hpp"
-#ifdef RESERVE_MEMORY
-#include "storage.hpp"
-#endif
 
 namespace openlwm2m {
 
@@ -27,36 +24,32 @@ public:
     Status createResource(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
                           ResourceDesc::Mandatory mandatory, ResourceDesc::Type type, int min = 0, int max = 0);
 
-    ObjectInstance *createInstance(Status *status = NULL);
-
-    bool hasFreeInstance();
+    ObjectInstance *createInstance(uint16_t id, Status *status = NULL);
 
 private:
+    struct Params {
+        Instance mInstance;
+        Mandatory mMandatory;
+        uint16_t mInterfaces;
+        size_t mMaxInstances;
+    };
+
     friend class Client;
+    friend class Lwm2mStorage<Object, Params>;
 
-    Instance mInstance;
-    size_t mMaxInstances;
-    Mandatory mMandatory;
-    uint16_t mInterfaces;
+    typedef Lwm2mStorage<Object, Params> Storage;
 
-    bool mStarted;
+    Params mParams;
 
-    List mResourceDescList;
-#ifdef RESERVE_MEMORY
-    Storage mInstanceStorage;
-#else
-    List mInstanceList;
-#endif
+    bool mInitialized;
 
-    Object(uint16_t id, Instance instance, size_t maxInstances, Mandatory mandatory, uint16_t interfaces);
-    ~Object();
+    ResourceDesc::Storage mResourceDescStorage;
+    ObjectInstance::Storage *mInstanceStorage;
 
-    Status start();
+    Object(Lwm2mBase *parent, uint16_t id, Params params);
+    virtual ~Object();
 
-    size_t getInstanceCount();
-
-    void deleteInstances();
-    void deleteResources();
+    Status init();
 };
 
 }  // namespace openlwm2m

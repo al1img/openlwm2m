@@ -14,10 +14,13 @@ int main()
     CoapTransport transport;
     Client client(transport);
 
-    Status status = client.bootstrapStart();
-    if (status != STS_OK) {
-        LOG_ERROR("Can't start client, status %d", status);
-    }
+    Status status = STS_OK;
+
+    status = client.init();
+    LWM2M_ASSERT_MESSAGE(status == STS_OK, "Can't initialize client");
+
+    status = client.bootstrapStart();
+    LWM2M_ASSERT_MESSAGE(status == STS_OK, "Start bootstrap failed");
 
     client.bootstrapFinish();
 

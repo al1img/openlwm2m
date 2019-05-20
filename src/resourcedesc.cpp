@@ -5,17 +5,11 @@
 
 namespace openlwm2m {
 
-ResourceDesc::ResourceDesc(Lwm2mBase* parent, uint16_t id, uint16_t operations, ResourceDesc::Instance instance,
-                           size_t maxInstances, ResourceDesc::Mandatory mandatory, ResourceDesc::Type type, int min,
-                           int max)
-    : Lwm2mBase(parent, id),
-      mOperations(operations),
-      mInstance(instance),
-      mMaxInstances(maxInstances),
-      mMandatory(mandatory),
-      mType(type),
-      mMin(min),
-      mMax(max)
+/*******************************************************************************
+ * Private
+ ******************************************************************************/
+
+ResourceDesc::ResourceDesc(Lwm2mBase* parent, uint16_t id, Params params) : Lwm2mBase(parent, id), mParams(params)
 {
     LOG_DEBUG("Create resource desc /%d/%d", getParent()->getId(), getId());
 }

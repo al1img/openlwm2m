@@ -33,9 +33,7 @@ void* CoapTransport::createConnection(char* uri, openlwm2m::Status* status)
 
     openlwm2m::Status retStatus = resolveAddress(uri, &dst);
     if (retStatus != openlwm2m::STS_OK) {
-        if (status) {
-            *status = retStatus;
-        }
+        if (status) *status = retStatus;
         return NULL;
     }
 
