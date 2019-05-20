@@ -1,12 +1,17 @@
 #ifndef COAP_TRANSPORT_HPP_
 #define COAP_TRANSPORT_HPP_
 
+#include <coap2/coap.h>
+
 #include "interface.hpp"
 
 class CoapTransport : public openlwm2m::TransportItf {
 public:
-    void createConnection();
-    void deleteConnection();
+    CoapTransport();
+    ~CoapTransport();
+
+    void* createConnection(char* uri, openlwm2m::Status* status = NULL);
+    openlwm2m::Status deleteConnection(void* connection);
 
     // Bootstrap
     void bootstrapRequest(BootstrapRequestHandler handler, void* context);
@@ -24,6 +29,11 @@ public:
 
     // Reporting
     void reportingNotify();
+
+private:
+    coap_context_t* mContext;
+
+    openlwm2m::Status resolveAddress(char* uri, coap_address_t* dst);
 };
 
 #endif /* COAP_TRANSPORT_HPP_ */

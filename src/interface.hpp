@@ -6,6 +6,7 @@
 #define OPENLWM2M_INTERFACE_HPP_
 
 #include <stdint.h>
+#include <cstddef>
 
 #include "status.hpp"
 
@@ -30,8 +31,8 @@ enum Interface {
 
 class TransportItf {
 public:
-    virtual void createConnection() = 0;
-    virtual void deleteConnection() = 0;
+    virtual void* createConnection(char* uri, Status* status = NULL) = 0;
+    virtual Status deleteConnection(void* connection) = 0;
 
     // Bootstrap
     typedef void (*BootstrapRequestHandler)(void* context);

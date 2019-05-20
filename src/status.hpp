@@ -12,6 +12,7 @@ namespace openlwm2m {
  */
 enum Status {
     STS_OK,          ///< OK.
+    STS_ERR,         ///< Generic error.
     STS_ERR_MEM,     ///< Not enough memory.
     STS_ERR_ACCESS,  ///< Access error.
     STS_ERR_EXIST,   ///< Item doesn't exist or unavailable.
