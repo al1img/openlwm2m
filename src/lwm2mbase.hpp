@@ -19,8 +19,13 @@ protected:
     virtual void release() {}
 
 private:
+    template <class, class>
+    friend class Lwm2mStorage;
+
     Lwm2mBase* mParent;
     uint16_t mId;
+
+    void setId(uint16_t id) { mId = id; }
 };
 
 }  // namespace openlwm2m

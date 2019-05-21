@@ -25,6 +25,9 @@ private:
 
     Resource(Lwm2mBase* parent, uint16_t id, ResourceDesc& desc);
     virtual ~Resource();
+
+    void init();
+    void destroy();
 };
 
 }  // namespace openlwm2m
