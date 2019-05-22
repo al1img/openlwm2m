@@ -44,12 +44,12 @@
 extern void platformLog(int logLevel, const char* module, const char* format, ...);
 #endif
 
-#define LWM2M_ASSERT(condition)                        \
+#define ASSERT(condition)                              \
     if (!(condition)) {                                \
         platformAssert(__PRETTY_FUNCTION__, __LINE__); \
     }
 
-#define LWM2M_ASSERT_MESSAGE(condition, message)                \
+#define ASSERT_MESSAGE(condition, message)                      \
     if (!(condition)) {                                         \
         platformAssert(__PRETTY_FUNCTION__, __LINE__, message); \
     }

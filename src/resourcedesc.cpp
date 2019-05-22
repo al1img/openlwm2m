@@ -16,4 +16,8 @@ ResourceDesc::ResourceDesc(ItemBase* parent, uint16_t id, Params params) : ItemB
 
 ResourceDesc::~ResourceDesc() { LOG_DEBUG("Delete resource desc /%d/%d", getParent()->getId(), getId()); }
 
+void ResourceDesc::init() {}
+
+void ResourceDesc::release() {}
+
 }  // namespace openlwm2m

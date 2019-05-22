@@ -17,10 +17,10 @@ int main()
     Status status = STS_OK;
 
     status = client.init();
-    LWM2M_ASSERT_MESSAGE(status == STS_OK, "Can't initialize client");
+    ASSERT_MESSAGE(status == STS_OK, "Can't initialize client");
 
     status = client.bootstrapStart();
-    LWM2M_ASSERT_MESSAGE(status == STS_OK, "Start bootstrap failed");
+    ASSERT_MESSAGE(status == STS_OK, "Start bootstrap failed");
 
     client.bootstrapFinish();
 

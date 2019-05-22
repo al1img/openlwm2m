@@ -5,10 +5,10 @@
 
 #include "interface.hpp"
 #include "itembase.hpp"
-#include "lwm2mstorage.hpp"
 #include "objectinstance.hpp"
 #include "resourcedesc.hpp"
 #include "status.hpp"
+#include "storage.hpp"
 
 namespace openlwm2m {
 
@@ -24,7 +24,7 @@ public:
     Status createResource(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
                           ResourceDesc::Mandatory mandatory, ResourceDesc::Type type, int min = 0, int max = 0);
 
-    ObjectInstance *createInstance(uint16_t id, Status *status = NULL);
+    ObjectInstance *createInstance(uint16_t id = INVALID_ID, Status *status = NULL);
 
 private:
     struct Params {
@@ -35,9 +35,10 @@ private:
     };
 
     friend class Client;
-    friend class Lwm2mStorage<Object, Params>;
+    friend class StorageBase<Object>;
+    friend class StorageArray<Object, Params>;
 
-    typedef Lwm2mStorage<Object, Params> Storage;
+    typedef StorageArray<Object, Params> Storage;
 
     Params mParams;
 
@@ -49,10 +50,8 @@ private:
     Object(ItemBase *parent, uint16_t id, Params params);
     virtual ~Object();
 
-    Status init();
-
-    void create() {}
-    void release() {}
+    void init();
+    void release();
 };
 
 }  // namespace openlwm2m

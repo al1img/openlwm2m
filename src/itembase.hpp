@@ -15,12 +15,15 @@ public:
 protected:
     ItemBase(ItemBase* parent, uint16_t id) : mParent(parent), mId(id) {}
 
-    virtual void create() = 0;
+    virtual void init() = 0;
     virtual void release() = 0;
 
 private:
     template <class, class>
-    friend class Lwm2mStorage;
+    friend class StorageItem;
+
+    template <class, class>
+    friend class StorageArray;
 
     ItemBase* mParent;
     uint16_t mId;

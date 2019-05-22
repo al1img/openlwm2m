@@ -5,7 +5,7 @@
 #include <cstddef>
 
 #include "itembase.hpp"
-#include "lwm2mstorage.hpp"
+#include "storage.hpp"
 
 namespace openlwm2m {
 
@@ -52,17 +52,18 @@ private:
     friend class ObjectInstance;
     friend class Resource;
     friend class ResourceInstance;
-    friend class Lwm2mStorage<ResourceDesc, Params>;
+    friend class StorageBase<ResourceDesc>;
+    friend class StorageArray<ResourceDesc, Params>;
 
-    typedef Lwm2mStorage<ResourceDesc, Params> Storage;
+    typedef StorageArray<ResourceDesc, Params> Storage;
 
     Params mParams;
 
     ResourceDesc(ItemBase* parent, uint16_t id, Params params);
     virtual ~ResourceDesc();
 
-    void create() {}
-    void release() {}
+    void init();
+    void release();
 };
 
 }  // namespace openlwm2m

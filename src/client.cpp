@@ -21,78 +21,83 @@ Client::Client(TransportItf& transport) : mTransport(transport), mObjectStorage(
      **************************************************************************/
     Object* object = createObject(0, Object::MULTIPLE, CONFIG_NUM_SERVERS + CONFIG_BOOTSTRAP_SERVER, Object::MANDATORY,
                                   ITF_BOOTSTRAP);
-    LWM2M_ASSERT(object);
+    ASSERT(object);
     // LWM2M Server URI
     status = object->createResource(0, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
                                     ResourceDesc::TYPE_STRING, 0, 255);
-    LWM2M_ASSERT(status == STS_OK);
+    ASSERT(status == STS_OK);
     // Bootstrap-Server
     status = object->createResource(1, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
                                     ResourceDesc::TYPE_BOOL);
-    LWM2M_ASSERT(status == STS_OK);
+    ASSERT(status == STS_OK);
     // Security Mode
     status = object->createResource(2, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
                                     ResourceDesc::TYPE_INT8, 0, 4);
-    LWM2M_ASSERT(status == STS_OK);
+    ASSERT(status == STS_OK);
     // Public Key or Identity
     status = object->createResource(3, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
                                     ResourceDesc::TYPE_OPAQUE, 0, CONFIG_CLIENT_PUBLIC_KEY_MAX_LEN);
-    LWM2M_ASSERT(status == STS_OK);
+    ASSERT(status == STS_OK);
     // Server Public Key
     status = object->createResource(4, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
                                     ResourceDesc::TYPE_OPAQUE, 0, CONFIG_SERVER_PUBLIC_KEY_MAX_LEN);
-    LWM2M_ASSERT(status == STS_OK);
+    ASSERT(status == STS_OK);
     // Secret Key
     status = object->createResource(5, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
                                     ResourceDesc::TYPE_OPAQUE, 0, CONFIG_CLIENT_PRIVATE_KEY_MAX_LEN);
-    LWM2M_ASSERT(status == STS_OK);
+    ASSERT(status == STS_OK);
 
     /***************************************************************************
      * E.2 LwM2M Object: LwM2M Server
      **************************************************************************/
     object = createObject(1, Object::MULTIPLE, CONFIG_NUM_SERVERS, Object::MANDATORY, ITF_ALL);
-    LWM2M_ASSERT(object);
+    ASSERT(object);
     // Short Server ID
     status = object->createResource(0, ResourceDesc::OP_READ, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
                                     ResourceDesc::TYPE_UINT16, 1, 65535);
-    LWM2M_ASSERT(status == STS_OK);
+    ASSERT(status == STS_OK);
     // Lifetime
     status = object->createResource(1, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
                                     ResourceDesc::TYPE_INT32);
-    LWM2M_ASSERT(status == STS_OK);
+    ASSERT(status == STS_OK);
     // Notification Storing When Disabled or Offline
     status = object->createResource(6, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
                                     ResourceDesc::TYPE_BOOL);
-    LWM2M_ASSERT(status == STS_OK);
+    ASSERT(status == STS_OK);
     // Binding
     status = object->createResource(7, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
                                     ResourceDesc::TYPE_STRING, 0, CONFIG_BINDING_STR_MAX_LEN);
-    LWM2M_ASSERT(status == STS_OK);
+    ASSERT(status == STS_OK);
     // Registration Update Trigger
     status = object->createResource(8, ResourceDesc::OP_EXECUTE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
                                     ResourceDesc::TYPE_NONE);
-    LWM2M_ASSERT(status == STS_OK);
+    ASSERT(status == STS_OK);
 
     /***************************************************************************
      * E.4 LwM2M Object: Device
      **************************************************************************/
     object = createObject(3, Object::SINGLE, 0, Object::MANDATORY, ITF_ALL);
-    LWM2M_ASSERT(object);
+    ASSERT(object);
     // Reboot
     status = object->createResource(4, ResourceDesc::OP_EXECUTE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
                                     ResourceDesc::TYPE_NONE);
-    LWM2M_ASSERT(status == STS_OK);
+    ASSERT(status == STS_OK);
     // Error Code
     status = object->createResource(11, ResourceDesc::OP_READ, ResourceDesc::MULTIPLE, CONFIG_ERR_CODE_MAX_SIZE,
                                     ResourceDesc::MANDATORY, ResourceDesc::TYPE_INT8, 0, 8);
-    LWM2M_ASSERT(status == STS_OK);
+    ASSERT(status == STS_OK);
     // Supported Binding and Modes
     status = object->createResource(16, ResourceDesc::OP_READ, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
                                     ResourceDesc::TYPE_STRING, 0, 2);
-    LWM2M_ASSERT(status == STS_OK);
+    ASSERT(status == STS_OK);
 }
 
-Client::~Client() { LOG_DEBUG("Delete client"); }
+Client::~Client()
+{
+    LOG_DEBUG("Delete client");
+
+    mObjectStorage.release();
+}
 
 /*******************************************************************************
  * Public
@@ -112,7 +117,7 @@ Object* Client::createObject(uint16_t id, Object::Instance instance, size_t maxI
 
     Object::Params params = {instance, mandatory, interfaces, maxInstances};
 
-    return mObjectStorage.newItem(id, params, status);
+    return mObjectStorage.createItem(id, params, status);
 }
 
 Object* Client::getObject(uint16_t id, Interface interface, Status* status)
@@ -134,19 +139,15 @@ Object* Client::getObject(uint16_t id, Interface interface, Status* status)
 
 Status Client::init()
 {
+    LOG_DEBUG("Init client");
+
     if (mState != STATE_INIT) {
         return STS_ERR_STATE;
     }
 
-    Node<Object>* node = mObjectStorage.begin();
+    mObjectStorage.init();
 
-    while (node) {
-        Status status = node->get()->init();
-        if (status != STS_OK) {
-            return status;
-        }
-        node = node->next();
-    }
+    mState = STATE_INITIALIZED;
 
     return STS_OK;
 }
@@ -154,6 +155,10 @@ Status Client::init()
 Status Client::bootstrapStart()
 {
     LOG_DEBUG("Start bootstrap");
+
+    if (mState == STATE_INIT) {
+        return STS_ERR_STATE;
+    }
 
     mState = STATE_BOOTSTRAP;
 

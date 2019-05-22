@@ -41,12 +41,12 @@ void Resource::init()
     // number of Resource Instance MUST be 1
     if (mDesc.mParams.mMandatory == ResourceDesc::MANDATORY && mDesc.mParams.mInstance == ResourceDesc::SINGLE &&
         mInstanceStorage.size() == 0) {
-        ResourceInstance* instance = createInstance(INVALID_ID);
-        LWM2M_ASSERT(instance);
+        ResourceInstance* instance = createInstance();
+        ASSERT(instance);
     }
 }
 
-void Resource::destroy()
+void Resource::release()
 {
     LOG_DEBUG("Delete resource /%d/%d/%d", getParent()->getParent()->getId(), getParent()->getId(), getId());
 

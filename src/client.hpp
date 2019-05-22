@@ -90,7 +90,7 @@ public:
     void reportingCancelObserveComposite();
 
 private:
-    enum State { STATE_INIT, STATE_BOOTSTRAP, STATE_REGISTERING, STATE_READY };
+    enum State { STATE_INIT, STATE_INITIALIZED, STATE_BOOTSTRAP, STATE_REGISTERING, STATE_READY };
 
     TransportItf& mTransport;
 

@@ -13,16 +13,17 @@ class Resource;
 class ResourceInstance : public ItemBase {
 private:
     friend class Resource;
-    friend class Lwm2mStorage<ResourceInstance, ResourceDesc&>;
+    friend class StorageBase<ResourceInstance>;
+    friend class StorageItem<ResourceInstance, ResourceDesc&>;
+
+    typedef StorageItem<ResourceInstance, ResourceDesc&> Storage;
 
     ResourceDesc& mDesc;
-
-    typedef Lwm2mStorage<ResourceInstance, ResourceDesc&> Storage;
 
     ResourceInstance(ItemBase* parent, uint16_t id, ResourceDesc& desc);
     virtual ~ResourceInstance();
 
-    void create();
+    void init();
     void release();
 };
 

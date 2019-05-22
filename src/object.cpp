@@ -30,7 +30,7 @@ Status Object::createResource(uint16_t id, uint16_t operations, ResourceDesc::In
 
     Status status = STS_OK;
 
-    mResourceDescStorage.newItem(id, params, &status);
+    mResourceDescStorage.createItem(id, params, &status);
 
     return status;
 }
@@ -70,31 +70,34 @@ Object::~Object()
     delete mInstanceStorage;
 }
 
-Status Object::init()
+void Object::init()
 {
-    LOG_DEBUG("Init object /%d", getId());
+    //    LOG_DEBUG("Init object /%d", getId());
 
-    if (!mInitialized) {
-        mInstanceStorage = new ObjectInstance::Storage(this, mResourceDescStorage, mParams.mMaxInstances);
-        mInitialized = true;
-    }
+    mInitialized = true;
+
+    mInstanceStorage = new ObjectInstance::Storage(this, mResourceDescStorage, mParams.mMaxInstances);
 
     // Appendix D.1
     // If the Object field “Mandatory” is “Mandatory” and the Object field “Instances” is “Single”then, the number
     // of Object Instance MUST be 1.
     if (mParams.mInstance == SINGLE && mParams.mMandatory == MANDATORY) {
         if (mInstanceStorage->size() == 0) {
-            Status status = STS_OK;
-
-            ObjectInstance* instance = createInstance(INVALID_ID, &status);
-
-            if (!instance) {
-                return status;
-            }
+            ObjectInstance* instance = createInstance();
+            ASSERT(instance);
         }
     }
+}
 
-    return STS_OK;
+void Object::release()
+{
+    //    LOG_DEBUG("Release object /%d", getId());
+
+    if (mInstanceStorage) {
+        mInstanceStorage->clear();
+    }
+
+    mResourceDescStorage.release();
 }
 
 }  // namespace openlwm2m

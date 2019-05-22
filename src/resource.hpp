@@ -3,22 +3,23 @@
 
 #include "interface.hpp"
 #include "itembase.hpp"
-#include "lwm2mstorage.hpp"
 #include "resourcedesc.hpp"
 #include "resourceinstance.hpp"
 #include "status.hpp"
+#include "storage.hpp"
 
 namespace openlwm2m {
 
 class Resource : public ItemBase {
 public:
-    ResourceInstance* createInstance(uint16_t id, Status* status = NULL);
+    ResourceInstance* createInstance(uint16_t id = INVALID_ID, Status* status = NULL);
 
 private:
     friend class ObjectInstance;
-    friend class Lwm2mStorage<Resource, ResourceDesc&>;
+    friend class StorageBase<Resource>;
+    friend class StorageArray<Resource, ResourceDesc&>;
 
-    typedef Lwm2mStorage<Resource, ResourceDesc&> Storage;
+    typedef StorageArray<Resource, ResourceDesc&> Storage;
 
     ResourceDesc& mDesc;
     ResourceInstance::Storage mInstanceStorage;
@@ -27,10 +28,7 @@ private:
     virtual ~Resource();
 
     void init();
-    void destroy();
-
-    void create() {}
-    void release() {}
+    void release();
 };
 
 }  // namespace openlwm2m

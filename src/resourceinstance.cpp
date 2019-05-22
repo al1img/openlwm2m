@@ -16,7 +16,7 @@ ResourceInstance::ResourceInstance(ItemBase* parent, uint16_t id, ResourceDesc& 
 
 ResourceInstance::~ResourceInstance() {}
 
-void ResourceInstance::create()
+void ResourceInstance::init()
 {
     LOG_DEBUG("Create resource instance /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(),
               getParent()->getParent()->getId(), getParent()->getId(), getId());

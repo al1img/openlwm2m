@@ -16,34 +16,26 @@ ObjectInstance::ObjectInstance(ItemBase* parent, uint16_t id, ResourceDesc::Stor
     Node<ResourceDesc>* node = resourceDescStorage.begin();
 
     while (node) {
-        Resource* resource = mResourceStorage.newItem(node->get()->getId(), *node->get());
-        LWM2M_ASSERT(resource);
+        Resource* resource = mResourceStorage.createItem(node->get()->getId(), *node->get());
+        ASSERT(resource);
         node = node->next();
     }
 }
 
 ObjectInstance::~ObjectInstance() {}
 
-void ObjectInstance::create()
+void ObjectInstance::init()
 {
     LOG_DEBUG("Create object instance /%d/%d", getParent()->getId(), getId());
 
-    Node<Resource>* node = mResourceStorage.begin();
-
-    while (node) {
-        node->get()->init();
-        node = node->next();
-    }
+    mResourceStorage.init();
 }
+
 void ObjectInstance::release()
 {
     LOG_DEBUG("Delete object instance /%d/%d", getParent()->getId(), getId());
-    Node<Resource>* node = mResourceStorage.begin();
 
-    while (node) {
-        node->get()->destroy();
-        node = node->next();
-    }
+    mResourceStorage.release();
 }
 
 }  // namespace openlwm2m
