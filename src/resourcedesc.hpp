@@ -4,12 +4,12 @@
 #include <stdint.h>
 #include <cstddef>
 
-#include "lwm2mbase.hpp"
+#include "itembase.hpp"
 #include "lwm2mstorage.hpp"
 
 namespace openlwm2m {
 
-class ResourceDesc : public Lwm2mBase {
+class ResourceDesc : public ItemBase {
 public:
     enum Mandatory { MANDATORY, OPTIONAL };
 
@@ -58,8 +58,11 @@ private:
 
     Params mParams;
 
-    ResourceDesc(Lwm2mBase* parent, uint16_t id, Params params);
+    ResourceDesc(ItemBase* parent, uint16_t id, Params params);
     virtual ~ResourceDesc();
+
+    void create() {}
+    void release() {}
 };
 
 }  // namespace openlwm2m

@@ -10,8 +10,8 @@ namespace openlwm2m {
  * Private
  ******************************************************************************/
 
-ObjectInstance::ObjectInstance(Lwm2mBase* parent, uint16_t id, ResourceDesc::Storage& resourceDescStorage)
-    : Lwm2mBase(parent, id), mResourceStorage(this)
+ObjectInstance::ObjectInstance(ItemBase* parent, uint16_t id, ResourceDesc::Storage& resourceDescStorage)
+    : ItemBase(parent, id), mResourceStorage(this)
 {
     Node<ResourceDesc>* node = resourceDescStorage.begin();
 

@@ -3,14 +3,14 @@
 
 #include <stdint.h>
 
-#include "lwm2mbase.hpp"
+#include "itembase.hpp"
 #include "resourcedesc.hpp"
 
 namespace openlwm2m {
 
 class Resource;
 
-class ResourceInstance : public Lwm2mBase {
+class ResourceInstance : public ItemBase {
 private:
     friend class Resource;
     friend class Lwm2mStorage<ResourceInstance, ResourceDesc&>;
@@ -19,7 +19,7 @@ private:
 
     typedef Lwm2mStorage<ResourceInstance, ResourceDesc&> Storage;
 
-    ResourceInstance(Lwm2mBase* parent, uint16_t id, ResourceDesc& desc);
+    ResourceInstance(ItemBase* parent, uint16_t id, ResourceDesc& desc);
     virtual ~ResourceInstance();
 
     void create();

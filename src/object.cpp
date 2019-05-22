@@ -57,8 +57,8 @@ ObjectInstance* Object::createInstance(uint16_t id, Status* status)
  * Private
  ******************************************************************************/
 
-Object::Object(Lwm2mBase* parent, uint16_t id, Params params)
-    : Lwm2mBase(parent, id), mParams(params), mInitialized(false), mResourceDescStorage(this), mInstanceStorage(NULL)
+Object::Object(ItemBase* parent, uint16_t id, Params params)
+    : ItemBase(parent, id), mParams(params), mInitialized(false), mResourceDescStorage(this), mInstanceStorage(NULL)
 {
     LOG_DEBUG("Create object /%d", getId());
 }
@@ -86,7 +86,7 @@ Status Object::init()
         if (mInstanceStorage->size() == 0) {
             Status status = STS_OK;
 
-            ObjectInstance* instance = createInstance(LWM2M_INVALID_ID, &status);
+            ObjectInstance* instance = createInstance(INVALID_ID, &status);
 
             if (!instance) {
                 return status;

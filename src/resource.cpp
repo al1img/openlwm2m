@@ -25,8 +25,8 @@ ResourceInstance* Resource::createInstance(uint16_t id, Status* status)
  * Private
  ******************************************************************************/
 
-Resource::Resource(Lwm2mBase* parent, uint16_t id, ResourceDesc& desc)
-    : Lwm2mBase(parent, id), mDesc(desc), mInstanceStorage(this, mDesc, mDesc.mParams.mMaxInstances)
+Resource::Resource(ItemBase* parent, uint16_t id, ResourceDesc& desc)
+    : ItemBase(parent, id), mDesc(desc), mInstanceStorage(this, mDesc, mDesc.mParams.mMaxInstances)
 {
 }
 
@@ -41,7 +41,7 @@ void Resource::init()
     // number of Resource Instance MUST be 1
     if (mDesc.mParams.mMandatory == ResourceDesc::MANDATORY && mDesc.mParams.mInstance == ResourceDesc::SINGLE &&
         mInstanceStorage.size() == 0) {
-        ResourceInstance* instance = createInstance(LWM2M_INVALID_ID);
+        ResourceInstance* instance = createInstance(INVALID_ID);
         LWM2M_ASSERT(instance);
     }
 }

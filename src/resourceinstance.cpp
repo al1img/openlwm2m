@@ -9,8 +9,8 @@ namespace openlwm2m {
  * Private
  ******************************************************************************/
 
-ResourceInstance::ResourceInstance(Lwm2mBase* parent, uint16_t id, ResourceDesc& desc)
-    : Lwm2mBase(parent, id), mDesc(desc)
+ResourceInstance::ResourceInstance(ItemBase* parent, uint16_t id, ResourceDesc& desc)
+    : ItemBase(parent, id), mDesc(desc)
 {
 }
 

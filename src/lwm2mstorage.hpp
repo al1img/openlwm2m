@@ -4,8 +4,8 @@
 #include <cstddef>
 
 #include "config.hpp"
+#include "itembase.hpp"
 #include "log.hpp"
-#include "lwm2mbase.hpp"
 #include "status.hpp"
 
 namespace openlwm2m {
@@ -28,7 +28,7 @@ private:
 template <class T, class P>
 class Lwm2mStorage {
 public:
-    Lwm2mStorage(Lwm2mBase* parent, P param, size_t maxItems)
+    Lwm2mStorage(ItemBase* parent, P param, size_t maxItems)
         : mParent(parent),
           mMaxItems(maxItems),
           mSize(0),
@@ -44,7 +44,7 @@ public:
         Node<T>* prevNode = NULL;
 
         for (size_t i = 0; i < mMaxItems; i++) {
-            T* item = new T(mParent, LWM2M_INVALID_ID, param);
+            T* item = new T(mParent, INVALID_ID, param);
             Node<T>* newNode = new Node<T>(item);
 
             // Assign first node
@@ -62,7 +62,7 @@ public:
 #endif
     }
 
-    Lwm2mStorage(Lwm2mBase* parent)
+    Lwm2mStorage(ItemBase* parent)
         : mParent(parent),
           mMaxItems(0),
           mSize(0),
@@ -237,7 +237,7 @@ public:
     bool hasFreeItem() const { return mMaxItems == 0 || mSize < mMaxItems; }
 
 private:
-    Lwm2mBase* mParent;
+    ItemBase* mParent;
     size_t mMaxItems;
     size_t mSize;
 
@@ -250,7 +250,7 @@ private:
     {
         uint16_t newId = 0;
 
-        if (*id != LWM2M_INVALID_ID) {
+        if (*id != INVALID_ID) {
             newId = *id;
         }
 
@@ -258,7 +258,7 @@ private:
         Node<T>* curNode = mStart;
 
         while (curNode) {
-            if (*id != LWM2M_INVALID_ID && newId == curNode->get()->getId()) {
+            if (*id != INVALID_ID && newId == curNode->get()->getId()) {
                 return STS_ERR_EXIST;
             }
 
@@ -266,7 +266,7 @@ private:
                 break;
             }
 
-            if (*id == LWM2M_INVALID_ID) {
+            if (*id == INVALID_ID) {
                 newId++;
             }
 

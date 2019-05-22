@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #include "interface.hpp"
-#include "lwm2mbase.hpp"
+#include "itembase.hpp"
 #include "lwm2mstorage.hpp"
 #include "objectinstance.hpp"
 #include "resourcedesc.hpp"
@@ -15,7 +15,7 @@ namespace openlwm2m {
 /**
  * lwm2m object.
  */
-class Object : public Lwm2mBase {
+class Object : public ItemBase {
 public:
     enum Mandatory { MANDATORY, OPTIONAL };
 
@@ -46,10 +46,13 @@ private:
     ResourceDesc::Storage mResourceDescStorage;
     ObjectInstance::Storage *mInstanceStorage;
 
-    Object(Lwm2mBase *parent, uint16_t id, Params params);
+    Object(ItemBase *parent, uint16_t id, Params params);
     virtual ~Object();
 
     Status init();
+
+    void create() {}
+    void release() {}
 };
 
 }  // namespace openlwm2m

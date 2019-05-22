@@ -2,7 +2,7 @@
 #define OPENLWM2M_RESOURCE_HPP_
 
 #include "interface.hpp"
-#include "lwm2mbase.hpp"
+#include "itembase.hpp"
 #include "lwm2mstorage.hpp"
 #include "resourcedesc.hpp"
 #include "resourceinstance.hpp"
@@ -10,7 +10,7 @@
 
 namespace openlwm2m {
 
-class Resource : public Lwm2mBase {
+class Resource : public ItemBase {
 public:
     ResourceInstance* createInstance(uint16_t id, Status* status = NULL);
 
@@ -23,11 +23,14 @@ private:
     ResourceDesc& mDesc;
     ResourceInstance::Storage mInstanceStorage;
 
-    Resource(Lwm2mBase* parent, uint16_t id, ResourceDesc& desc);
+    Resource(ItemBase* parent, uint16_t id, ResourceDesc& desc);
     virtual ~Resource();
 
     void init();
     void destroy();
+
+    void create() {}
+    void release() {}
 };
 
 }  // namespace openlwm2m
