@@ -13,6 +13,7 @@
 #define ANSI_COLOR_BLUE "\x1b[34m"
 #define ANSI_COLOR_MAGENTA "\x1b[35m"
 #define ANSI_COLOR_CYAN "\x1b[36m"
+#define ANSI_COLOR_WHITE "\x1b[37m"
 #define ANSI_COLOR_RESET "\x1b[0m"
 
 static size_t sMaxModuleLen = 0;
@@ -35,7 +36,7 @@ void platformLog(int logLevel, const char* module, const char* format, ...)
                                           ANSI_COLOR_RED,
                                           ANSI_COLOR_YELLOW,
                                           ANSI_COLOR_GREEN,
-                                          ANSI_COLOR_RESET,
+                                          ANSI_COLOR_WHITE,
                                           ANSI_COLOR_MAGENTA};
 
     if (logLevel > LOG_LEVEL_DEBUG) {

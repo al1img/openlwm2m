@@ -9,6 +9,7 @@
 
 #include "interface.hpp"
 #include "object.hpp"
+#include "reghandler.hpp"
 #include "status.hpp"
 
 namespace openlwm2m {
@@ -95,6 +96,8 @@ private:
     TransportItf& mTransport;
 
     Object::Storage mObjectStorage;
+    RegHandler::Storage mRegHandlerStorage;
+
     State mState;
 };
 

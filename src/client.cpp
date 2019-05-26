@@ -10,7 +10,11 @@ namespace openlwm2m {
  * Client
  ******************************************************************************/
 
-Client::Client(TransportItf& transport) : mTransport(transport), mObjectStorage(NULL), mState(STATE_INIT)
+Client::Client(TransportItf& transport)
+    : mTransport(transport),
+      mObjectStorage(NULL),
+      mRegHandlerStorage(NULL, transport, CONFIG_NUM_BOOTSTRAP_SERVERS + CONFIG_NUM_SERVERS),
+      mState(STATE_INIT)
 {
     LOG_DEBUG("Create client");
 
@@ -19,8 +23,8 @@ Client::Client(TransportItf& transport) : mTransport(transport), mObjectStorage(
     /***************************************************************************
      * E.1 LwM2M Object: LwM2M Security
      **************************************************************************/
-    Object* object = createObject(0, Object::MULTIPLE, CONFIG_NUM_SERVERS + CONFIG_BOOTSTRAP_SERVER, Object::MANDATORY,
-                                  ITF_BOOTSTRAP);
+    Object* object = createObject(0, Object::MULTIPLE, CONFIG_NUM_BOOTSTRAP_SERVERS + CONFIG_NUM_SERVERS,
+                                  Object::MANDATORY, ITF_BOOTSTRAP);
     ASSERT(object);
     // LWM2M Server URI
     status = object->createResource(0, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
