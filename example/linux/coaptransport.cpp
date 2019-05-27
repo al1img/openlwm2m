@@ -48,7 +48,9 @@ openlwm2m::Status CoapTransport::deleteConnection(void* connection)
 }
 
 // Bootstrap
-void CoapTransport::bootstrapRequest(BootstrapRequestHandler handler, void* context) {}
+void CoapTransport::bootstrapRequest(BootstrapRequestHandler handler, void* context)
+{
+}
 
 // Registration
 void CoapTransport::registrationRequest(const char* clientName, uint32_t lifetime, const char* version,
@@ -62,13 +64,19 @@ void CoapTransport::registrationUpdate(const uint32_t* lifetime, const char* bin
 {
 }
 
-void CoapTransport::registrationDeregister(RegistrationDeregisterHandler handler, void* context) {}
+void CoapTransport::registrationDeregister(RegistrationDeregisterHandler handler, void* context)
+{
+}
 
 // Device
-void CoapTransport::deviceSend(DeviceSendHandler handler, void* context) {}
+void CoapTransport::deviceSend(DeviceSendHandler handler, void* context)
+{
+}
 
 // Reporting
-void CoapTransport::reportingNotify() {}
+void CoapTransport::reportingNotify()
+{
+}
 
 /*******************************************************************************
  * Private

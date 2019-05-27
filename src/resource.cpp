@@ -30,7 +30,9 @@ Resource::Resource(ItemBase* parent, uint16_t id, ResourceDesc& desc)
 {
 }
 
-Resource::~Resource() {}
+Resource::~Resource()
+{
+}
 
 void Resource::init()
 {

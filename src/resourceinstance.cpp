@@ -14,7 +14,9 @@ ResourceInstance::ResourceInstance(ItemBase* parent, uint16_t id, ResourceDesc& 
 {
 }
 
-ResourceInstance::~ResourceInstance() {}
+ResourceInstance::~ResourceInstance()
+{
+}
 
 void ResourceInstance::init()
 {

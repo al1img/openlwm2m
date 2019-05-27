@@ -182,24 +182,58 @@ Status Client::bootstrapFinish()
     return STS_OK;
 }
 
-void Client::bootstrapDiscover() {}
-void Client::bootstrapRead() {}
-void Client::bootstrapWrite() {}
-void Client::bootstrapDelete() {}
+void Client::bootstrapDiscover()
+{
+}
+void Client::bootstrapRead()
+{
+}
+void Client::bootstrapWrite()
+{
+}
+void Client::bootstrapDelete()
+{
+}
 
-void Client::deviceRead() {}
-void Client::deviceDiscover() {}
-void Client::deviceWrite() {}
-void Client::deviceWriteAttributes() {}
-void Client::deviceExecute() {}
-void Client::deviceCreate() {}
-void Client::deviceDelete() {}
-void Client::readComposite() {}
-void Client::writeComposite() {}
+void Client::deviceRead()
+{
+}
+void Client::deviceDiscover()
+{
+}
+void Client::deviceWrite()
+{
+}
+void Client::deviceWriteAttributes()
+{
+}
+void Client::deviceExecute()
+{
+}
+void Client::deviceCreate()
+{
+}
+void Client::deviceDelete()
+{
+}
+void Client::readComposite()
+{
+}
+void Client::writeComposite()
+{
+}
 
-void Client::reportingObserve() {}
-void Client::reportingCancelObservation() {}
-void Client::reportingObserveComposite() {}
-void Client::reportingCancelObserveComposite() {}
+void Client::reportingObserve()
+{
+}
+void Client::reportingCancelObservation()
+{
+}
+void Client::reportingObserveComposite()
+{
+}
+void Client::reportingCancelObserveComposite()
+{
+}
 
 }  // namespace openlwm2m

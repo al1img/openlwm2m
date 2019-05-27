@@ -22,7 +22,9 @@ ObjectInstance::ObjectInstance(ItemBase* parent, uint16_t id, ResourceDesc::Stor
     }
 }
 
-ObjectInstance::~ObjectInstance() {}
+ObjectInstance::~ObjectInstance()
+{
+}
 
 void ObjectInstance::init()
 {
