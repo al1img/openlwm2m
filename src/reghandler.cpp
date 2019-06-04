@@ -20,12 +20,12 @@ RegHandler::~RegHandler()
 
 void RegHandler::init()
 {
-    LOG_DEBUG("Create object instance /%d/%d", getParent()->getId(), getId());
+    LOG_DEBUG("Create reg handler /%d", getId());
 }
 
 void RegHandler::release()
 {
-    LOG_DEBUG("Delete object instance /%d/%d", getParent()->getId(), getId());
+    LOG_DEBUG("Delete reg handler /%d", getId());
 }
 
 }  // namespace openlwm2m
