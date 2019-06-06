@@ -9,30 +9,71 @@ namespace openlwm2m {
  * Public
  ******************************************************************************/
 
-Status Object::createResource(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
-                              ResourceDesc::Mandatory mandatory, ResourceDesc::Type type, int min, int max)
+Status Object::createResourceString(uint16_t id, uint16_t operations, ResourceDesc::Instance instance,
+                                    size_t maxInstances, ResourceDesc::Mandatory mandatory, size_t maxLen)
 {
-    if (mInstanceStorage) {
-        return STS_ERR_INVALID_STATE;
-    }
+    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_STRING};
 
-    // Appendix D.1
-    // Resource which supports “Execute” operation MUST have “Single” as value of the “Instances” field.
-    if (operations & ResourceDesc::OP_EXECUTE && instance != ResourceDesc::SINGLE) {
-        return STS_ERR_INVALID_VALUE;
-    }
+    params.minUint = 0;
+    params.maxUint = maxLen;
 
-    if (instance == ResourceDesc::SINGLE) {
-        maxInstances = 1;
-    }
+    return createResource(id, params);
+}
 
-    ResourceDesc::Params params = {operations, instance, mandatory, type, min, max, maxInstances};
+Status Object::createResourceInt(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
+                                 ResourceDesc::Mandatory mandatory, int64_t min, int64_t max)
+{
+    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_INT};
 
-    Status status = STS_OK;
+    params.minInt = min;
+    params.maxInt = max;
 
-    mResourceDescStorage.createItem(id, params, &status);
+    return createResource(id, params);
+}
 
-    return status;
+Status Object::createResourceUint(uint16_t id, uint16_t operations, ResourceDesc::Instance instance,
+                                  size_t maxInstances, ResourceDesc::Mandatory mandatory, uint64_t min, uint64_t max)
+{
+    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_UINT};
+
+    params.minUint = min;
+    params.maxUint = max;
+
+    return createResource(id, params);
+}
+
+Status Object::createResourceBool(uint16_t id, uint16_t operations, ResourceDesc::Instance instance,
+                                  size_t maxInstances, ResourceDesc::Mandatory mandatory)
+{
+    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_BOOL};
+
+    params.minUint = 0;
+    params.maxUint = 0;
+
+    return createResource(id, params);
+}
+
+Status Object::createResourceOpaque(uint16_t id, uint16_t operations, ResourceDesc::Instance instance,
+                                    size_t maxInstances, ResourceDesc::Mandatory mandatory, size_t minSize,
+                                    size_t maxSize)
+{
+    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_OPAQUE};
+
+    params.minUint = minSize;
+    params.maxUint = maxSize;
+
+    return createResource(id, params);
+}
+
+Status Object::createResourceNone(uint16_t id, uint16_t operations, ResourceDesc::Instance instance,
+                                  size_t maxInstances, ResourceDesc::Mandatory mandatory)
+{
+    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_NONE};
+
+    params.minUint = 0;
+    params.maxUint = 0;
+
+    return createResource(id, params);
 }
 
 ObjectInstance* Object::getInstanceById(uint16_t id)
@@ -133,6 +174,29 @@ void Object::release()
     }
 
     mResourceDescStorage.release();
+}
+
+Status Object::createResource(uint16_t id, ResourceDesc::Params& params)
+{
+    if (mInstanceStorage) {
+        return STS_ERR_INVALID_STATE;
+    }
+
+    // Appendix D.1
+    // Resource which supports “Execute” operation MUST have “Single” as value of the “Instances” field.
+    if (params.operations & ResourceDesc::OP_EXECUTE && params.instance != ResourceDesc::SINGLE) {
+        return STS_ERR_INVALID_VALUE;
+    }
+
+    if (params.instance == ResourceDesc::SINGLE) {
+        params.maxInstances = 1;
+    }
+
+    Status status = STS_OK;
+
+    mResourceDescStorage.createItem(id, params, &status);
+
+    return status;
 }
 
 }  // namespace openlwm2m

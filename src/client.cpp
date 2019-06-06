@@ -28,28 +28,27 @@ Client::Client(TransportItf& transport)
                                   Object::MANDATORY, ITF_BOOTSTRAP | ITF_REGISTER);
     ASSERT(object);
     // LWM2M Server URI
-    status = object->createResource(RES_LWM2M_SERVER_URI, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
-                                    ResourceDesc::MANDATORY, ResourceDesc::TYPE_STRING, 0, 255);
+    status = object->createResourceString(RES_LWM2M_SERVER_URI, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
+                                          ResourceDesc::MANDATORY, 255);
     ASSERT(status == STS_OK);
     // Bootstrap-Server
-    status = object->createResource(1, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
-                                    ResourceDesc::TYPE_BOOL);
+    status = object->createResourceBool(1, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY);
     ASSERT(status == STS_OK);
     // Security Mode
-    status = object->createResource(2, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
-                                    ResourceDesc::TYPE_INT8, 0, 4);
+    status =
+        object->createResourceInt(2, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY, 0, 4);
     ASSERT(status == STS_OK);
     // Public Key or Identity
-    status = object->createResource(3, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
-                                    ResourceDesc::TYPE_OPAQUE, 0, CONFIG_CLIENT_PUBLIC_KEY_MAX_LEN);
+    status = object->createResourceOpaque(3, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY, 0,
+                                          CONFIG_CLIENT_PUBLIC_KEY_MAX_LEN);
     ASSERT(status == STS_OK);
     // Server Public Key
-    status = object->createResource(4, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
-                                    ResourceDesc::TYPE_OPAQUE, 0, CONFIG_SERVER_PUBLIC_KEY_MAX_LEN);
+    status = object->createResourceOpaque(4, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY, 0,
+                                          CONFIG_SERVER_PUBLIC_KEY_MAX_LEN);
     ASSERT(status == STS_OK);
     // Secret Key
-    status = object->createResource(5, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
-                                    ResourceDesc::TYPE_OPAQUE, 0, CONFIG_CLIENT_PRIVATE_KEY_MAX_LEN);
+    status = object->createResourceOpaque(5, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY, 0,
+                                          CONFIG_CLIENT_PRIVATE_KEY_MAX_LEN);
     ASSERT(status == STS_OK);
 
     /***************************************************************************
@@ -58,24 +57,22 @@ Client::Client(TransportItf& transport)
     object = createObject(OBJ_LWM2M_SERVER, Object::MULTIPLE, CONFIG_NUM_SERVERS, Object::MANDATORY, ITF_ALL);
     ASSERT(object);
     // Short Server ID
-    status = object->createResource(RES_SHORT_SERVER_ID, ResourceDesc::OP_READ, ResourceDesc::SINGLE, 0,
-                                    ResourceDesc::MANDATORY, ResourceDesc::TYPE_UINT16, 1, 65535);
+    status = object->createResourceUint(RES_SHORT_SERVER_ID, ResourceDesc::OP_READ, ResourceDesc::SINGLE, 0,
+                                        ResourceDesc::MANDATORY, 1, 65535);
     ASSERT(status == STS_OK);
     // Lifetime
-    status = object->createResource(1, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
-                                    ResourceDesc::TYPE_INT32);
+    status = object->createResourceInt(1, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY);
     ASSERT(status == STS_OK);
     // Notification Storing When Disabled or Offline
-    status = object->createResource(6, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
-                                    ResourceDesc::TYPE_BOOL);
+    status =
+        object->createResourceBool(6, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY);
     ASSERT(status == STS_OK);
     // Binding
-    status = object->createResource(7, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
-                                    ResourceDesc::TYPE_STRING, 0, CONFIG_BINDING_STR_MAX_LEN);
+    status = object->createResourceString(7, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0,
+                                          ResourceDesc::MANDATORY, CONFIG_BINDING_STR_MAX_LEN);
     ASSERT(status == STS_OK);
     // Registration Update Trigger
-    status = object->createResource(8, ResourceDesc::OP_EXECUTE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
-                                    ResourceDesc::TYPE_NONE);
+    status = object->createResourceNone(8, ResourceDesc::OP_EXECUTE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY);
     ASSERT(status == STS_OK);
 
     /***************************************************************************
@@ -84,16 +81,15 @@ Client::Client(TransportItf& transport)
     object = createObject(3, Object::SINGLE, 0, Object::MANDATORY, ITF_ALL);
     ASSERT(object);
     // Reboot
-    status = object->createResource(4, ResourceDesc::OP_EXECUTE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
-                                    ResourceDesc::TYPE_NONE);
+    status = object->createResourceNone(4, ResourceDesc::OP_EXECUTE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY);
     ASSERT(status == STS_OK);
     // Error Code
-    status = object->createResource(11, ResourceDesc::OP_READ, ResourceDesc::MULTIPLE, CONFIG_ERR_CODE_MAX_SIZE,
-                                    ResourceDesc::MANDATORY, ResourceDesc::TYPE_INT8, 0, 8);
+    status = object->createResourceInt(11, ResourceDesc::OP_READ, ResourceDesc::MULTIPLE, CONFIG_ERR_CODE_MAX_SIZE,
+                                       ResourceDesc::MANDATORY, 0, 8);
     ASSERT(status == STS_OK);
     // Supported Binding and Modes
-    status = object->createResource(16, ResourceDesc::OP_READ, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
-                                    ResourceDesc::TYPE_STRING, 0, 2);
+    status =
+        object->createResourceString(16, ResourceDesc::OP_READ, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY, 2);
     ASSERT(status == STS_OK);
 }
 
@@ -182,10 +178,14 @@ Status Client::registration()
     ObjectInstance* serverInstance = object->getFirstInstance();
 
     while (serverInstance) {
+        ResourceInstance* shortServerIdInstance = serverInstance->getResourceInstance(RES_SHORT_SERVER_ID);
+        ASSERT(shortServerIdInstance);
+
         RegHandler* handler = mRegHandlerStorage.newItem(serverInstance->getId(), *this);
 
         if (!handler) {
-            return STS_ERR_NO_MEM;
+            LOG_ERROR("Can't create reg handler: %d", STS_ERR_NO_MEM);
+            continue;
         }
 
         Status status = STS_OK;
@@ -202,7 +202,7 @@ Status Client::registration()
     if (mRegHandlerStorage.size() == 0) {
         LOG_ERROR("No valid lwm2m servers found");
 
-        return STS_ERR_NO_MEM;
+        return STS_ERR_NOT_EXIST;
     }
 
     return STS_OK;

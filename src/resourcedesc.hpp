@@ -17,16 +17,9 @@ public:
 
     enum Type {
         TYPE_STRING,
-        TYPE_INT8,
-        TYPE_INT16,
-        TYPE_INT32,
-        TYPE_INT64,
-        TYPE_UINT8,
-        TYPE_UINT16,
-        TYPE_UINT32,
-        TYPE_UINT64,
-        TYPE_FLOAT32,
-        TYPE_FLOAT64,
+        TYPE_INT,
+        TYPE_UINT,
+        TYPE_FLOAT,
         TYPE_BOOL,
         TYPE_OPAQUE,
         TYPE_TIME,
@@ -41,11 +34,19 @@ private:
     struct Params {
         uint16_t operations;
         Instance instance;
+        size_t maxInstances;
         Mandatory mandatory;
         Type type;
-        int min;
-        int max;
-        size_t maxInstances;
+        union {
+            int64_t minInt;
+            uint64_t minUint;
+            double minFloat;
+        };
+        union {
+            int64_t maxInt;
+            uint64_t maxUint;
+            double maxFloat;
+        };
     };
 
     friend class Object;
@@ -53,6 +54,7 @@ private:
     friend class Resource;
     friend class ResourceInstance;
     friend class ResourceInstanceString;
+    friend class ResourceInstanceInt;
     friend class StorageBase<ResourceDesc>;
     friend class StorageArray<ResourceDesc, Params>;
 

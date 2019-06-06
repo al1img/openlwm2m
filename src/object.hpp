@@ -2,6 +2,7 @@
 #define OPENLWM2M_OBJECT_HPP_
 
 #include <stdint.h>
+#include <climits>
 
 #include "interface.hpp"
 #include "itembase.hpp"
@@ -24,8 +25,18 @@ public:
 
     enum Instance { SINGLE, MULTIPLE };
 
-    Status createResource(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
-                          ResourceDesc::Mandatory mandatory, ResourceDesc::Type type, int min = 0, int max = 0);
+    Status createResourceString(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
+                                ResourceDesc::Mandatory mandatory, size_t maxLen = 0);
+    Status createResourceInt(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
+                             ResourceDesc::Mandatory mandatory, int64_t min = LONG_MIN, int64_t max = LONG_MAX);
+    Status createResourceUint(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
+                              ResourceDesc::Mandatory mandatory, uint64_t min = 0, uint64_t max = ULONG_MAX);
+    Status createResourceBool(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
+                              ResourceDesc::Mandatory mandatory);
+    Status createResourceOpaque(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
+                                ResourceDesc::Mandatory mandatory, size_t minSize = 0, size_t maxSize = 0);
+    Status createResourceNone(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
+                              ResourceDesc::Mandatory mandatory);
 
     ObjectInstance* createInstance(uint16_t id = INVALID_ID, Status* status = NULL);
     ObjectInstance* getInstanceById(uint16_t id);
@@ -58,6 +69,8 @@ private:
 
     void init();
     void release();
+
+    Status createResource(uint16_t id, ResourceDesc::Params& params);
 };
 
 }  // namespace openlwm2m

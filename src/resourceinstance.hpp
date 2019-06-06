@@ -17,7 +17,44 @@ public:
         ASSERT_MESSAGE(false, "Method not supported");
         return NULL;
     };
-    virtual void setString(const char* value) { ASSERT_MESSAGE(false, "Method not supported"); };
+    virtual Status setString(const char* value)
+    {
+        ASSERT_MESSAGE(false, "Method not supported");
+        return STS_ERR_INVALID_VALUE;
+    };
+
+    virtual int64_t getInt()
+    {
+        ASSERT_MESSAGE(false, "Method not supported");
+        return 0;
+    };
+    virtual Status setInt(int64_t value)
+    {
+        ASSERT_MESSAGE(false, "Method not supported");
+        return STS_ERR_INVALID_VALUE;
+    };
+
+    virtual uint64_t getUint()
+    {
+        ASSERT_MESSAGE(false, "Method not supported");
+        return 0;
+    };
+    virtual Status setUint(uint64_t value)
+    {
+        ASSERT_MESSAGE(false, "Method not supported");
+        return STS_ERR_INVALID_VALUE;
+    };
+
+    virtual uint8_t getBool()
+    {
+        ASSERT_MESSAGE(false, "Method not supported");
+        return 0;
+    };
+    virtual Status setBool(uint8_t value)
+    {
+        ASSERT_MESSAGE(false, "Method not supported");
+        return STS_ERR_INVALID_VALUE;
+    };
 
 protected:
     ResourceInstance(ItemBase* parent, uint16_t id, ResourceDesc& desc);
@@ -52,7 +89,21 @@ private:
     void release();
 
     const char* getString();
-    void setString(const char* value);
+    Status setString(const char* value);
+};
+
+class ResourceInstanceInt : public ResourceInstance {
+private:
+    int64_t mValue;
+
+    ResourceInstanceInt(ItemBase* parent, uint16_t id, ResourceDesc& desc);
+    virtual ~ResourceInstanceInt();
+
+    void init();
+    void release();
+
+    int64_t getInt();
+    Status setInt(int64_t value);
 };
 
 }  // namespace openlwm2m
