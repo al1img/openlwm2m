@@ -7,6 +7,26 @@
 namespace openlwm2m {
 
 /*******************************************************************************
+ * Public
+ ******************************************************************************/
+
+Resource* ObjectInstance::getResourceById(uint16_t id)
+{
+    return mResourceStorage.getItemById(id);
+}
+
+ResourceInstance* ObjectInstance::getResourceInstance(uint16_t resId, uint16_t resInstanceId)
+{
+    Resource* resource = getResourceById(resId);
+
+    if (!resource) {
+        return NULL;
+    }
+
+    return resource->getInstanceById(resInstanceId);
+}
+
+/*******************************************************************************
  * Private
  ******************************************************************************/
 

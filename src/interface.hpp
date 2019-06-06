@@ -31,7 +31,7 @@ enum Interface {
 
 class TransportItf {
 public:
-    virtual void* createConnection(char* uri, Status* status = NULL) = 0;
+    virtual void* createConnection(const char* uri, Status* status = NULL) = 0;
     virtual Status deleteConnection(void* connection) = 0;
 
     // Bootstrap
@@ -63,8 +63,6 @@ public:
 class ClientItf {
 public:
     // Bootstrap
-    virtual Status bootstrapStart() = 0;
-    virtual Status bootstrapFinish() = 0;
     virtual void bootstrapDiscover() = 0;
     virtual void bootstrapRead() = 0;
     virtual void bootstrapWrite() = 0;

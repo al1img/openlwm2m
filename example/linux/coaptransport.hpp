@@ -10,7 +10,7 @@ public:
     CoapTransport();
     ~CoapTransport();
 
-    void* createConnection(char* uri, openlwm2m::Status* status = NULL);
+    void* createConnection(const char* uri, openlwm2m::Status* status = NULL);
     openlwm2m::Status deleteConnection(void* connection);
 
     // Bootstrap
@@ -33,7 +33,7 @@ public:
 private:
     coap_context_t* mContext;
 
-    openlwm2m::Status resolveAddress(char* uri, coap_address_t* dst);
+    openlwm2m::Status resolveAddress(const char* uri, coap_address_t* dst);
 };
 
 #endif /* COAP_TRANSPORT_HPP_ */

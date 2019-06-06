@@ -27,7 +27,7 @@ CoapTransport::~CoapTransport()
  * Public
  ******************************************************************************/
 
-void* CoapTransport::createConnection(char* uri, openlwm2m::Status* status)
+void* CoapTransport::createConnection(const char* uri, openlwm2m::Status* status)
 {
     coap_address_t dst;
 
@@ -82,24 +82,24 @@ void CoapTransport::reportingNotify()
  * Private
  ******************************************************************************/
 
-openlwm2m::Status CoapTransport::resolveAddress(char* uri, coap_address_t* dst)
+openlwm2m::Status CoapTransport::resolveAddress(const char* uri, coap_address_t* dst)
 {
     char* host;
     char* port;
 
     if (0 == strncmp(uri, "coaps://", strlen("coaps://"))) {
-        host = uri + strlen("coaps://");
+        host = const_cast<char*>(uri) + strlen("coaps://");
     }
     else if (0 == strncmp(uri, "coap://", strlen("coap://"))) {
-        host = uri + strlen("coap://");
+        host = const_cast<char*>(uri) + strlen("coap://");
     }
     else {
-        return openlwm2m::STS_ERR_VALUE;
+        return openlwm2m::STS_ERR_INVALID_VALUE;
     }
 
     port = strrchr(host, ':');
     if (port == NULL) {
-        return openlwm2m::STS_ERR_VALUE;
+        return openlwm2m::STS_ERR_INVALID_VALUE;
     }
 
     if (host[0] == '[') {
@@ -108,7 +108,7 @@ openlwm2m::Status CoapTransport::resolveAddress(char* uri, coap_address_t* dst)
             *(port - 1) = 0;
         }
         else {
-            return openlwm2m::STS_ERR_VALUE;
+            return openlwm2m::STS_ERR_INVALID_VALUE;
         }
     }
 
@@ -141,5 +141,5 @@ openlwm2m::Status CoapTransport::resolveAddress(char* uri, coap_address_t* dst)
         }
     }
 
-    return openlwm2m::STS_ERR_EXIST;
+    return openlwm2m::STS_ERR_NOT_EXIST;
 }

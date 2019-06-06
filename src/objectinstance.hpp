@@ -11,12 +11,17 @@
 namespace openlwm2m {
 
 class ObjectInstance : public ItemBase {
+public:
+    Resource* getResourceById(uint16_t id);
+    ResourceInstance* getResourceInstance(uint16_t resId, uint16_t resInstanceId = 0);
+
 private:
     friend class Object;
     friend class StorageBase<ObjectInstance>;
     friend class StorageItem<ObjectInstance, ResourceDesc::Storage&>;
 
     typedef StorageItem<ObjectInstance, ResourceDesc::Storage&> Storage;
+    typedef Node<ObjectInstance> StorageNode;
 
     Resource::Storage mResourceStorage;
 

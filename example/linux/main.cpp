@@ -19,10 +19,13 @@ int main()
     status = client.init();
     ASSERT_MESSAGE(status == STS_OK, "Can't initialize client");
 
-    status = client.bootstrapStart();
-    ASSERT_MESSAGE(status == STS_OK, "Start bootstrap failed");
+    ObjectInstance* serverObjectInstance = client.getObject(ITF_BOOTSTRAP, OBJ_LWM2M_SERVER)->createInstance();
+    ObjectInstance* securityObjectInstance = client.getObject(ITF_BOOTSTRAP, OBJ_LWM2M_SECURITY)->createInstance();
 
-    client.bootstrapFinish();
+    securityObjectInstance->getResourceInstance(RES_LWM2M_SERVER_URI)->setString("coap://::1:5683");
+
+    status = client.registration();
+    ASSERT_MESSAGE(status == STS_OK, "Registration failed");
 
     LOG_INFO("Stop lwm2m client");
 

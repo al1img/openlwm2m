@@ -12,14 +12,14 @@ namespace openlwm2m {
 Status Object::createResource(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
                               ResourceDesc::Mandatory mandatory, ResourceDesc::Type type, int min, int max)
 {
-    if (mInitialized) {
-        return STS_ERR_STATE;
+    if (mInstanceStorage) {
+        return STS_ERR_INVALID_STATE;
     }
 
     // Appendix D.1
     // Resource which supports “Execute” operation MUST have “Single” as value of the “Instances” field.
     if (operations & ResourceDesc::OP_EXECUTE && instance != ResourceDesc::SINGLE) {
-        return STS_ERR_VALUE;
+        return STS_ERR_INVALID_VALUE;
     }
 
     if (instance == ResourceDesc::SINGLE) {
@@ -35,17 +35,15 @@ Status Object::createResource(uint16_t id, uint16_t operations, ResourceDesc::In
     return status;
 }
 
+ObjectInstance* Object::getInstanceById(uint16_t id)
+{
+    return mInstanceStorage->getItemById(id);
+}
+
 ObjectInstance* Object::createInstance(uint16_t id, Status* status)
 {
-    // Check state
-    if (!mInitialized) {
-        if (status) *status = STS_ERR_STATE;
-        return NULL;
-    }
-
-    // Check size
-    if (!mInstanceStorage || !mInstanceStorage->hasFreeItem()) {
-        if (status) *status = STS_ERR_MEM;
+    if (!mInstanceStorage) {
+        if (status) *status = STS_ERR_INVALID_STATE;
         return NULL;
     }
 
@@ -53,12 +51,49 @@ ObjectInstance* Object::createInstance(uint16_t id, Status* status)
     return mInstanceStorage->newItem(id, mResourceDescStorage, status);
 }
 
+ObjectInstance* Object::getFirstInstance()
+{
+    if (mInstanceStorage) {
+        mInstanceNode = mInstanceStorage->begin();
+
+        if (mInstanceNode) {
+            return mInstanceNode->get();
+        }
+    }
+
+    return NULL;
+}
+
+ObjectInstance* Object::getNextInstance()
+{
+    if (mInstanceNode) {
+        mInstanceNode = mInstanceNode->next();
+
+        if (mInstanceNode) {
+            return mInstanceNode->get();
+        }
+    }
+
+    return NULL;
+}
+
+ResourceInstance* Object::getResourceInstance(uint16_t objInstanceId, uint16_t resId, uint16_t resInstanceId)
+{
+    ObjectInstance* objInstance = getInstanceById(objInstanceId);
+
+    if (!objInstance) {
+        return NULL;
+    }
+
+    return objInstance->getResourceInstance(resId, resInstanceId);
+}
+
 /*******************************************************************************
  * Private
  ******************************************************************************/
 
 Object::Object(ItemBase* parent, uint16_t id, Params params)
-    : ItemBase(parent, id), mParams(params), mInitialized(false), mResourceDescStorage(this), mInstanceStorage(NULL)
+    : ItemBase(parent, id), mParams(params), mResourceDescStorage(this), mInstanceStorage(NULL), mInstanceNode(NULL)
 {
     LOG_DEBUG("Create object /%d", getId());
 }
@@ -74,17 +109,17 @@ void Object::init()
 {
     //    LOG_DEBUG("Init object /%d", getId());
 
-    mInitialized = true;
+    if (!mInstanceStorage) {
+        mInstanceStorage = new ObjectInstance::Storage(this, mResourceDescStorage, mParams.maxInstances);
 
-    mInstanceStorage = new ObjectInstance::Storage(this, mResourceDescStorage, mParams.mMaxInstances);
-
-    // Appendix D.1
-    // If the Object field “Mandatory” is “Mandatory” and the Object field “Instances” is “Single”then, the number
-    // of Object Instance MUST be 1.
-    if (mParams.mInstance == SINGLE && mParams.mMandatory == MANDATORY) {
-        if (mInstanceStorage->size() == 0) {
-            ObjectInstance* instance = createInstance();
-            ASSERT(instance);
+        // Appendix D.1
+        // If the Object field “Mandatory” is “Mandatory” and the Object field “Instances” is “Single”then, the number
+        // of Object Instance MUST be 1.
+        if (mParams.instance == SINGLE && mParams.mandatory == MANDATORY) {
+            if (mInstanceStorage->size() == 0) {
+                ObjectInstance* instance = createInstance();
+                ASSERT(instance);
+            }
         }
     }
 }

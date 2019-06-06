@@ -10,9 +10,17 @@
 
 namespace openlwm2m {
 
+#define RES_LWM2M_SERVER_URI 0
+
+#define RES_SHORT_SERVER_ID 0
+
 class Resource : public ItemBase {
 public:
     ResourceInstance* createInstance(uint16_t id = INVALID_ID, Status* status = NULL);
+
+    ResourceInstance* getInstanceById(uint16_t id);
+    ResourceInstance* getFirstInstance();
+    ResourceInstance* getNextInstance();
 
 private:
     friend class ObjectInstance;
@@ -23,6 +31,7 @@ private:
 
     ResourceDesc& mDesc;
     ResourceInstance::Storage mInstanceStorage;
+    ResourceInstance::StorageNode* mInstanceNode;
 
     Resource(ItemBase* parent, uint16_t id, ResourceDesc& desc);
     virtual ~Resource();

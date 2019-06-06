@@ -118,7 +118,7 @@ protected:
 
         while (curNode) {
             if (*id != INVALID_ID && newId == curNode->get()->getId()) {
-                return STS_ERR_EXIST;
+                return STS_ERR_NOT_EXIST;
             }
 
             if (newId < curNode->get()->getId()) {
@@ -142,21 +142,29 @@ protected:
 template <class T, class P>
 class StorageItem : public StorageBase<T> {
 public:
-    StorageItem(ItemBase* parent, P param, size_t maxItems)
+    StorageItem(ItemBase* parent, P param, size_t maxItems, T* (*newItemFunc)(ItemBase*, uint16_t, P) = NULL)
         : mParent(parent),
-          mMaxItems(maxItems)
-#if RESERVE_MEMORY
-          ,
-          mFree(NULL)
+          mMaxItems(maxItems),
+#if CONFIG_RESERVE_MEMORY
+          mFree(NULL),
 #endif
+          mNewItemFunc(newItemFunc)
     {
-#if RESERVE_MEMORY
+#if CONFIG_RESERVE_MEMORY
         ASSERT_MESSAGE(mMaxItems, "Unlimited instances is not supported with memory reservation");
 
         Node<T>* prevNode = NULL;
 
         for (size_t i = 0; i < mMaxItems; i++) {
-            T* item = new T(mParent, INVALID_ID, param);
+            T* item;
+
+            if (mNewItemFunc) {
+                item = newItemFunc(mParent, INVALID_ID, param);
+            }
+            else {
+                item = new T(mParent, INVALID_ID, param);
+            }
+
             Node<T>* newNode = new Node<T>(item);
 
             // Assign first node
@@ -176,7 +184,7 @@ public:
 
     ~StorageItem()
     {
-#if RESERVE_MEMORY
+#if CONFIG_RESERVE_MEMORY
         Node<T>* node = mFree;
 
         while (node) {
@@ -193,7 +201,7 @@ public:
     T* newItem(uint16_t id, P param, Status* status = NULL)
     {
         if (mMaxItems != 0 && this->mSize == mMaxItems) {
-            if (status) *status = STS_ERR_MEM;
+            if (status) *status = STS_ERR_NO_MEM;
             return NULL;
         }
 
@@ -207,10 +215,10 @@ public:
 
         Node<T>* newNode;
 
-#if RESERVE_MEMORY
+#if CONFIG_RESERVE_MEMORY
         if (mMaxItems != 0) {
             if (!mFree) {
-                if (status) *status = STS_ERR_MEM;
+                if (status) *status = STS_ERR_NO_MEM;
                 return NULL;
             }
 
@@ -222,7 +230,16 @@ public:
         else
 #endif
         {
-            newNode = new Node<T>(new T(mParent, id, param));
+            T* newItem;
+
+            if (mNewItemFunc) {
+                newItem = mNewItemFunc(mParent, id, param);
+            }
+            else {
+                newItem = new T(mParent, id, param);
+            }
+
+            newNode = new Node<T>(newItem);
         }
 
         newNode->get()->init();
@@ -241,9 +258,9 @@ public:
             if (node->get() == item) {
                 node->get()->release();
 
-                removeNode(prevNode, node);
+                this->removeNode(prevNode, node);
 
-#if RESERVE_MEMORY
+#if CONFIG_RESERVE_MEMORY
                 if (mMaxItems != 0) {
                     if (mFree) {
                         node->mNext = mFree->mNext;
@@ -265,7 +282,7 @@ public:
             node = node->mNext;
         }
 
-        return STS_ERR_EXIST;
+        return STS_ERR_NOT_EXIST;
     }
 
     void clear()
@@ -278,7 +295,7 @@ public:
             Node<T>* tmp = node;
             node = node->mNext;
 
-#if RESERVE_MEMORY
+#if CONFIG_RESERVE_MEMORY
             if (mMaxItems != 0) {
                 if (mFree) {
                     tmp->mNext = mFree->mNext;
@@ -303,9 +320,10 @@ public:
 private:
     ItemBase* mParent;
     size_t mMaxItems;
-#if RESERVE_MEMORY
+#if CONFIG_RESERVE_MEMORY
     Node<T>* mFree;
 #endif
+    T* (*mNewItemFunc)(ItemBase*, uint16_t, P);
 };
 
 template <class T, class P>

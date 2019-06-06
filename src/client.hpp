@@ -48,25 +48,24 @@ public:
     /**
      * Returns lwm2m object.
      *
-     * @param[in] id            Object id.
      * @param[in] interface     Interface which requires this object.
-     * @param[out] status       Returns status of operation openlwm2m::Status.
+     * @param[in] id            Object id.
      *
      * @retval pointer to Object.
      */
-    Object* getObject(uint16_t id, Interface interface, Status* status = NULL);
+    Object* getObject(Interface interface, uint16_t id);
+
+    ResourceInstance* getResourceInstance(Interface interface, uint16_t objId, uint16_t objInstanceId, uint16_t resId,
+                                          uint16_t resInstanceId = 0);
+
+    TransportItf& getTransport() const { return mTransport; }
 
     Status init();
 
+    Status registration();
+
     // Bootstrap
 
-    /**
-     * Starts bootstrap procedure.
-     *
-     * See: 6.1. Bootstrap Interface
-     */
-    Status bootstrapStart();
-    Status bootstrapFinish();
     void bootstrapDiscover();
     void bootstrapRead();
     void bootstrapWrite();
@@ -91,7 +90,9 @@ public:
     void reportingCancelObserveComposite();
 
 private:
-    enum State { STATE_INIT, STATE_INITIALIZED, STATE_BOOTSTRAP, STATE_REGISTERING, STATE_READY };
+    friend class RegHandler;
+
+    enum State { STATE_INIT, STATE_INITIALIZED, STATE_BOOTSTRAP, STATE_REGISTER, STATE_READY };
 
     TransportItf& mTransport;
 

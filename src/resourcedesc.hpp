@@ -39,19 +39,20 @@ public:
 
 private:
     struct Params {
-        uint16_t mOperations;
-        Instance mInstance;
-        Mandatory mMandatory;
-        Type mType;
-        int mMin;
-        int mMax;
-        size_t mMaxInstances;
+        uint16_t operations;
+        Instance instance;
+        Mandatory mandatory;
+        Type type;
+        int min;
+        int max;
+        size_t maxInstances;
     };
 
     friend class Object;
     friend class ObjectInstance;
     friend class Resource;
     friend class ResourceInstance;
+    friend class ResourceInstanceString;
     friend class StorageBase<ResourceDesc>;
     friend class StorageArray<ResourceDesc, Params>;
 

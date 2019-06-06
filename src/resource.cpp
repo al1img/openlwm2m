@@ -11,14 +11,36 @@ namespace openlwm2m {
 
 ResourceInstance* Resource::createInstance(uint16_t id, Status* status)
 {
-    // Check size
-    if (!mInstanceStorage.hasFreeItem()) {
-        if (status) *status = STS_ERR_MEM;
-        return NULL;
+    return mInstanceStorage.newItem(id, mDesc, status);
+}
+
+ResourceInstance* Resource::getInstanceById(uint16_t id)
+{
+    return mInstanceStorage.getItemById(id);
+}
+
+ResourceInstance* Resource::getFirstInstance()
+{
+    mInstanceNode = mInstanceStorage.begin();
+
+    if (mInstanceNode) {
+        return mInstanceNode->get();
     }
 
-    // Create instance
-    return mInstanceStorage.newItem(id, mDesc, status);
+    return NULL;
+}
+
+ResourceInstance* Resource::getNextInstance()
+{
+    if (mInstanceNode) {
+        mInstanceNode = mInstanceNode->next();
+
+        if (mInstanceNode) {
+            return mInstanceNode->get();
+        }
+    }
+
+    return NULL;
 }
 
 /*******************************************************************************
@@ -26,7 +48,9 @@ ResourceInstance* Resource::createInstance(uint16_t id, Status* status)
  ******************************************************************************/
 
 Resource::Resource(ItemBase* parent, uint16_t id, ResourceDesc& desc)
-    : ItemBase(parent, id), mDesc(desc), mInstanceStorage(this, mDesc, mDesc.mParams.mMaxInstances)
+    : ItemBase(parent, id),
+      mDesc(desc),
+      mInstanceStorage(this, mDesc, mDesc.mParams.maxInstances, &ResourceInstance::newInstance)
 {
 }
 
@@ -41,9 +65,9 @@ void Resource::init()
     // Appendix D.1
     // If the Resource field “Mandatory” is “Mandatory” and the field “Instances” of theResource is “Single” then, the
     // number of Resource Instance MUST be 1
-    if (mDesc.mParams.mMandatory == ResourceDesc::MANDATORY && mDesc.mParams.mInstance == ResourceDesc::SINGLE &&
+    if (mDesc.mParams.mandatory == ResourceDesc::MANDATORY && mDesc.mParams.instance == ResourceDesc::SINGLE &&
         mInstanceStorage.size() == 0) {
-        ResourceInstance* instance = createInstance();
+        ResourceInstance* instance = createInstance(0);
         ASSERT(instance);
     }
 }

@@ -13,7 +13,7 @@ namespace openlwm2m {
 Client::Client(TransportItf& transport)
     : mTransport(transport),
       mObjectStorage(NULL),
-      mRegHandlerStorage(NULL, transport, CONFIG_NUM_SERVERS),
+      mRegHandlerStorage(NULL, *this, CONFIG_NUM_SERVERS),
       mState(STATE_INIT)
 {
     LOG_DEBUG("Create client");
@@ -23,13 +23,13 @@ Client::Client(TransportItf& transport)
     /***************************************************************************
      * E.1 LwM2M Object: LwM2M Security
      **************************************************************************/
-    Object* object =
-        createObject(0, Object::MULTIPLE, CONFIG_NUM_SERVERS == 0 ? 0 : CONFIG_NUM_SERVERS + CONFIG_BOOTSTRAP_SERVER,
-                     Object::MANDATORY, ITF_BOOTSTRAP);
+    Object* object = createObject(OBJ_LWM2M_SECURITY, Object::MULTIPLE,
+                                  CONFIG_NUM_SERVERS == 0 ? 0 : CONFIG_NUM_SERVERS + CONFIG_BOOTSTRAP_SERVER,
+                                  Object::MANDATORY, ITF_BOOTSTRAP | ITF_REGISTER);
     ASSERT(object);
     // LWM2M Server URI
-    status = object->createResource(0, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
-                                    ResourceDesc::TYPE_STRING, 0, 255);
+    status = object->createResource(RES_LWM2M_SERVER_URI, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
+                                    ResourceDesc::MANDATORY, ResourceDesc::TYPE_STRING, 0, 255);
     ASSERT(status == STS_OK);
     // Bootstrap-Server
     status = object->createResource(1, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
@@ -55,11 +55,11 @@ Client::Client(TransportItf& transport)
     /***************************************************************************
      * E.2 LwM2M Object: LwM2M Server
      **************************************************************************/
-    object = createObject(1, Object::MULTIPLE, CONFIG_NUM_SERVERS, Object::MANDATORY, ITF_ALL);
+    object = createObject(OBJ_LWM2M_SERVER, Object::MULTIPLE, CONFIG_NUM_SERVERS, Object::MANDATORY, ITF_ALL);
     ASSERT(object);
     // Short Server ID
-    status = object->createResource(0, ResourceDesc::OP_READ, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
-                                    ResourceDesc::TYPE_UINT16, 1, 65535);
+    status = object->createResource(RES_SHORT_SERVER_ID, ResourceDesc::OP_READ, ResourceDesc::SINGLE, 0,
+                                    ResourceDesc::MANDATORY, ResourceDesc::TYPE_UINT16, 1, 65535);
     ASSERT(status == STS_OK);
     // Lifetime
     status = object->createResource(1, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY,
@@ -101,6 +101,7 @@ Client::~Client()
 {
     LOG_DEBUG("Delete client");
 
+    mRegHandlerStorage.clear();
     mObjectStorage.release();
 }
 
@@ -112,7 +113,7 @@ Object* Client::createObject(uint16_t id, Object::Instance instance, size_t maxI
                              uint16_t interfaces, Status* status)
 {
     if (mState != STATE_INIT) {
-        if (status) *status = STS_ERR_STATE;
+        if (status) *status = STS_ERR_INVALID_STATE;
         return NULL;
     }
 
@@ -125,21 +126,28 @@ Object* Client::createObject(uint16_t id, Object::Instance instance, size_t maxI
     return mObjectStorage.createItem(id, params, status);
 }
 
-Object* Client::getObject(uint16_t id, Interface interface, Status* status)
+Object* Client::getObject(Interface interface, uint16_t id)
 {
     Object* object = mObjectStorage.getItemById(id);
 
-    if (!object) {
-        if (status) *status = STS_ERR_EXIST;
+    if (object && !(object->mParams.interfaces & interface)) {
+        LOG_WARNING("Object /%d not accesible by interface %d", id, interface);
         return NULL;
     }
 
-    if (object->mParams.mInterfaces & interface) {
-        return object;
+    return object;
+}
+
+ResourceInstance* Client::getResourceInstance(Interface interface, uint16_t objId, uint16_t objInstanceId,
+                                              uint16_t resId, uint16_t resInstanceId)
+{
+    Object* object = getObject(interface, objId);
+
+    if (!object) {
+        return NULL;
     }
 
-    if (status) *status = STS_ERR_EXIST;
-    return NULL;
+    return object->getResourceInstance(objInstanceId, resId, resInstanceId);
 }
 
 Status Client::init()
@@ -147,7 +155,7 @@ Status Client::init()
     LOG_DEBUG("Init client");
 
     if (mState != STATE_INIT) {
-        return STS_ERR_STATE;
+        return STS_ERR_INVALID_STATE;
     }
 
     mObjectStorage.init();
@@ -157,28 +165,45 @@ Status Client::init()
     return STS_OK;
 }
 
-Status Client::bootstrapStart()
+Status Client::registration()
 {
-    LOG_DEBUG("Start bootstrap");
+    LOG_DEBUG("Register client");
 
-    if (mState == STATE_INIT) {
-        return STS_ERR_STATE;
+    if (mState != STATE_INITIALIZED && mState != STATE_BOOTSTRAP) {
+        return STS_ERR_INVALID_STATE;
     }
 
-    mState = STATE_BOOTSTRAP;
+    Object* object = getObject(ITF_REGISTER, OBJ_LWM2M_SERVER);
 
-    return STS_OK;
-}
-
-Status Client::bootstrapFinish()
-{
-    LOG_DEBUG("Finish bootstrap");
-
-    if (mState != STATE_BOOTSTRAP) {
-        return STS_ERR_STATE;
+    if (!object) {
+        return STS_ERR_NOT_EXIST;
     }
 
-    mState = STATE_REGISTERING;
+    ObjectInstance* serverInstance = object->getFirstInstance();
+
+    while (serverInstance) {
+        RegHandler* handler = mRegHandlerStorage.newItem(serverInstance->getId(), *this);
+
+        if (!handler) {
+            return STS_ERR_NO_MEM;
+        }
+
+        Status status = STS_OK;
+
+        if ((status = handler->connect()) != STS_OK) {
+            LOG_ERROR("Can't connect to lwm2m server: %d", status);
+
+            mRegHandlerStorage.deleteInstance(handler);
+        }
+
+        serverInstance = object->getNextInstance();
+    }
+
+    if (mRegHandlerStorage.size() == 0) {
+        LOG_ERROR("No valid lwm2m servers found");
+
+        return STS_ERR_NO_MEM;
+    }
 
     return STS_OK;
 }
