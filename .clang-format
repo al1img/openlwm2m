@@ -4,4 +4,6 @@
     AccessModifierOffset: -4,
     BreakBeforeBraces: Stroustrup,
     ColumnLimit: 120,
-    AllowShortFunctionsOnASingleLine: InlineOnly}
+    AllowShortFunctionsOnASingleLine: InlineOnly,
+    DerivePointerAlignment: false,
+    PointerAlignment: Left}
