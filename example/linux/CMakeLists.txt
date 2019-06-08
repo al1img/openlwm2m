@@ -13,6 +13,7 @@ pkg_check_modules(COAP REQUIRED libcoap-2)
 include_directories(
 	.
 	../../src
+	platform/
 	${COAP_INCLUDES}
 )
 

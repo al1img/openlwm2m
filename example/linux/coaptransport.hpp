@@ -1,5 +1,5 @@
-#ifndef COAP_TRANSPORT_HPP_
-#define COAP_TRANSPORT_HPP_
+#ifndef COAPTRANSPORT_HPP_
+#define COAPTRANSPORT_HPP_
 
 #include <coap2/coap.h>
 
@@ -36,4 +36,4 @@ private:
     openlwm2m::Status resolveAddress(const char* uri, coap_address_t* dst);
 };
 
-#endif /* COAP_TRANSPORT_HPP_ */
+#endif /* COAPTRANSPORT_HPP_ */

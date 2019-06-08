@@ -1,7 +1,7 @@
-#include "coaptransport.hpp"
-
 #include "client.hpp"
+#include "coaptransport.hpp"
 #include "log.hpp"
+#include "memory.hpp"
 
 #define LOG_MODULE "Main"
 
@@ -18,14 +18,18 @@ int main()
 
     status = client.init();
     ASSERT_MESSAGE(status == STS_OK, "Can't initialize client");
+#if CONFIG_RESERVE_MEMORY
+    memInitDone();
+#endif
 
-    ObjectInstance* serverObjectInstance = client.getObject(ITF_BOOTSTRAP, OBJ_LWM2M_SERVER)->createInstance();
-    ObjectInstance* securityObjectInstance = client.getObject(ITF_BOOTSTRAP, OBJ_LWM2M_SECURITY)->createInstance();
+    //    ObjectInstance* serverObjectInstance = client.getObject(ITF_BOOTSTRAP, OBJ_LWM2M_SERVER)->createInstance();
+    //    ObjectInstance* securityObjectInstance = client.getObject(ITF_BOOTSTRAP,
+    //    OBJ_LWM2M_SECURITY)->createInstance();
 
-    securityObjectInstance->getResourceInstance(RES_LWM2M_SERVER_URI)->setString("coap://::1:5683");
+    //    securityObjectInstance->getResourceInstance(RES_LWM2M_SERVER_URI)->setString("coap://::1:5683");
 
-    status = client.registration();
-    ASSERT_MESSAGE(status == STS_OK, "Registration failed");
+    //    status = client.registration();
+    // ASSERT_MESSAGE(status == STS_OK, "Registration failed");
 
     LOG_INFO("Stop lwm2m client");
 
