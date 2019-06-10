@@ -24,27 +24,18 @@ Status Timer::poll(uint64_t currentTimeMs, uint64_t* poolInMs)
     return STS_OK;
 }
 
-Timer* Timer::createTimer(uint64_t period, bool oneShot, bool start)
+Timer::Timer()
 {
-    Params params = {period, oneShot, start};
+}
 
-    return mTimerStorage.createItem(INVALID_ID, params);
+Timer::~Timer()
+{
 }
 
 /*******************************************************************************
  * Private
  ******************************************************************************/
 
-Timer::Timer(ItemBase* parent, uint16_t id, Params params) : ItemBase(parent, id), mParams(params)
-{
-}
-
-void Timer::init()
-{
-}
-
-void Timer::release()
-{
-}
+List<Timer> Timer::sTimerList;
 
 }  // namespace openlwm2m
