@@ -19,31 +19,110 @@ public:
 
 private:
     template <class>
-    friend class StorageBase;
-
-    template <class, class>
-    friend class StorageItem;
-
-    template <class, class>
-    friend class StorageArray;
+    friend class List;
 
     T* mData;
     Node* mNext;
 };
 
 template <class T>
-class StorageBase {
+class List {
 public:
-    StorageBase() : mSize(0), mStart(NULL) {}
+    List() : mSize(0), mBegin(NULL), mEnd(NULL) {}
+
+    Node<T>* begin() const { return mBegin; }
+
+    size_t size() const { return mSize; }
+
+    void insertBegin(Node<T>* node)
+    {
+        if (mBegin) {
+            node->mNext = mBegin;
+        }
+        else {
+            mEnd = node;
+            node->mNext = NULL;
+        }
+
+        mBegin = node;
+
+        mSize++;
+    }
+
+    void insertAfter(Node<T>* prevNode, Node<T>* node)
+    {
+        node->mNext = prevNode->mNext;
+        prevNode->mNext = node;
+
+        if (!node->mNext) {
+            mEnd = node;
+        }
+
+        mSize++;
+    }
+
+    void insertEnd(Node<T>* node)
+    {
+        if (mEnd) {
+            mEnd->mNext = node;
+        }
+        else {
+            mEnd = node;
+            mBegin = node;
+        }
+
+        mSize++;
+    }
+
+    void remove(Node<T>* node)
+    {
+        Node<T>* prevNode = NULL;
+        Node<T>* curNode = this->mBegin;
+
+        while (node) {
+            if (curNode == node) {
+                if (curNode == mEnd) {
+                    mEnd = prevNode;
+                }
+
+                if (prevNode) {
+                    prevNode->mNext = curNode->mNext;
+                }
+                else {
+                    mBegin = curNode->mNext;
+                }
+
+                curNode->mNext = NULL;
+
+                mSize--;
+
+                break;
+            }
+
+            prevNode = node;
+            node = node->mNext;
+        }
+    }
+
+private:
+    size_t mSize;
+    Node<T>* mBegin;
+    Node<T>* mEnd;
+};
+
+template <class T>
+class StorageBase : public List<T> {
+public:
+    StorageBase() {}
 
     virtual ~StorageBase()
     {
-        Node<T>* node = mStart;
+        Node<T>* node = this->begin();
 
         while (node) {
             Node<T>* tmp = node;
 
-            node = node->mNext;
+            node = node->next();
 
             delete tmp->get();
             delete tmp;
@@ -52,59 +131,19 @@ public:
 
     T* getItemById(uint16_t id)
     {
-        Node<T>* node = mStart;
+        Node<T>* node = this->begin();
         while (node) {
             if (node->get()->getId() == id) {
                 return node->get();
             }
-            node = node->mNext;
+
+            node = node->next();
         }
 
         return NULL;
     }
 
-    Node<T>* begin() const { return mStart; }
-
-    size_t size() const { return mSize; }
-
 protected:
-    size_t mSize;
-    Node<T>* mStart;
-
-    void insertNode(Node<T>* prevNode, Node<T>* node)
-    {
-        // Empty storage
-        if (!mStart) {
-            mStart = node;
-        }
-        // Insert into begin
-        else if (!prevNode) {
-            node->mNext = mStart;
-            mStart = node;
-        }
-        // Insert before node
-        else {
-            node->mNext = prevNode->mNext;
-            prevNode->mNext = node;
-        }
-
-        mSize++;
-    }
-
-    void removeNode(Node<T>* prevNode, Node<T>* node)
-    {
-        if (prevNode) {
-            prevNode->mNext = node->mNext;
-        }
-        else {
-            mStart = node->mNext;
-        }
-
-        node->mNext = NULL;
-
-        mSize--;
-    }
-
     Status findNodeAndId(uint16_t* id, Node<T>** node)
     {
         uint16_t newId = 0;
@@ -114,7 +153,7 @@ protected:
         }
 
         *node = NULL;
-        Node<T>* curNode = mStart;
+        Node<T>* curNode = this->begin();
 
         while (curNode) {
             if (*id != INVALID_ID && newId == curNode->get()->getId()) {
@@ -130,7 +169,7 @@ protected:
             }
 
             *node = curNode;
-            curNode = curNode->mNext;
+            curNode = curNode->next();
         }
 
         *id = newId;
@@ -143,17 +182,10 @@ template <class T, class P>
 class StorageItem : public StorageBase<T> {
 public:
     StorageItem(ItemBase* parent, P param, size_t maxItems, T* (*newItemFunc)(ItemBase*, uint16_t, P) = NULL)
-        : mParent(parent),
-          mMaxItems(maxItems),
-#if CONFIG_RESERVE_MEMORY
-          mFree(NULL),
-#endif
-          mNewItemFunc(newItemFunc)
+        : mParent(parent), mMaxItems(maxItems), mNewItemFunc(newItemFunc)
     {
 #if CONFIG_RESERVE_MEMORY
         ASSERT_MESSAGE(mMaxItems, "Unlimited instances is not supported with memory reservation");
-
-        Node<T>* prevNode = NULL;
 
         for (size_t i = 0; i < mMaxItems; i++) {
             T* item;
@@ -167,17 +199,7 @@ public:
 
             Node<T>* newNode = new Node<T>(item);
 
-            // Assign first node
-            if (!mFree) {
-                mFree = newNode;
-            }
-
-            // Assign next node
-            if (prevNode) {
-                prevNode->mNext = newNode;
-            }
-
-            prevNode = newNode;
+            mFreeList.insertEnd(newNode);
         }
 #endif
     }
@@ -185,14 +207,14 @@ public:
     ~StorageItem()
     {
 #if CONFIG_RESERVE_MEMORY
-        Node<T>* node = mFree;
+        Node<T>* node = mFreeList.begin();
 
         while (node) {
             Node<T>* tmp = node;
 
             delete node->get();
 
-            node = node->mNext;
+            node = node->next();
             delete tmp;
         }
 #endif
@@ -200,7 +222,7 @@ public:
 
     T* newItem(uint16_t id, P param, Status* status = NULL)
     {
-        if (mMaxItems != 0 && this->mSize == mMaxItems) {
+        if (mMaxItems != 0 && this->size() == mMaxItems) {
             if (status) *status = STS_ERR_NO_MEM;
             return NULL;
         }
@@ -213,76 +235,62 @@ public:
             return NULL;
         }
 
-        Node<T>* newNode;
-
 #if CONFIG_RESERVE_MEMORY
-        if (mMaxItems != 0) {
-            if (!mFree) {
-                if (status) *status = STS_ERR_NO_MEM;
-                return NULL;
-            }
+        Node<T>* newNode = mFreeList.begin();
 
-            newNode = mFree;
-            mFree = newNode->mNext;
-            newNode->mNext = NULL;
-            newNode->get()->setId(id);
+        if (!newNode) {
+            if (status) *status = STS_ERR_NO_MEM;
+            return NULL;
         }
-        else
+
+        mFreeList.remove(newNode);
+
+        newNode->get()->setId(id);
+#else
+        T* newItem;
+
+        if (mNewItemFunc) {
+            newItem = mNewItemFunc(mParent, id, param);
+        }
+        else {
+            newItem = new T(mParent, id, param);
+        }
+
+        Node<T>* newNode = new Node<T>(newItem);
 #endif
-        {
-            T* newItem;
-
-            if (mNewItemFunc) {
-                newItem = mNewItemFunc(mParent, id, param);
-            }
-            else {
-                newItem = new T(mParent, id, param);
-            }
-
-            newNode = new Node<T>(newItem);
-        }
 
         newNode->get()->init();
 
-        this->insertNode(node, newNode);
+        if (node) {
+            this->insertAfter(node, newNode);
+        }
+        else {
+            this->insertBegin(newNode);
+        }
 
         return newNode->get();
     }
 
     Status deleteItem(T* item)
     {
-        Node<T>* prevNode = NULL;
-        Node<T>* node = this->mStart;
+        Node<T>* node = this->begin();
 
         while (node) {
             if (node->get() == item) {
                 node->get()->release();
-
-                this->removeNode(prevNode, node);
+                this->remove(node);
 
 #if CONFIG_RESERVE_MEMORY
-                if (mMaxItems != 0) {
-                    if (mFree) {
-                        node->mNext = mFree->mNext;
-                    }
-                    else {
-                        node->mNext = NULL;
-                    }
-
-                    mFree = node;
-                }
-                else
+                mFreeList.insertEnd(node);
+#else
+                delete node->get();
+                delete node;
 #endif
-                {
-                    delete node->get();
-                    delete node;
-                }
 
                 return STS_OK;
             }
 
-            prevNode = node;
-            node = node->mNext;
+            node = node->next();
         }
 
         return STS_ERR_NOT_EXIST;
@@ -290,35 +298,23 @@ public:
 
     void clear()
     {
-        Node<T>* node = this->mStart;
+        Node<T>* node = this->begin();
 
         while (node) {
             node->get()->release();
 
             Node<T>* tmp = node;
-            node = node->mNext;
+
+            node = node->next();
+            this->remove(tmp);
 
 #if CONFIG_RESERVE_MEMORY
-            if (mMaxItems != 0) {
-                if (mFree) {
-                    tmp->mNext = mFree->mNext;
-                }
-                else {
-                    tmp->mNext = NULL;
-                }
-
-                mFree = tmp;
-            }
-            else
+            mFreeList.insertEnd(tmp);
+#else
+            delete tmp->get();
+            delete tmp;
 #endif
-            {
-                delete tmp->get();
-                delete tmp;
-            }
         }
-
-        this->mStart = NULL;
-        this->mSize = 0;
     }
 
     bool hasFreeItem() const { return mMaxItems == 0 || this->mSize < mMaxItems; }
@@ -327,10 +323,10 @@ private:
     ItemBase* mParent;
     size_t mMaxItems;
 #if CONFIG_RESERVE_MEMORY
-    Node<T>* mFree;
+    List<T> mFreeList;
 #endif
     T* (*mNewItemFunc)(ItemBase*, uint16_t, P);
-};
+};  // namespace openlwm2m
 
 template <class T, class P>
 class StorageArray : public StorageBase<T> {
@@ -349,28 +345,33 @@ public:
 
         Node<T>* newNode = new Node<T>(new T(mParent, id, param));
 
-        this->insertNode(node, newNode);
+        if (node) {
+            this->insertAfter(node, newNode);
+        }
+        else {
+            this->insertBegin(newNode);
+        }
 
         return newNode->get();
     }
 
     void init()
     {
-        Node<T>* node = this->mStart;
+        Node<T>* node = this->begin();
 
         while (node) {
             node->get()->init();
-            node = node->mNext;
+            node = node->next();
         }
     }
 
     void release()
     {
-        Node<T>* node = this->mStart;
+        Node<T>* node = this->begin();
 
         while (node) {
             node->get()->release();
-            node = node->mNext;
+            node = node->next();
         }
     }
 
