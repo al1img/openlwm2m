@@ -19,41 +19,61 @@ RegHandler::~RegHandler()
 {
 }
 
-Status RegHandler::connect()
+Status RegHandler::bind(ObjectInstance* serverInstance)
 {
+    mServerInstance = serverInstance;
+
+    Object* object = mClient.getObject(ITF_CLIENT, OBJ_LWM2M_SECURITY);
+    ASSERT(object);
+
+    mSecurityInstance = object->getFirstInstance();
+
+    while (mSecurityInstance) {
+        if (mSecurityInstance->getResourceInstance(RES_BOOTSTRAP_SERVER)->getBool()) {
+            continue;
+        }
+
+        if (mSecurityInstance->getResourceInstance(RES_SECURITY_SHORT_SERVER_ID)->getInt() ==
+            mServerInstance->getResourceInstance(RES_SHORT_SERVER_ID)->getInt()) {
+            break;
+        }
+
+        mSecurityInstance = object->getNextInstance();
+    }
+
+    if (!mSecurityInstance) {
+        return STS_ERR_NOT_EXIST;
+    }
+
+    const char* serverUri = mSecurityInstance->getResourceInstance(RES_LWM2M_SERVER_URI)->getString();
+
+    LOG_DEBUG("Bind /%d to: %s", getId(), serverUri);
+
     Status status = STS_OK;
-
-    ResourceInstance* shortServerIdInstance =
-        mClient.getResourceInstance(ITF_REGISTER, OBJ_LWM2M_SERVER, getId(), RES_SHORT_SERVER_ID);
-
-    if (!shortServerIdInstance) {
-        return STS_ERR_NOT_EXIST;
-    }
-
-    ResourceInstance* serverUriInstance =
-        mClient.getResourceInstance(ITF_REGISTER, OBJ_LWM2M_SECURITY, getId(), RES_LWM2M_SERVER_URI);
-
-    if (!serverUriInstance) {
-        return STS_ERR_NOT_EXIST;
-    }
-
-    const char* serverUri = serverUriInstance->getString();
-
-    LOG_DEBUG("Reg handler /%d, connect to: %s", getId(), serverUri);
 
     mConnection = mClient.getTransport().createConnection(serverUri, &status);
 
     return status;
 }
 
+Status RegHandler::startRegistration()
+{
+    LOG_DEBUG("Start /%d", getId());
+
+    return STS_OK;
+}
+
 void RegHandler::init()
 {
-    LOG_DEBUG("Create reg handler /%d", getId());
+    LOG_DEBUG("Create /%d", getId());
+
+    mConnection = mServerInstance = mSecurityInstance = NULL;
+    mState = STATE_INIT;
 }
 
 void RegHandler::release()
 {
-    LOG_DEBUG("Delete reg handler /%d", getId());
+    LOG_DEBUG("Delete /%d", getId());
 
     if (mConnection) {
         Status status = mClient.getTransport().deleteConnection(mConnection);

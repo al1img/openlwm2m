@@ -8,11 +8,11 @@
 
 namespace openlwm2m {
 
-class Resource;
+class Object;
 
 class ResourceInstance : public ItemBase {
 public:
-    virtual const char* getString()
+    virtual const char* getString() const
     {
         ASSERT_MESSAGE(false, "Method not supported");
         return NULL;
@@ -23,7 +23,7 @@ public:
         return STS_ERR_INVALID_VALUE;
     };
 
-    virtual int64_t getInt()
+    virtual int64_t getInt() const
     {
         ASSERT_MESSAGE(false, "Method not supported");
         return 0;
@@ -34,7 +34,7 @@ public:
         return STS_ERR_INVALID_VALUE;
     };
 
-    virtual uint64_t getUint()
+    virtual uint64_t getUint() const
     {
         ASSERT_MESSAGE(false, "Method not supported");
         return 0;
@@ -45,7 +45,7 @@ public:
         return STS_ERR_INVALID_VALUE;
     };
 
-    virtual uint8_t getBool()
+    virtual uint8_t getBool() const
     {
         ASSERT_MESSAGE(false, "Method not supported");
         return 0;
@@ -57,10 +57,12 @@ public:
     };
 
 protected:
+    ResourceDesc& mDesc;
+
     ResourceInstance(ItemBase* parent, uint16_t id, ResourceDesc& desc);
     virtual ~ResourceInstance();
 
-    ResourceDesc& mDesc;
+    void valueChanged();
 
 private:
     friend class Resource;
@@ -88,12 +90,14 @@ private:
     void init();
     void release();
 
-    const char* getString();
+    const char* getString() const { return mValue; }
     Status setString(const char* value);
 };
 
 class ResourceInstanceInt : public ResourceInstance {
 private:
+    friend class ResourceInstance;
+
     int64_t mValue;
 
     ResourceInstanceInt(ItemBase* parent, uint16_t id, ResourceDesc& desc);
@@ -102,8 +106,24 @@ private:
     void init();
     void release();
 
-    int64_t getInt();
+    int64_t getInt() const { return mValue; }
     Status setInt(int64_t value);
+};
+
+class ResourceInstanceBool : public ResourceInstance {
+private:
+    friend class ResourceInstance;
+
+    uint8_t mValue;
+
+    ResourceInstanceBool(ItemBase* parent, uint16_t id, ResourceDesc& desc);
+    virtual ~ResourceInstanceBool();
+
+    void init();
+    void release();
+
+    uint8_t getBool() const { return mValue ? 1 : 0; }
+    Status setBool(uint8_t value);
 };
 
 }  // namespace openlwm2m

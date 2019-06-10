@@ -26,17 +26,23 @@ public:
     enum Instance { SINGLE, MULTIPLE };
 
     Status createResourceString(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
-                                ResourceDesc::Mandatory mandatory, size_t maxLen = 0);
+                                ResourceDesc::Mandatory mandatory, size_t maxLen = 0,
+                                ResourceDesc::ValueChangeCbk cbk = 0, void* context = NULL);
     Status createResourceInt(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
-                             ResourceDesc::Mandatory mandatory, int64_t min = LONG_MIN, int64_t max = LONG_MAX);
+                             ResourceDesc::Mandatory mandatory, int64_t min = LONG_MIN, int64_t max = LONG_MAX,
+                             ResourceDesc::ValueChangeCbk cbk = 0, void* context = NULL);
     Status createResourceUint(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
-                              ResourceDesc::Mandatory mandatory, uint64_t min = 0, uint64_t max = ULONG_MAX);
+                              ResourceDesc::Mandatory mandatory, uint64_t min = 0, uint64_t max = ULONG_MAX,
+                              ResourceDesc::ValueChangeCbk cbk = 0, void* context = NULL);
     Status createResourceBool(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
-                              ResourceDesc::Mandatory mandatory);
+                              ResourceDesc::Mandatory mandatory, ResourceDesc::ValueChangeCbk cbk = 0,
+                              void* context = NULL);
     Status createResourceOpaque(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
-                                ResourceDesc::Mandatory mandatory, size_t minSize = 0, size_t maxSize = 0);
+                                ResourceDesc::Mandatory mandatory, size_t minSize = 0, size_t maxSize = 0,
+                                ResourceDesc::ValueChangeCbk cbk = 0, void* context = NULL);
     Status createResourceNone(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
-                              ResourceDesc::Mandatory mandatory);
+                              ResourceDesc::Mandatory mandatory, ResourceDesc::ValueChangeCbk cbk = 0,
+                              void* context = NULL);
 
     ObjectInstance* createInstance(uint16_t id = INVALID_ID, Status* status = NULL);
     ObjectInstance* getInstanceById(uint16_t id);

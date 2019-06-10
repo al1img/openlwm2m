@@ -118,7 +118,7 @@ protected:
 
         while (curNode) {
             if (*id != INVALID_ID && newId == curNode->get()->getId()) {
-                return STS_ERR_NOT_EXIST;
+                return STS_ERR_EXIST;
             }
 
             if (newId < curNode->get()->getId()) {
@@ -249,7 +249,7 @@ public:
         return newNode->get();
     }
 
-    Status deleteInstance(T* item)
+    Status deleteItem(T* item)
     {
         Node<T>* prevNode = NULL;
         Node<T>* node = this->mStart;
@@ -264,6 +264,9 @@ public:
                 if (mMaxItems != 0) {
                     if (mFree) {
                         node->mNext = mFree->mNext;
+                    }
+                    else {
+                        node->mNext = NULL;
                     }
 
                     mFree = node;
@@ -299,6 +302,9 @@ public:
             if (mMaxItems != 0) {
                 if (mFree) {
                     tmp->mNext = mFree->mNext;
+                }
+                else {
+                    tmp->mNext = NULL;
                 }
 
                 mFree = tmp;

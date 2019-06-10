@@ -11,12 +11,12 @@ namespace openlwm2m {
 
 ResourceDesc::ResourceDesc(ItemBase* parent, uint16_t id, Params params) : ItemBase(parent, id), mParams(params)
 {
-    LOG_DEBUG("Create resource desc /%d/%d", getParent()->getId(), getId());
+    LOG_DEBUG("Create /%d/%d", getParent()->getId(), getId());
 }
 
 ResourceDesc::~ResourceDesc()
 {
-    LOG_DEBUG("Delete resource desc /%d/%d", getParent()->getId(), getId());
+    LOG_DEBUG("Delete /%d/%d", getParent()->getId(), getId());
 }
 
 void ResourceDesc::init()

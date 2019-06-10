@@ -25,14 +25,15 @@ Client::Client(TransportItf& transport)
      **************************************************************************/
     Object* object = createObject(OBJ_LWM2M_SECURITY, Object::MULTIPLE,
                                   CONFIG_NUM_SERVERS == 0 ? 0 : CONFIG_NUM_SERVERS + CONFIG_BOOTSTRAP_SERVER,
-                                  Object::MANDATORY, ITF_BOOTSTRAP | ITF_REGISTER);
+                                  Object::MANDATORY, ITF_BOOTSTRAP);
     ASSERT(object);
     // LWM2M Server URI
     status = object->createResourceString(RES_LWM2M_SERVER_URI, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
                                           ResourceDesc::MANDATORY, 255);
     ASSERT(status == STS_OK);
     // Bootstrap-Server
-    status = object->createResourceBool(1, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY);
+    status = object->createResourceBool(RES_BOOTSTRAP_SERVER, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
+                                        ResourceDesc::MANDATORY, &Client::resBootstrapChanged, this);
     ASSERT(status == STS_OK);
     // Security Mode
     status =
@@ -50,6 +51,10 @@ Client::Client(TransportItf& transport)
     status = object->createResourceOpaque(5, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY, 0,
                                           CONFIG_CLIENT_PRIVATE_KEY_MAX_LEN);
     ASSERT(status == STS_OK);
+    // Short Server ID
+    status = object->createResourceInt(RES_SECURITY_SHORT_SERVER_ID, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
+                                       ResourceDesc::OPTIONAL, 1, 65534);
+    ASSERT(status == STS_OK);
 
     /***************************************************************************
      * E.2 LwM2M Object: LwM2M Server
@@ -57,8 +62,8 @@ Client::Client(TransportItf& transport)
     object = createObject(OBJ_LWM2M_SERVER, Object::MULTIPLE, CONFIG_NUM_SERVERS, Object::MANDATORY, ITF_ALL);
     ASSERT(object);
     // Short Server ID
-    status = object->createResourceUint(RES_SHORT_SERVER_ID, ResourceDesc::OP_READ, ResourceDesc::SINGLE, 0,
-                                        ResourceDesc::MANDATORY, 1, 65535);
+    status = object->createResourceInt(RES_SHORT_SERVER_ID, ResourceDesc::OP_READ, ResourceDesc::SINGLE, 0,
+                                       ResourceDesc::MANDATORY, 1, 65535);
     ASSERT(status == STS_OK);
     // Lifetime
     status = object->createResourceInt(1, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY);
@@ -73,6 +78,10 @@ Client::Client(TransportItf& transport)
     ASSERT(status == STS_OK);
     // Registration Update Trigger
     status = object->createResourceNone(8, ResourceDesc::OP_EXECUTE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY);
+    ASSERT(status == STS_OK);
+    // Registration Priority Oreder
+    status = object->createResourceUint(RES_REGISTRATION_PRIORITY_ORDER, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
+                                        ResourceDesc::OPTIONAL);
     ASSERT(status == STS_OK);
 
     /***************************************************************************
@@ -126,7 +135,7 @@ Object* Client::getObject(Interface interface, uint16_t id)
 {
     Object* object = mObjectStorage.getItemById(id);
 
-    if (object && !(object->mParams.interfaces & interface)) {
+    if (interface && object && !(object->mParams.interfaces & interface)) {
         LOG_WARNING("Object /%d not accesible by interface %d", id, interface);
         return NULL;
     }
@@ -169,43 +178,38 @@ Status Client::registration()
         return STS_ERR_INVALID_STATE;
     }
 
-    Object* object = getObject(ITF_REGISTER, OBJ_LWM2M_SERVER);
+    Status status = STS_OK;
 
-    if (!object) {
-        return STS_ERR_NOT_EXIST;
+    if ((status = createRegHandlers()) != STS_OK) {
+        mRegHandlerStorage.clear();
+        return status;
     }
 
-    ObjectInstance* serverInstance = object->getFirstInstance();
+    if ((status = startNextPriorityReg()) != STS_OK) {
+        mRegHandlerStorage.clear();
+        return status;
+    }
 
-    while (serverInstance) {
-        ResourceInstance* shortServerIdInstance = serverInstance->getResourceInstance(RES_SHORT_SERVER_ID);
-        ASSERT(shortServerIdInstance);
+    // Starts all non priority handlers
 
-        RegHandler* handler = mRegHandlerStorage.newItem(serverInstance->getId(), *this);
-
-        if (!handler) {
-            LOG_ERROR("Can't create reg handler: %d", STS_ERR_NO_MEM);
+    for (RegHandler::StorageNode* node = mRegHandlerStorage.begin(); node; node = node->next()) {
+        // Skip already started handlers
+        if (node->get()->mState != RegHandler::STATE_INIT) {
             continue;
         }
 
-        Status status = STS_OK;
-
-        if ((status = handler->connect()) != STS_OK) {
-            LOG_ERROR("Can't connect to lwm2m server: %d", status);
-
-            mRegHandlerStorage.deleteInstance(handler);
+        // Skip handlers with priority order
+        if (node->get()->mServerInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER)) {
+            continue;
         }
 
-        serverInstance = object->getNextInstance();
+        if ((status = node->get()->startRegistration()) != STS_OK) {
+            mRegHandlerStorage.clear();
+            return status;
+        }
     }
 
-    if (mRegHandlerStorage.size() == 0) {
-        LOG_ERROR("No valid lwm2m servers found");
-
-        return STS_ERR_NOT_EXIST;
-    }
-
-    return STS_OK;
+    return status;
 }
 
 void Client::bootstrapDiscover()
@@ -260,6 +264,105 @@ void Client::reportingObserveComposite()
 }
 void Client::reportingCancelObserveComposite()
 {
+}
+
+/*******************************************************************************
+ * Private
+ ******************************************************************************/
+
+void Client::resBootstrapChanged(void* context, ResourceInstance* resInstance)
+{
+    // E.1 ThisResource MUST be set when the Bootstrap-ServerResource has a value of 'false'.
+    ObjectInstance* securityObjectInstance = static_cast<ObjectInstance*>(resInstance->getParent()->getParent());
+    ASSERT(securityObjectInstance);
+
+    Resource* resShortServerId = securityObjectInstance->getResourceById(RES_SECURITY_SHORT_SERVER_ID);
+    ASSERT(resShortServerId);
+
+    if (!resInstance->getBool()) {
+        if (!resShortServerId->getFirstInstance()) {
+            resShortServerId->createInstance();
+        }
+    }
+    else {
+        resShortServerId->deleteInstance(resShortServerId->getFirstInstance());
+    }
+}
+
+Status Client::createRegHandlers()
+{
+    Object* object = getObject(ITF_REGISTER, OBJ_LWM2M_SERVER);
+    ASSERT(object);
+
+    ObjectInstance* serverInstance = object->getFirstInstance();
+
+    while (serverInstance) {
+        ResourceInstance* shortServerIdInstance = serverInstance->getResourceInstance(RES_SHORT_SERVER_ID);
+        ASSERT(shortServerIdInstance);
+
+        RegHandler* handler = mRegHandlerStorage.newItem(INVALID_ID, *this);
+        ASSERT(handler);
+
+        Status status = STS_OK;
+
+        if ((status = handler->bind(serverInstance)) != STS_OK) {
+            LOG_ERROR("Can't bind to lwm2m server %d", status);
+
+            mRegHandlerStorage.deleteItem(handler);
+        }
+
+        serverInstance = object->getNextInstance();
+    }
+
+    if (mRegHandlerStorage.size() == 0) {
+        LOG_ERROR("No valid lwm2m servers found");
+
+        return STS_ERR_NOT_EXIST;
+    }
+
+    return STS_OK;
+}
+
+Status Client::startNextPriorityReg()
+{
+    RegHandler* minPriorityHandler = NULL;
+    uint64_t minPriority = UINT_MAX;
+
+    for (RegHandler::StorageNode* node = mRegHandlerStorage.begin(); node; node = node->next()) {
+        // Skip already started handlers
+        if (node->get()->mState != RegHandler::STATE_INIT) {
+            continue;
+        }
+
+        ResourceInstance* regPriority =
+            node->get()->mServerInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER);
+
+        // Skip handlers without priority order
+        if (!regPriority) {
+            continue;
+        }
+
+        if (regPriority->getUint() <= minPriority) {
+            minPriorityHandler = node->get();
+            minPriority = regPriority->getUint();
+        }
+    }
+
+    if (minPriorityHandler) {
+        return minPriorityHandler->startRegistration();
+    }
+
+    return STS_OK;
+}
+
+void Client::registrationStatus(RegHandler* handler, Status status)
+{
+    LOG_DEBUG("Handler /%d reg status: %d", handler->getId(), status);
+
+    // if priority handler finished, start next priority handler
+    if (handler->mServerInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER)) {
+        startNextPriorityReg();
+    }
 }
 
 }  // namespace openlwm2m

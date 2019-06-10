@@ -7,10 +7,23 @@
 #include "itembase.hpp"
 #include "storage.hpp"
 
+// LwM2M Object: LwM2M Security
+#define RES_LWM2M_SERVER_URI 0
+#define RES_BOOTSTRAP_SERVER 1
+#define RES_SECURITY_SHORT_SERVER_ID 10
+
+// LwM2M Object: LwM2M Server
+#define RES_SHORT_SERVER_ID 0
+#define RES_REGISTRATION_PRIORITY_ORDER 13
+
 namespace openlwm2m {
+
+class ResourceInstance;
 
 class ResourceDesc : public ItemBase {
 public:
+    typedef void (*ValueChangeCbk)(void* context, ResourceInstance* resInstance);
+
     enum Mandatory { MANDATORY, OPTIONAL };
 
     enum Instance { SINGLE, MULTIPLE };
@@ -37,6 +50,8 @@ private:
         size_t maxInstances;
         Mandatory mandatory;
         Type type;
+        ResourceDesc::ValueChangeCbk cbk;
+        void* context;
         union {
             int64_t minInt;
             uint64_t minUint;

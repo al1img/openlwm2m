@@ -10,9 +10,11 @@ namespace openlwm2m {
  ******************************************************************************/
 
 Status Object::createResourceString(uint16_t id, uint16_t operations, ResourceDesc::Instance instance,
-                                    size_t maxInstances, ResourceDesc::Mandatory mandatory, size_t maxLen)
+                                    size_t maxInstances, ResourceDesc::Mandatory mandatory, size_t maxLen,
+                                    ResourceDesc::ValueChangeCbk cbk, void* context)
 {
-    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_STRING};
+    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_STRING,
+                                   cbk,        context};
 
     params.minUint = 0;
     params.maxUint = maxLen;
@@ -21,9 +23,10 @@ Status Object::createResourceString(uint16_t id, uint16_t operations, ResourceDe
 }
 
 Status Object::createResourceInt(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
-                                 ResourceDesc::Mandatory mandatory, int64_t min, int64_t max)
+                                 ResourceDesc::Mandatory mandatory, int64_t min, int64_t max,
+                                 ResourceDesc::ValueChangeCbk cbk, void* context)
 {
-    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_INT};
+    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_INT, cbk, context};
 
     params.minInt = min;
     params.maxInt = max;
@@ -32,9 +35,11 @@ Status Object::createResourceInt(uint16_t id, uint16_t operations, ResourceDesc:
 }
 
 Status Object::createResourceUint(uint16_t id, uint16_t operations, ResourceDesc::Instance instance,
-                                  size_t maxInstances, ResourceDesc::Mandatory mandatory, uint64_t min, uint64_t max)
+                                  size_t maxInstances, ResourceDesc::Mandatory mandatory, uint64_t min, uint64_t max,
+                                  ResourceDesc::ValueChangeCbk cbk, void* context)
 {
-    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_UINT};
+    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_UINT,
+                                   cbk,        context};
 
     params.minUint = min;
     params.maxUint = max;
@@ -43,9 +48,11 @@ Status Object::createResourceUint(uint16_t id, uint16_t operations, ResourceDesc
 }
 
 Status Object::createResourceBool(uint16_t id, uint16_t operations, ResourceDesc::Instance instance,
-                                  size_t maxInstances, ResourceDesc::Mandatory mandatory)
+                                  size_t maxInstances, ResourceDesc::Mandatory mandatory,
+                                  ResourceDesc::ValueChangeCbk cbk, void* context)
 {
-    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_BOOL};
+    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_BOOL,
+                                   cbk,        context};
 
     params.minUint = 0;
     params.maxUint = 0;
@@ -55,9 +62,10 @@ Status Object::createResourceBool(uint16_t id, uint16_t operations, ResourceDesc
 
 Status Object::createResourceOpaque(uint16_t id, uint16_t operations, ResourceDesc::Instance instance,
                                     size_t maxInstances, ResourceDesc::Mandatory mandatory, size_t minSize,
-                                    size_t maxSize)
+                                    size_t maxSize, ResourceDesc::ValueChangeCbk cbk, void* context)
 {
-    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_OPAQUE};
+    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_OPAQUE,
+                                   cbk,        context};
 
     params.minUint = minSize;
     params.maxUint = maxSize;
@@ -66,9 +74,11 @@ Status Object::createResourceOpaque(uint16_t id, uint16_t operations, ResourceDe
 }
 
 Status Object::createResourceNone(uint16_t id, uint16_t operations, ResourceDesc::Instance instance,
-                                  size_t maxInstances, ResourceDesc::Mandatory mandatory)
+                                  size_t maxInstances, ResourceDesc::Mandatory mandatory,
+                                  ResourceDesc::ValueChangeCbk cbk, void* context)
 {
-    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_NONE};
+    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, ResourceDesc::TYPE_NONE,
+                                   cbk,        context};
 
     params.minUint = 0;
     params.maxUint = 0;
@@ -136,12 +146,12 @@ ResourceInstance* Object::getResourceInstance(uint16_t objInstanceId, uint16_t r
 Object::Object(ItemBase* parent, uint16_t id, Params params)
     : ItemBase(parent, id), mParams(params), mResourceDescStorage(this), mInstanceStorage(NULL), mInstanceNode(NULL)
 {
-    LOG_DEBUG("Create object /%d", getId());
+    LOG_DEBUG("Create /%d", getId());
 }
 
 Object::~Object()
 {
-    LOG_DEBUG("Delete object /%d", getId());
+    LOG_DEBUG("Delete /%d", getId());
 
     delete mInstanceStorage;
 }

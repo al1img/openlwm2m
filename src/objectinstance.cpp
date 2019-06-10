@@ -48,14 +48,14 @@ ObjectInstance::~ObjectInstance()
 
 void ObjectInstance::init()
 {
-    LOG_DEBUG("Create object instance /%d/%d", getParent()->getId(), getId());
+    LOG_DEBUG("Create /%d/%d", getParent()->getId(), getId());
 
     mResourceStorage.init();
 }
 
 void ObjectInstance::release()
 {
-    LOG_DEBUG("Delete object instance /%d/%d", getParent()->getId(), getId());
+    LOG_DEBUG("Delete /%d/%d", getParent()->getId(), getId());
 
     mResourceStorage.release();
 }

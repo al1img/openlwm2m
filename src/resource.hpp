@@ -10,13 +10,10 @@
 
 namespace openlwm2m {
 
-#define RES_LWM2M_SERVER_URI 0
-
-#define RES_SHORT_SERVER_ID 0
-
 class Resource : public ItemBase {
 public:
     ResourceInstance* createInstance(uint16_t id = INVALID_ID, Status* status = NULL);
+    Status deleteInstance(ResourceInstance* instance);
 
     ResourceInstance* getInstanceById(uint16_t id);
     ResourceInstance* getFirstInstance();

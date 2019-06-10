@@ -17,15 +17,21 @@ private:
     friend class StorageItem<RegHandler, Client&>;
 
     typedef StorageItem<RegHandler, Client&> Storage;
+    typedef Node<RegHandler> StorageNode;
+
+    enum State { STATE_INIT, STATE_START };
 
     Client& mClient;
     void* mConnection;
     ObjectInstance* mServerInstance;
+    ObjectInstance* mSecurityInstance;
+    State mState;
 
     RegHandler(ItemBase* parent, uint16_t id, Client& client);
     virtual ~RegHandler();
 
-    Status connect();
+    Status bind(ObjectInstance* serverInstance);
+    Status startRegistration();
 
     void init();
     void release();

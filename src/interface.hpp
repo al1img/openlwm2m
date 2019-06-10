@@ -18,6 +18,7 @@ namespace openlwm2m {
  * See: 6. Interfaces.
  */
 enum Interface {
+    ITF_CLIENT = 0x00,     ///< Client interface: this interface access all objects.
     ITF_BOOTSTRAP = 0x01,  ///< Bootstrap interface.
     ITF_REGISTER = 0x02,   ///< Client registration interface.
     ITF_DEVICE = 0x04,     ///< Device Management and Service Enablement Interface.

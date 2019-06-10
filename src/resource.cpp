@@ -14,6 +14,15 @@ ResourceInstance* Resource::createInstance(uint16_t id, Status* status)
     return mInstanceStorage.newItem(id, mDesc, status);
 }
 
+Status Resource::deleteInstance(ResourceInstance* instance)
+{
+    if (instance) {
+        return mInstanceStorage.deleteItem(instance);
+    }
+
+    return STS_OK;
+}
+
 ResourceInstance* Resource::getInstanceById(uint16_t id)
 {
     return mInstanceStorage.getItemById(id);
@@ -60,7 +69,7 @@ Resource::~Resource()
 
 void Resource::init()
 {
-    LOG_DEBUG("Create resource /%d/%d/%d", getParent()->getParent()->getId(), getParent()->getId(), getId());
+    LOG_DEBUG("Create /%d/%d/%d", getParent()->getParent()->getId(), getParent()->getId(), getId());
 
     // Appendix D.1
     // If the Resource field “Mandatory” is “Mandatory” and the field “Instances” of theResource is “Single” then, the
@@ -74,7 +83,7 @@ void Resource::init()
 
 void Resource::release()
 {
-    LOG_DEBUG("Delete resource /%d/%d/%d", getParent()->getParent()->getId(), getParent()->getId(), getId());
+    LOG_DEBUG("Delete /%d/%d/%d", getParent()->getParent()->getId(), getParent()->getId(), getId());
 
     mInstanceStorage.clear();
 }

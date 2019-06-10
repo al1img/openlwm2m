@@ -100,6 +100,13 @@ private:
     RegHandler::Storage mRegHandlerStorage;
 
     State mState;
+
+    static void resBootstrapChanged(void* context, ResourceInstance* resInstance);
+
+    Status createRegHandlers();
+
+    Status startNextPriorityReg();
+    void registrationStatus(RegHandler* handler, Status status);
 };
 
 }  // namespace openlwm2m

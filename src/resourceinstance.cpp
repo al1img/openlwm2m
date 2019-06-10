@@ -12,6 +12,10 @@ namespace openlwm2m {
  * ResourceInstance
  ******************************************************************************/
 
+/*******************************************************************************
+ * Public
+ ******************************************************************************/
+
 ResourceInstance::ResourceInstance(ItemBase* parent, uint16_t id, ResourceDesc& desc)
     : ItemBase(parent, id), mDesc(desc)
 {
@@ -23,13 +27,20 @@ ResourceInstance::~ResourceInstance()
 
 void ResourceInstance::init()
 {
-    LOG_DEBUG("Create resource instance /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(),
-              getParent()->getParent()->getId(), getParent()->getId(), getId());
+    LOG_DEBUG("Create /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(), getParent()->getParent()->getId(),
+              getParent()->getId(), getId());
 }
 void ResourceInstance::release()
 {
-    LOG_DEBUG("Delete resource instance /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(),
-              getParent()->getParent()->getId(), getParent()->getId(), getId());
+    LOG_DEBUG("Delete /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(), getParent()->getParent()->getId(),
+              getParent()->getId(), getId());
+}
+
+void ResourceInstance::valueChanged()
+{
+    if (mDesc.mParams.cbk) {
+        mDesc.mParams.cbk(mDesc.mParams.context, this);
+    }
 }
 
 ResourceInstance* ResourceInstance::newInstance(ItemBase* parent, uint16_t id, ResourceDesc& desc)
@@ -37,6 +48,12 @@ ResourceInstance* ResourceInstance::newInstance(ItemBase* parent, uint16_t id, R
     switch (desc.mParams.type) {
         case ResourceDesc::TYPE_STRING:
             return new ResourceInstanceString(parent, id, desc);
+
+        case ResourceDesc::TYPE_INT:
+            return new ResourceInstanceInt(parent, id, desc);
+
+        case ResourceDesc::TYPE_BOOL:
+            return new ResourceInstanceBool(parent, id, desc);
     }
 
     return new ResourceInstance(parent, id, desc);
@@ -61,27 +78,26 @@ ResourceInstanceString::~ResourceInstanceString()
 
 void ResourceInstanceString::init()
 {
-    LOG_DEBUG("Create string instance /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(),
+    LOG_DEBUG("Create string /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(),
               getParent()->getParent()->getId(), getParent()->getId(), getId());
+
+    valueChanged();
 }
+
 void ResourceInstanceString::release()
 {
-    LOG_DEBUG("Delete string instance /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(),
+    LOG_DEBUG("Delete string /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(),
               getParent()->getParent()->getId(), getParent()->getId(), getId());
-}
-
-const char* ResourceInstanceString::getString()
-{
-    LOG_DEBUG("Get string instance /%d/%d/%d/%d, value: %s", getParent()->getParent()->getParent()->getId(),
-              getParent()->getParent()->getId(), getParent()->getId(), getId(), mValue);
-
-    return mValue;
 }
 
 Status ResourceInstanceString::setString(const char* value)
 {
-    LOG_DEBUG("Set string instance /%d/%d/%d/%d, value: %s", getParent()->getParent()->getParent()->getId(),
+    LOG_DEBUG("Set string /%d/%d/%d/%d, value: %s", getParent()->getParent()->getParent()->getId(),
               getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
+
+    if (strcmp(value, mValue) == 0) {
+        return STS_OK;
+    }
 
 #if !CONFIG_RESERVE_MEMORY
     delete[] mValue;
@@ -89,6 +105,8 @@ Status ResourceInstanceString::setString(const char* value)
 #endif
 
     strncpy(mValue, value, (mDesc.mParams.maxUint ? mDesc.mParams.maxUint : strlen(value)) + 1);
+
+    valueChanged();
 
     return STS_OK;
 }
@@ -108,34 +126,77 @@ ResourceInstanceInt::~ResourceInstanceInt()
 
 void ResourceInstanceInt::init()
 {
-    LOG_DEBUG("Create integer instance /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(),
+    LOG_DEBUG("Create int /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(),
               getParent()->getParent()->getId(), getParent()->getId(), getId());
+
+    valueChanged();
 }
 
 void ResourceInstanceInt::release()
 {
-    LOG_DEBUG("Delete integer instance /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(),
+    LOG_DEBUG("Delete int /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(),
               getParent()->getParent()->getId(), getParent()->getId(), getId());
-}
-
-int64_t ResourceInstanceInt::getInt()
-{
-    LOG_DEBUG("Get integer instance /%d/%d/%d/%d, value: %l", getParent()->getParent()->getParent()->getId(),
-              getParent()->getParent()->getId(), getParent()->getId(), getId(), mValue);
-
-    return mValue;
 }
 
 Status ResourceInstanceInt::setInt(int64_t value)
 {
-    LOG_DEBUG("Set string instance /%d/%d/%d/%d, value: %l", getParent()->getParent()->getParent()->getId(),
+    LOG_DEBUG("Set int /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
               getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
+
+    if (value == mValue) {
+        return STS_OK;
+    }
 
     if (value < mDesc.mParams.minInt || value > mDesc.mParams.maxInt) {
         return STS_ERR_INVALID_VALUE;
     }
 
     mValue = value;
+
+    valueChanged();
+
+    return STS_OK;
+}
+
+/*******************************************************************************
+ * ResourceInstanceInt
+ ******************************************************************************/
+
+ResourceInstanceBool::ResourceInstanceBool(ItemBase* parent, uint16_t id, ResourceDesc& desc)
+    : ResourceInstance(parent, id, desc), mValue(0)
+{
+}
+
+ResourceInstanceBool::~ResourceInstanceBool()
+{
+}
+
+void ResourceInstanceBool::init()
+{
+    LOG_DEBUG("Create bool /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(),
+              getParent()->getParent()->getId(), getParent()->getId(), getId());
+
+    valueChanged();
+}
+
+void ResourceInstanceBool::release()
+{
+    LOG_DEBUG("Delete bool /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(),
+              getParent()->getParent()->getId(), getParent()->getId(), getId());
+}
+
+Status ResourceInstanceBool::setBool(uint8_t value)
+{
+    LOG_DEBUG("Set instance /%d/%d/%d/%d, value: %u", getParent()->getParent()->getParent()->getId(),
+              getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
+
+    if (value == mValue) {
+        return STS_OK;
+    }
+
+    mValue = value;
+
+    valueChanged();
 
     return STS_OK;
 }
