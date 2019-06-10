@@ -1,6 +1,7 @@
 #include "client.hpp"
 #include "interface.hpp"
 #include "log.hpp"
+#include "timer.hpp"
 
 #define LOG_MODULE "Client"
 
@@ -113,6 +114,21 @@ Client::~Client()
 /*******************************************************************************
  * Public
  ******************************************************************************/
+
+Status Client::poll(uint64_t currentTimeMs, uint64_t* pollInMs)
+{
+    if (pollInMs) {
+        *pollInMs = UINT_MAX;
+    }
+
+    Status status = STS_OK;
+
+    if ((status = Timer::poll(currentTimeMs, pollInMs)) != STS_OK) {
+        return status;
+    }
+
+    return STS_OK;
+}
 
 Object* Client::createObject(uint16_t id, Object::Instance instance, size_t maxInstances, Object::Mandatory mandatory,
                              uint16_t interfaces, Status* status)

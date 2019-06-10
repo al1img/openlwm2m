@@ -25,6 +25,8 @@ public:
     Client(TransportItf& transport);
     ~Client();
 
+    Status poll(uint64_t currentTimeMs, uint64_t* pollInMs);
+
     /**
      * Creates lwm2m object.
      *
