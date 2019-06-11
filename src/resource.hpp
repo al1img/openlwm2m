@@ -31,7 +31,7 @@ private:
     ResourceInstance::StorageNode* mInstanceNode;
 
     Resource(ItemBase* parent, uint16_t id, ResourceDesc& desc);
-    virtual ~Resource();
+    ~Resource();
 
     void init();
     void release();

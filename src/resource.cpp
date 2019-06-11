@@ -57,9 +57,7 @@ ResourceInstance* Resource::getNextInstance()
  ******************************************************************************/
 
 Resource::Resource(ItemBase* parent, uint16_t id, ResourceDesc& desc)
-    : ItemBase(parent, id),
-      mDesc(desc),
-      mInstanceStorage(this, mDesc, mDesc.mParams.maxInstances, &ResourceInstance::newInstance)
+    : ItemBase(parent, id), mDesc(desc), mInstanceStorage(this, mDesc, mDesc.mParams.maxInstances)
 {
 }
 

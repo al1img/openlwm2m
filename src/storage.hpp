@@ -138,7 +138,7 @@ class StorageBase : public List<T> {
 public:
     StorageBase() {}
 
-    virtual ~StorageBase()
+    ~StorageBase()
     {
         Node<T>* node = this->begin();
 
@@ -204,21 +204,13 @@ protected:
 template <class T, class P>
 class StorageItem : public StorageBase<T> {
 public:
-    StorageItem(ItemBase* parent, P param, size_t maxItems, T* (*newItemFunc)(ItemBase*, uint16_t, P) = NULL)
-        : mParent(parent), mMaxItems(maxItems), mNewItemFunc(newItemFunc)
+    StorageItem(ItemBase* parent, P param, size_t maxItems) : mParent(parent), mMaxItems(maxItems)
     {
 #if CONFIG_RESERVE_MEMORY
         ASSERT_MESSAGE(mMaxItems, "Unlimited instances is not supported with memory reservation");
 
         for (size_t i = 0; i < mMaxItems; i++) {
-            T* item;
-
-            if (mNewItemFunc) {
-                item = newItemFunc(mParent, INVALID_ID, param);
-            }
-            else {
-                item = new T(mParent, INVALID_ID, param);
-            }
+            T* item = new T(mParent, INVALID_ID, param);
 
             Node<T>* newNode = new Node<T>(item);
 
@@ -270,15 +262,7 @@ public:
 
         newNode->get()->setId(id);
 #else
-        T* newItem;
-
-        if (mNewItemFunc) {
-            newItem = mNewItemFunc(mParent, id, param);
-        }
-        else {
-            newItem = new T(mParent, id, param);
-        }
-
+        T* newItem = new T(mParent, id, param);
         Node<T>* newNode = new Node<T>(newItem);
 #endif
 
@@ -348,8 +332,7 @@ private:
 #if CONFIG_RESERVE_MEMORY
     List<T> mFreeList;
 #endif
-    T* (*mNewItemFunc)(ItemBase*, uint16_t, P);
-};  // namespace openlwm2m
+};
 
 template <class T, class P>
 class StorageArray : public StorageBase<T> {

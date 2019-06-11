@@ -19,6 +19,30 @@ RegHandler::~RegHandler()
 {
 }
 
+void RegHandler::init()
+{
+    LOG_DEBUG("Create /%d", getId());
+
+    mConnection = mServerInstance = mSecurityInstance = NULL;
+    mState = STATE_INIT;
+}
+
+void RegHandler::release()
+{
+    LOG_DEBUG("Delete /%d", getId());
+
+    if (mConnection) {
+        Status status = mClient.getTransport().deleteConnection(mConnection);
+
+        if (status != STS_OK) {
+            LOG_ERROR("Can't delete connection: %d", status);
+        }
+    }
+
+    mTimer.stop();
+    mState = STATE_INIT;
+}
+
 Status RegHandler::bind(ObjectInstance* serverInstance)
 {
     mServerInstance = serverInstance;
@@ -107,30 +131,6 @@ void RegHandler::registrationCallback(void* context, Status status)
 
 void RegHandler::onRegistrationCallback(Status status)
 {
-}
-
-void RegHandler::init()
-{
-    LOG_DEBUG("Create /%d", getId());
-
-    mConnection = mServerInstance = mSecurityInstance = NULL;
-    mState = STATE_INIT;
-}
-
-void RegHandler::release()
-{
-    LOG_DEBUG("Delete /%d", getId());
-
-    if (mConnection) {
-        Status status = mClient.getTransport().deleteConnection(mConnection);
-
-        if (status != STS_OK) {
-            LOG_ERROR("Can't delete connection: %d", status);
-        }
-    }
-
-    mTimer.stop();
-    mState = STATE_INIT;
 }
 
 }  // namespace openlwm2m

@@ -12,57 +12,37 @@ class Object;
 
 class ResourceInstance : public ItemBase {
 public:
-    virtual const char* getString() const
+    const char* getString() const
     {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return NULL;
-    };
-    virtual Status setString(const char* value)
-    {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return STS_ERR_INVALID_VALUE;
+        ASSERT_MESSAGE(mDesc.mParams.type == ResourceDesc::TYPE_STRING, "Method not supported");
+        return mValueString;
     };
 
-    virtual int64_t getInt() const
+    Status setString(const char* value);
+
+    int64_t getInt() const
     {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return 0;
-    };
-    virtual Status setInt(int64_t value)
-    {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return STS_ERR_INVALID_VALUE;
+        ASSERT_MESSAGE(mDesc.mParams.type == ResourceDesc::TYPE_INT, "Method not supported");
+        return mValueInt;
     };
 
-    virtual uint64_t getUint() const
+    Status setInt(int64_t value);
+
+    uint64_t getUint() const
     {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return 0;
-    };
-    virtual Status setUint(uint64_t value)
-    {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return STS_ERR_INVALID_VALUE;
+        ASSERT_MESSAGE(mDesc.mParams.type == ResourceDesc::TYPE_UINT, "Method not supported");
+        return mValueUint;
     };
 
-    virtual uint8_t getBool() const
+    Status setUint(uint64_t value);
+
+    uint8_t getBool() const
     {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return 0;
-    };
-    virtual Status setBool(uint8_t value)
-    {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return STS_ERR_INVALID_VALUE;
+        ASSERT_MESSAGE(mDesc.mParams.type == ResourceDesc::TYPE_BOOL, "Method not supported");
+        return mValueBool;
     };
 
-protected:
-    ResourceDesc& mDesc;
-
-    ResourceInstance(ItemBase* parent, uint16_t id, ResourceDesc& desc);
-    virtual ~ResourceInstance();
-
-    void valueChanged();
+    Status setBool(uint8_t value);
 
 private:
     friend class Resource;
@@ -72,58 +52,23 @@ private:
     typedef StorageItem<ResourceInstance, ResourceDesc&> Storage;
     typedef Node<ResourceInstance> StorageNode;
 
-    void init();
-    void release();
+    ResourceDesc& mDesc;
 
-    static ResourceInstance* newInstance(ItemBase* parent, uint16_t id, ResourceDesc& desc);
-};
+    union {
+        char* mValueString;
+        int64_t mValueInt;
+        uint64_t mValueUint;
+        double mValueFloat;
+        uint8_t mValueBool;
+    };
 
-class ResourceInstanceString : public ResourceInstance {
-private:
-    friend class ResourceInstance;
-
-    char* mValue;
-
-    ResourceInstanceString(ItemBase* parent, uint16_t id, ResourceDesc& desc);
-    virtual ~ResourceInstanceString();
+    ResourceInstance(ItemBase* parent, uint16_t id, ResourceDesc& desc);
+    ~ResourceInstance();
 
     void init();
     void release();
 
-    const char* getString() const { return mValue; }
-    Status setString(const char* value);
-};
-
-class ResourceInstanceInt : public ResourceInstance {
-private:
-    friend class ResourceInstance;
-
-    int64_t mValue;
-
-    ResourceInstanceInt(ItemBase* parent, uint16_t id, ResourceDesc& desc);
-    virtual ~ResourceInstanceInt();
-
-    void init();
-    void release();
-
-    int64_t getInt() const { return mValue; }
-    Status setInt(int64_t value);
-};
-
-class ResourceInstanceBool : public ResourceInstance {
-private:
-    friend class ResourceInstance;
-
-    uint8_t mValue;
-
-    ResourceInstanceBool(ItemBase* parent, uint16_t id, ResourceDesc& desc);
-    virtual ~ResourceInstanceBool();
-
-    void init();
-    void release();
-
-    uint8_t getBool() const { return mValue ? 1 : 0; }
-    Status setBool(uint8_t value);
+    void valueChanged();
 };
 
 }  // namespace openlwm2m

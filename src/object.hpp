@@ -71,7 +71,7 @@ private:
     ObjectInstance::StorageNode* mInstanceNode;
 
     Object(ItemBase* parent, uint16_t id, Params params);
-    virtual ~Object();
+    ~Object();
 
     void init();
     void release();

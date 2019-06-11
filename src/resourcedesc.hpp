@@ -81,7 +81,7 @@ private:
     Params mParams;
 
     ResourceDesc(ItemBase* parent, uint16_t id, Params params);
-    virtual ~ResourceDesc();
+    ~ResourceDesc();
 
     void init();
     void release();

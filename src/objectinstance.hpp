@@ -26,7 +26,7 @@ private:
     Resource::Storage mResourceStorage;
 
     ObjectInstance(ItemBase* parent, uint16_t id, ResourceDesc::Storage& resourceDescStorage);
-    virtual ~ObjectInstance();
+    ~ObjectInstance();
 
     void init();
     void release();

@@ -30,7 +30,10 @@ private:
     Timer mTimer;
 
     RegHandler(ItemBase* parent, uint16_t id, Client& client);
-    virtual ~RegHandler();
+    ~RegHandler();
+
+    void init();
+    void release();
 
     Status bind(ObjectInstance* serverInstance);
     Status startRegistration();
@@ -40,9 +43,6 @@ private:
 
     static void registrationCallback(void* context, Status status);
     void onRegistrationCallback(Status status);
-
-    void init();
-    void release();
 };
 
 }  // namespace openlwm2m

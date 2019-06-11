@@ -13,7 +13,7 @@ public:
     typedef Status (*TimerCallback)(void* context);
 
     Timer();
-    virtual ~Timer();
+    ~Timer();
 
     void start(uint64_t period, TimerCallback callback, void* context, bool oneShot = false);
     void stop();

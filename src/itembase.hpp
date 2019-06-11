@@ -15,9 +15,6 @@ public:
 protected:
     ItemBase(ItemBase* parent, uint16_t id) : mParent(parent), mId(id) {}
 
-    virtual void init() = 0;
-    virtual void release() = 0;
-
 private:
     template <class, class>
     friend class StorageItem;
