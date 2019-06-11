@@ -14,7 +14,10 @@
 
 // LwM2M Object: LwM2M Server
 #define RES_SHORT_SERVER_ID 0
+#define RES_LIFETIME 1
+#define RES_BINDING 7
 #define RES_REGISTRATION_PRIORITY_ORDER 13
+#define RES_INITIAL_REGISTRATION_DELAY 14
 
 namespace openlwm2m {
 

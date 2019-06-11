@@ -60,7 +60,53 @@ Status RegHandler::startRegistration()
 {
     LOG_DEBUG("Start /%d", getId());
 
+    ResourceInstance* initRegDelay = mServerInstance->getResourceInstance(RES_INITIAL_REGISTRATION_DELAY);
+
+    uint64_t initDelayMs = 0;
+
+    if (initRegDelay) {
+        initDelayMs = initRegDelay->getUint();
+    }
+
+    mTimer.start(initDelayMs, &RegHandler::timerCallback, this, true);
+
+    mState = STATE_INIT_DELAY;
+
     return STS_OK;
+}
+
+Status RegHandler::timerCallback(void* context)
+{
+    return static_cast<RegHandler*>(context)->onTimerCallback();
+}
+
+Status RegHandler::onTimerCallback()
+{
+    LOG_DEBUG("Timer /%d, state: %d", getId(), mState);
+
+    switch (mState) {
+        case STATE_INIT_DELAY:
+            mState = STATE_REGISTRATION;
+            mClient.mTransport.registrationRequest(
+                mClient.mName, mServerInstance->getResourceInstance(RES_LIFETIME)->getInt(), LWM2M_VERSION,
+                mServerInstance->getResourceInstance(RES_BINDING)->getString(), mClient.mQueueMode, NULL, NULL,
+                &RegHandler::registrationCallback, this);
+            break;
+
+        default:
+            break;
+    }
+
+    return STS_OK;
+}
+
+void RegHandler::registrationCallback(void* context, Status status)
+{
+    static_cast<RegHandler*>(context)->onRegistrationCallback(status);
+}
+
+void RegHandler::onRegistrationCallback(Status status)
+{
 }
 
 void RegHandler::init()
@@ -82,6 +128,9 @@ void RegHandler::release()
             LOG_ERROR("Can't delete connection: %d", status);
         }
     }
+
+    mTimer.stop();
+    mState = STATE_INIT;
 }
 
 }  // namespace openlwm2m

@@ -35,7 +35,7 @@ int main()
     registerSignals();
 
     CoapTransport transport;
-    Client client(transport);
+    Client client("Test client", false, transport);
 
     Status status = STS_OK;
 

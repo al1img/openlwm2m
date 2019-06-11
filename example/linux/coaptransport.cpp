@@ -53,7 +53,7 @@ void CoapTransport::bootstrapRequest(BootstrapRequestHandler handler, void* cont
 }
 
 // Registration
-void CoapTransport::registrationRequest(const char* clientName, uint32_t lifetime, const char* version,
+void CoapTransport::registrationRequest(const char* clientName, uint64_t lifetime, const char* version,
                                         const char* bindingMode, bool queueMode, const char* smsNumber,
                                         const char* objects, RegistrationRequestHandler handler, void* context)
 {

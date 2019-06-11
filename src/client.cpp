@@ -11,8 +11,10 @@ namespace openlwm2m {
  * Client
  ******************************************************************************/
 
-Client::Client(TransportItf& transport)
-    : mTransport(transport),
+Client::Client(const char* name, bool queueMode, TransportItf& transport)
+    : mName(name),
+      mQueueMode(queueMode),
+      mTransport(transport),
       mObjectStorage(NULL),
       mRegHandlerStorage(NULL, *this, CONFIG_NUM_SERVERS),
       mState(STATE_INIT)
@@ -67,14 +69,15 @@ Client::Client(TransportItf& transport)
                                        ResourceDesc::MANDATORY, 1, 65535);
     ASSERT(status == STS_OK);
     // Lifetime
-    status = object->createResourceInt(1, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY);
+    status = object->createResourceInt(RES_LIFETIME, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0,
+                                       ResourceDesc::MANDATORY);
     ASSERT(status == STS_OK);
     // Notification Storing When Disabled or Offline
     status =
         object->createResourceBool(6, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY);
     ASSERT(status == STS_OK);
     // Binding
-    status = object->createResourceString(7, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0,
+    status = object->createResourceString(RES_BINDING, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0,
                                           ResourceDesc::MANDATORY, CONFIG_BINDING_STR_MAX_LEN);
     ASSERT(status == STS_OK);
     // Registration Update Trigger
@@ -82,6 +85,10 @@ Client::Client(TransportItf& transport)
     ASSERT(status == STS_OK);
     // Registration Priority Oreder
     status = object->createResourceUint(RES_REGISTRATION_PRIORITY_ORDER, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
+                                        ResourceDesc::OPTIONAL);
+    ASSERT(status == STS_OK);
+    // Initial Registration Delay Timer
+    status = object->createResourceUint(RES_INITIAL_REGISTRATION_DELAY, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
                                         ResourceDesc::OPTIONAL);
     ASSERT(status == STS_OK);
 
@@ -128,10 +135,10 @@ Status Client::poll(uint64_t currentTimeMs, uint64_t* pollInMs)
     }
 
     if (pollInMs) {
-        LOG_DEBUG("Poll, current time: %lu", currentTimeMs);
+        LOG_DEBUG("Poll, current time: %lu, poll in: %lu", currentTimeMs, *pollInMs);
     }
     else {
-        LOG_DEBUG("Poll, current time: %lu, poll in: %lu", currentTimeMs, *pollInMs);
+        LOG_DEBUG("Poll, current time: %lu", currentTimeMs);
     }
 
     return STS_OK;

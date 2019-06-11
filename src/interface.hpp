@@ -41,11 +41,11 @@ public:
     virtual void bootstrapRequest(BootstrapRequestHandler handler, void* context) = 0;
 
     // Registration
-    typedef void (*RegistrationRequestHandler)(void* context);
+    typedef void (*RegistrationRequestHandler)(void* context, Status status);
     typedef void (*RegistrationUpdateHandler)(void* context);
     typedef void (*RegistrationDeregisterHandler)(void* context);
 
-    virtual void registrationRequest(const char* clientName, uint32_t lifetime, const char* version,
+    virtual void registrationRequest(const char* clientName, uint64_t lifetime, const char* version,
                                      const char* bindingMode, bool queueMode, const char* smsNumber,
                                      const char* objects, RegistrationRequestHandler handler, void* context) = 0;
     virtual void registrationUpdate(const uint32_t* lifetime, const char* bindingMode, const char* smsNumber,

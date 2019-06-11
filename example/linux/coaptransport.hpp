@@ -17,7 +17,7 @@ public:
     void bootstrapRequest(BootstrapRequestHandler handler, void* context);
 
     // Registration
-    void registrationRequest(const char* clientName, uint32_t lifetime, const char* version, const char* bindingMode,
+    void registrationRequest(const char* clientName, uint64_t lifetime, const char* version, const char* bindingMode,
                              bool queueMode, const char* smsNumber, const char* objects,
                              RegistrationRequestHandler handler, void* context);
     void registrationUpdate(const uint32_t* lifetime, const char* bindingMode, const char* smsNumber,

@@ -12,6 +12,8 @@
 #include "reghandler.hpp"
 #include "status.hpp"
 
+#define LWM2M_VERSION "1.1"
+
 namespace openlwm2m {
 
 /**
@@ -22,7 +24,7 @@ public:
     /**
      * Constructor.
      */
-    Client(TransportItf& transport);
+    Client(const char* name, bool queueMode, TransportItf& transport);
     ~Client();
 
     Status poll(uint64_t currentTimeMs, uint64_t* pollInMs);
@@ -96,6 +98,8 @@ private:
 
     enum State { STATE_INIT, STATE_INITIALIZED, STATE_BOOTSTRAP, STATE_REGISTER, STATE_READY };
 
+    const char* mName;
+    bool mQueueMode;
     TransportItf& mTransport;
 
     Object::Storage mObjectStorage;
