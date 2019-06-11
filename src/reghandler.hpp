@@ -43,6 +43,10 @@ private:
 
     static void registrationCallback(void* context, Status status);
     void onRegistrationCallback(Status status);
+
+    Status getObjectsString(char* str, int maxSize);
+
+    void registrationStatus(Status status);
 };
 
 }  // namespace openlwm2m

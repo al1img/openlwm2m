@@ -98,7 +98,6 @@ ObjectInstance* Object::createInstance(uint16_t id, Status* status)
         return NULL;
     }
 
-    // Create instance
     return mInstanceStorage->newItem(id, mResourceDescStorage, status);
 }
 

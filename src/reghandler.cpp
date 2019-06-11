@@ -1,4 +1,7 @@
 #include "reghandler.hpp"
+
+#include <cstdio>
+
 #include "client.hpp"
 #include "log.hpp"
 
@@ -82,8 +85,6 @@ Status RegHandler::bind(ObjectInstance* serverInstance)
 
 Status RegHandler::startRegistration()
 {
-    LOG_DEBUG("Start /%d", getId());
-
     ResourceInstance* initRegDelay = mServerInstance->getResourceInstance(RES_INITIAL_REGISTRATION_DELAY);
 
     uint64_t initDelayMs = 0;
@@ -91,6 +92,8 @@ Status RegHandler::startRegistration()
     if (initRegDelay) {
         initDelayMs = initRegDelay->getUint();
     }
+
+    LOG_DEBUG("Start /%d, delay: %lu", getId(), initDelayMs);
 
     mTimer.start(initDelayMs, &RegHandler::timerCallback, this, true);
 
@@ -106,11 +109,22 @@ Status RegHandler::timerCallback(void* context)
 
 Status RegHandler::onTimerCallback()
 {
-    LOG_DEBUG("Timer /%d, state: %d", getId(), mState);
+    Status status = STS_OK;
 
     switch (mState) {
         case STATE_INIT_DELAY:
             mState = STATE_REGISTRATION;
+            char objectsStr[CONFIG_DEFAULT_STRING_LEN];
+
+            status = getObjectsString(objectsStr, CONFIG_DEFAULT_STRING_LEN);
+
+            if (status != STS_OK) {
+                registrationStatus(status);
+                return status;
+            }
+
+            LOG_DEBUG("Send reg request /%d, objects: %s", getId(), objectsStr);
+
             mClient.mTransport.registrationRequest(
                 mClient.mName, mServerInstance->getResourceInstance(RES_LIFETIME)->getInt(), LWM2M_VERSION,
                 mServerInstance->getResourceInstance(RES_BINDING)->getString(), mClient.mQueueMode, NULL, NULL,
@@ -131,6 +145,61 @@ void RegHandler::registrationCallback(void* context, Status status)
 
 void RegHandler::onRegistrationCallback(Status status)
 {
+}
+
+Status RegHandler::getObjectsString(char* str, int maxSize)
+{
+    int size = 0;
+
+    Object* object = mClient.getFirstObject(ITF_REGISTER);
+
+    while (object) {
+        ObjectInstance* instance = object->getFirstInstance();
+
+        int ret = 0;
+
+        for (;;) {
+            if (!instance) {
+                ret = snprintf(&str[size], maxSize - size, "<%d>,", object->getId());
+            }
+            else {
+                ret = snprintf(&str[size], maxSize - size, "<%d/%d>,", object->getId(), instance->getId());
+                instance = object->getNextInstance();
+            }
+
+            if (ret < 0) {
+                return STS_ERR;
+            }
+
+            if (ret >= (maxSize - size)) {
+                return STS_ERR_NO_MEM;
+            }
+
+            size += ret;
+
+            if (!instance) {
+                break;
+            }
+        }
+
+        object = mClient.getNextObject(ITF_REGISTER);
+    }
+
+    if (size > 0 && str[size - 1] == ',') {
+        str[size - 1] = 0;
+    }
+
+    return STS_OK;
+}
+
+void RegHandler::registrationStatus(Status status)
+{
+    if (status == STS_OK) {
+        LOG_INFO("Registration success /%d", getId());
+    }
+    else {
+        LOG_ERROR("Registration failed /%d, status: %d", getId(), status);
+    }
 }
 
 }  // namespace openlwm2m

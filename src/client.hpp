@@ -59,6 +59,9 @@ public:
      */
     Object* getObject(Interface interface, uint16_t id);
 
+    Object* getFirstObject(Interface interface);
+    Object* getNextObject(Interface interface);
+
     ResourceInstance* getResourceInstance(Interface interface, uint16_t objId, uint16_t objInstanceId, uint16_t resId,
                                           uint16_t resInstanceId = 0);
 
@@ -103,6 +106,7 @@ private:
     TransportItf& mTransport;
 
     Object::Storage mObjectStorage;
+    Object::StorageNode* mObjectNode;
     RegHandler::Storage mRegHandlerStorage;
 
     State mState;

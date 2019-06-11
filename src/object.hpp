@@ -63,6 +63,7 @@ private:
     friend class StorageArray<Object, Params>;
 
     typedef StorageArray<Object, Params> Storage;
+    typedef Node<Object> StorageNode;
 
     Params mParams;
 

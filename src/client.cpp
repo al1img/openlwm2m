@@ -16,6 +16,7 @@ Client::Client(const char* name, bool queueMode, TransportItf& transport)
       mQueueMode(queueMode),
       mTransport(transport),
       mObjectStorage(NULL),
+      mObjectNode(NULL),
       mRegHandlerStorage(NULL, *this, CONFIG_NUM_SERVERS),
       mState(STATE_INIT)
 {
@@ -166,11 +167,51 @@ Object* Client::getObject(Interface interface, uint16_t id)
     Object* object = mObjectStorage.getItemById(id);
 
     if (interface && object && !(object->mParams.interfaces & interface)) {
-        LOG_WARNING("Object /%d not accesible by interface %d", id, interface);
+        LOG_DEBUG("Object /%d not accesible by interface %d", id, interface);
         return NULL;
     }
 
     return object;
+}
+
+Object* Client::getFirstObject(Interface interface)
+{
+    mObjectNode = mObjectStorage.begin();
+
+    while (mObjectNode) {
+        if (mObjectNode) {
+            if (interface && mObjectNode->get() && !(mObjectNode->get()->mParams.interfaces & interface)) {
+                LOG_DEBUG("Object /%d not accesible by interface %d", mObjectNode->get()->getId(), interface);
+            }
+            else {
+                return mObjectNode->get();
+            }
+        }
+
+        mObjectNode = mObjectNode->next();
+    }
+
+    return NULL;
+}
+
+Object* Client::getNextObject(Interface interface)
+{
+    if (mObjectNode) {
+        mObjectNode = mObjectNode->next();
+
+        if (mObjectNode) {
+            if (interface && mObjectNode->get() && !(mObjectNode->get()->mParams.interfaces & interface)) {
+                LOG_DEBUG("Object /%d not accesible by interface %d", mObjectNode->get()->getId(), interface);
+            }
+            else {
+                return mObjectNode->get();
+            }
+
+            mObjectNode = mObjectNode->next();
+        }
+    }
+
+    return NULL;
 }
 
 ResourceInstance* Client::getResourceInstance(Interface interface, uint16_t objId, uint16_t objInstanceId,
