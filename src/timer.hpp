@@ -10,14 +10,25 @@ class Timer {
 public:
     static Status poll(uint64_t currentTimeMs, uint64_t* poolInMs);
 
+    typedef Status (*TimerCallback)(void* context);
+
     Timer();
     virtual ~Timer();
 
-    void start(uint64_t period, bool oneShot = false, bool start = false);
+    void start(uint64_t period, TimerCallback callback, void* context, bool oneShot = false);
     void stop();
 
 private:
     static List<Timer> sTimerList;
+
+    uint64_t mPeriod;
+    bool mStarted;
+    bool mOneShot;
+    TimerCallback mCallback;
+    void* mContext;
+    uint64_t mFireAt;
+
+    Status processTimer(uint64_t currentTimeMs, uint64_t* poolInMs);
 };
 
 }  // namespace openlwm2m
