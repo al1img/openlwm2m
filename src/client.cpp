@@ -118,7 +118,7 @@ Client::~Client()
 Status Client::poll(uint64_t currentTimeMs, uint64_t* pollInMs)
 {
     if (pollInMs) {
-        *pollInMs = UINT_MAX;
+        *pollInMs = ULONG_MAX;
     }
 
     Status status = STS_OK;
@@ -342,7 +342,7 @@ Status Client::createRegHandlers()
 Status Client::startNextPriorityReg()
 {
     RegHandler* minPriorityHandler = NULL;
-    uint64_t minPriority = UINT_MAX;
+    uint64_t minPriority = ULONG_MAX;
 
     for (RegHandler::StorageNode* node = mRegHandlerStorage.begin(); node; node = node->next()) {
         // Skip already started handlers
