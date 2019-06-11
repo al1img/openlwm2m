@@ -11,7 +11,7 @@ namespace openlwm2m {
 
 ResourceInstance* Resource::createInstance(uint16_t id, Status* status)
 {
-    return mInstanceStorage.newItem(id, mDesc, status);
+    return mInstanceStorage.newItem(this, id, mDesc, status);
 }
 
 Status Resource::deleteInstance(ResourceInstance* instance)
@@ -57,7 +57,7 @@ ResourceInstance* Resource::getNextInstance()
  ******************************************************************************/
 
 Resource::Resource(ItemBase* parent, uint16_t id, ResourceDesc& desc)
-    : ItemBase(parent, id), mDesc(desc), mInstanceStorage(this, mDesc, mDesc.mParams.maxInstances)
+    : ItemBase(parent, id), mDesc(desc), mInstanceStorage(mDesc, mDesc.mParams.maxInstances)
 {
 }
 

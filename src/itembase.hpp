@@ -26,6 +26,7 @@ private:
     uint16_t mId;
 
     void setId(uint16_t id) { mId = id; }
+    void setParent(ItemBase* parent) { mParent = parent; }
 };
 
 }  // namespace openlwm2m

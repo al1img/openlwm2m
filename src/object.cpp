@@ -98,7 +98,7 @@ ObjectInstance* Object::createInstance(uint16_t id, Status* status)
         return NULL;
     }
 
-    return mInstanceStorage->newItem(id, mResourceDescStorage, status);
+    return mInstanceStorage->newItem(this, id, mResourceDescStorage, status);
 }
 
 ObjectInstance* Object::getFirstInstance()
@@ -143,7 +143,7 @@ ResourceInstance* Object::getResourceInstance(uint16_t objInstanceId, uint16_t r
  ******************************************************************************/
 
 Object::Object(ItemBase* parent, uint16_t id, Params params)
-    : ItemBase(parent, id), mParams(params), mResourceDescStorage(this), mInstanceStorage(NULL), mInstanceNode(NULL)
+    : ItemBase(parent, id), mParams(params), mInstanceStorage(NULL), mInstanceNode(NULL)
 {
     LOG_DEBUG("Create /%d", getId());
 }
@@ -160,7 +160,7 @@ void Object::init()
     //    LOG_DEBUG("Init object /%d", getId());
 
     if (!mInstanceStorage) {
-        mInstanceStorage = new ObjectInstance::Storage(this, mResourceDescStorage, mParams.maxInstances);
+        mInstanceStorage = new ObjectInstance::Storage(mResourceDescStorage, mParams.maxInstances);
 
         // Appendix D.1
         // If the Object field “Mandatory” is “Mandatory” and the Object field “Instances” is “Single”then, the number
@@ -203,7 +203,7 @@ Status Object::createResource(uint16_t id, ResourceDesc::Params& params)
 
     Status status = STS_OK;
 
-    mResourceDescStorage.createItem(id, params, &status);
+    mResourceDescStorage.newItem(this, id, params, &status);
 
     return status;
 }

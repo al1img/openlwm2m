@@ -31,12 +31,12 @@ ResourceInstance* ObjectInstance::getResourceInstance(uint16_t resId, uint16_t r
  ******************************************************************************/
 
 ObjectInstance::ObjectInstance(ItemBase* parent, uint16_t id, ResourceDesc::Storage& resourceDescStorage)
-    : ItemBase(parent, id), mResourceStorage(this)
+    : ItemBase(parent, id), mResourceStorage()
 {
     Node<ResourceDesc>* node = resourceDescStorage.begin();
 
     while (node) {
-        Resource* resource = mResourceStorage.createItem(node->get()->getId(), *node->get());
+        Resource* resource = mResourceStorage.newItem(this, node->get()->getId(), *node->get());
         ASSERT(resource);
         node = node->next();
     }

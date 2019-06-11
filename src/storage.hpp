@@ -204,13 +204,13 @@ protected:
 template <class T, class P>
 class StorageItem : public StorageBase<T> {
 public:
-    StorageItem(ItemBase* parent, P param, size_t maxItems) : mParent(parent), mMaxItems(maxItems)
+    StorageItem(P param, size_t maxItems) : mMaxItems(maxItems)
     {
 #if CONFIG_RESERVE_MEMORY
         ASSERT_MESSAGE(mMaxItems, "Unlimited instances is not supported with memory reservation");
 
         for (size_t i = 0; i < mMaxItems; i++) {
-            T* item = new T(mParent, INVALID_ID, param);
+            T* item = new T(NULL, INVALID_ID, param);
 
             Node<T>* newNode = new Node<T>(item);
 
@@ -235,7 +235,7 @@ public:
 #endif
     }
 
-    T* newItem(uint16_t id, P param, Status* status = NULL)
+    T* newItem(ItemBase* parent, uint16_t id, P param, Status* status = NULL)
     {
         if (mMaxItems != 0 && this->size() == mMaxItems) {
             if (status) *status = STS_ERR_NO_MEM;
@@ -260,9 +260,10 @@ public:
 
         mFreeList.remove(newNode);
 
+        newNode->get()->setParent(parent);
         newNode->get()->setId(id);
 #else
-        T* newItem = new T(mParent, id, param);
+        T* newItem = new T(parent, id, param);
         Node<T>* newNode = new Node<T>(newItem);
 #endif
 
@@ -327,7 +328,6 @@ public:
     bool hasFreeItem() const { return mMaxItems == 0 || this->mSize < mMaxItems; }
 
 private:
-    ItemBase* mParent;
     size_t mMaxItems;
 #if CONFIG_RESERVE_MEMORY
     List<T> mFreeList;
@@ -337,9 +337,9 @@ private:
 template <class T, class P>
 class StorageArray : public StorageBase<T> {
 public:
-    StorageArray(ItemBase* parent) : mParent(parent) {}
+    StorageArray() {}
 
-    T* createItem(uint16_t id, P param, Status* status = NULL)
+    T* newItem(ItemBase* parent, uint16_t id, P param, Status* status = NULL)
     {
         Node<T>* node;
         Status retStatus;
@@ -349,7 +349,7 @@ public:
             return NULL;
         }
 
-        Node<T>* newNode = new Node<T>(new T(mParent, id, param));
+        Node<T>* newNode = new Node<T>(new T(parent, id, param));
 
         if (node) {
             this->insertAfter(node, newNode);
@@ -380,9 +380,6 @@ public:
             node = node->next();
         }
     }
-
-private:
-    ItemBase* mParent;
 };
 
 }  // namespace openlwm2m
