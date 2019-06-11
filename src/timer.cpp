@@ -14,8 +14,6 @@ namespace openlwm2m {
 
 Status Timer::poll(uint64_t currentTimeMs, uint64_t* poolInMs)
 {
-    LOG_DEBUG("Poll at: %lu", currentTimeMs);
-
     uint64_t timerPoolInMs = ULONG_MAX;
     Status retStatus = STS_OK;
 

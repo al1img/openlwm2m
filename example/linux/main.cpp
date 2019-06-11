@@ -1,4 +1,8 @@
 #include "client.hpp"
+
+#include <signal.h>
+#include <unistd.h>
+
 #include "coaptransport.hpp"
 #include "log.hpp"
 #include "memory.hpp"
@@ -7,9 +11,28 @@
 
 using namespace openlwm2m;
 
+bool sTerminate = false;
+
+void sigIntHandler(int sig)
+{
+    sTerminate = true;
+}
+
+void registerSignals()
+{
+    struct sigaction act = {};
+
+    act.sa_handler = sigIntHandler;
+    act.sa_flags = SA_RESETHAND;
+
+    sigaction(SIGINT, &act, NULL);
+}
+
 int main()
 {
     LOG_INFO("Start lwm2m client");
+
+    registerSignals();
 
     CoapTransport transport;
     Client client(transport);
@@ -38,6 +61,23 @@ int main()
 
     status = client.registration();
     ASSERT_MESSAGE(status == STS_OK, "Registration failed");
+
+    uint64_t currentTimeMs = 0;
+    uint64_t pollInMs = 0;
+
+    while (!sTerminate) {
+        if (pollInMs == 0) {
+            status = client.poll(currentTimeMs, &pollInMs);
+            ASSERT_MESSAGE(status == STS_OK, "Client failed");
+        }
+
+        usleep(1000);
+
+        currentTimeMs++;
+        if (pollInMs) {
+            pollInMs--;
+        }
+    }
 
     LOG_INFO("Stop lwm2m client");
 

@@ -79,35 +79,58 @@ public:
         Node<T>* prevNode = NULL;
         Node<T>* curNode = this->mBegin;
 
-        while (node) {
+        while (curNode) {
             if (curNode == node) {
-                if (curNode == mEnd) {
-                    mEnd = prevNode;
-                }
-
-                if (prevNode) {
-                    prevNode->mNext = curNode->mNext;
-                }
-                else {
-                    mBegin = curNode->mNext;
-                }
-
-                curNode->mNext = NULL;
-
-                mSize--;
-
+                removeNode(prevNode, curNode);
                 break;
             }
 
-            prevNode = node;
-            node = node->mNext;
+            prevNode = curNode;
+            curNode = curNode->mNext;
         }
+    }
+
+    Node<T>* remove(T* data)
+    {
+        Node<T>* prevNode = NULL;
+        Node<T>* curNode = this->mBegin;
+
+        while (curNode) {
+            if (curNode->mData == data) {
+                removeNode(prevNode, curNode);
+
+                return curNode;
+            }
+
+            prevNode = curNode;
+            curNode = curNode->mNext;
+        }
+
+        return NULL;
     }
 
 private:
     size_t mSize;
     Node<T>* mBegin;
     Node<T>* mEnd;
+
+    void removeNode(Node<T>* prevNode, Node<T>* node)
+    {
+        if (!prevNode) {
+            mBegin = node->mNext;
+        }
+        else {
+            prevNode->mNext = node->mNext;
+        }
+
+        if (node == mEnd) {
+            mEnd = prevNode;
+        }
+
+        node->mNext = NULL;
+
+        mSize--;
+    }
 };
 
 template <class T>
