@@ -33,8 +33,6 @@ Status Timer::poll(uint64_t currentTimeMs, uint64_t* poolInMs)
         *poolInMs = timerPoolInMs;
     }
 
-    LOG_DEBUG("Poll in: %lu", timerPoolInMs);
-
     return retStatus;
 }
 
@@ -59,7 +57,7 @@ void Timer::start(uint64_t period, TimerCallback callback, void* context, bool o
     mContext = context;
     mOneShot = oneShot;
     mStarted = true;
-    mFireAt = ULONG_MAX;
+    mFireAt = 0;
 }
 
 void Timer::stop()
@@ -89,14 +87,20 @@ Status Timer::processTimer(uint64_t currentTimeMs, uint64_t* poolInMs)
             if (mOneShot) {
                 stop();
             }
+            else {
+                mFireAt = currentTimeMs + mPeriod;
+            }
         }
-    }
 
-    if (mStarted) {
-        mFireAt = currentTimeMs + mPeriod;
+        if (mFireAt == 0) {
+            mFireAt = currentTimeMs + mPeriod;
+        }
 
-        if (poolInMs && mPeriod < *poolInMs) {
-            *poolInMs = mPeriod;
+        if (mStarted) {
+            uint64_t poolIn = mFireAt - currentTimeMs;
+            if (poolInMs && poolIn < *poolInMs) {
+                *poolInMs = poolIn;
+            }
         }
     }
 

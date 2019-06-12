@@ -135,13 +135,6 @@ Status Client::poll(uint64_t currentTimeMs, uint64_t* pollInMs)
         return status;
     }
 
-    if (pollInMs) {
-        LOG_DEBUG("Poll, current time: %lu, poll in: %lu", currentTimeMs, *pollInMs);
-    }
-    else {
-        LOG_DEBUG("Poll, current time: %lu", currentTimeMs);
-    }
-
     return STS_OK;
 }
 

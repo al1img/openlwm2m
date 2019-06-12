@@ -66,17 +66,25 @@ int main()
     uint64_t pollInMs = 0;
 
     while (!sTerminate) {
+        status = client.poll(currentTimeMs, &pollInMs);
+        ASSERT_MESSAGE(status == STS_OK, "Client failed");
+        LOG_DEBUG("Poll in: %lu", pollInMs);
+
+        if (pollInMs > 10000) {
+            pollInMs = 10000;
+        }
+
         if (pollInMs == 0) {
-            status = client.poll(currentTimeMs, &pollInMs);
-            ASSERT_MESSAGE(status == STS_OK, "Client failed");
+            pollInMs = 1;
         }
 
-        usleep(1000);
+        uint64_t timeSpent = transport.run(pollInMs);
 
-        currentTimeMs++;
-        if (pollInMs) {
-            pollInMs--;
-        }
+        LOG_DEBUG("Time spent: %lu", timeSpent);
+
+        currentTimeMs += timeSpent;
+
+        LOG_DEBUG("Current time: %lu", currentTimeMs);
     }
 
     LOG_INFO("Stop lwm2m client");

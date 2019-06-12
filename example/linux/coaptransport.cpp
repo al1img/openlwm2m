@@ -1,18 +1,29 @@
 #include <netdb.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <climits>
 
 #include "coaptransport.hpp"
+#include "log.hpp"
+
+#define LOG_MODULE "Coap"
 
 /*******************************************************************************
  * CoapTransport
  ******************************************************************************/
 
-CoapTransport::CoapTransport()
+CoapTransport::CoapTransport() : mReqStorage(Request::Param(), REQ_STORAGE_SIZE)
 {
     coap_startup();
 
     mContext = coap_new_context(NULL);
+
+    mContext->app = this;
+
+    coap_set_log_level(LOG_DEBUG);
+
+    coap_register_response_handler(mContext, &CoapTransport::responseHandler);
+    coap_register_nack_handler(mContext, &CoapTransport::nackHandler);
 }
 
 CoapTransport::~CoapTransport()
@@ -57,6 +68,20 @@ void CoapTransport::registrationRequest(void* session, const char* clientName, u
                                         const char* bindingMode, bool queueMode, const char* smsNumber,
                                         const char* objects, RequestHandler handler, void* context)
 {
+    Request::Param param = {handler, context};
+
+    Request* request = mReqStorage.newItem(NULL, INVALID_ID, param);
+    ASSERT(request);
+
+    coap_pdu_t* pdu = coap_pdu_init(COAP_MESSAGE_CON, COAP_REQUEST_GET, request->getId(),
+                                    coap_session_max_pdu_size(static_cast<coap_session_t*>(session)));
+    ASSERT(pdu);
+
+    coap_add_option(pdu, COAP_OPTION_URI_PATH, 5, reinterpret_cast<const uint8_t*>("hello"));
+
+    coap_tid_t tid = coap_send(static_cast<coap_session_t*>(session), pdu);
+
+    LOG_DEBUG("Send tid: %d", tid);
 }
 
 void CoapTransport::registrationUpdate(void* session, const uint32_t* lifetime, const char* bindingMode,
@@ -77,6 +102,15 @@ void CoapTransport::deviceSend(void* session, RequestHandler handler, void* cont
 // Reporting
 void CoapTransport::reportingNotify(void* session, RequestHandler handler, void* context)
 {
+}
+
+uint64_t CoapTransport::run(uint64_t timeout)
+{
+    if (timeout == ULONG_MAX) {
+        timeout = 0;
+    }
+
+    return coap_run_once(mContext, timeout);
 }
 
 /*******************************************************************************
@@ -143,4 +177,26 @@ openlwm2m::Status CoapTransport::resolveAddress(const char* uri, coap_address_t*
     }
 
     return openlwm2m::STS_ERR_NOT_EXIST;
+}
+
+void CoapTransport::responseHandler(coap_context_t* context, coap_session_t* session, coap_pdu_t* sent,
+                                    coap_pdu_t* received, const coap_tid_t id)
+{
+    static_cast<CoapTransport*>(context->app)->onResponse(session, sent, received, id);
+}
+
+void CoapTransport::onResponse(coap_session_t* session, coap_pdu_t* sent, coap_pdu_t* received, const coap_tid_t id)
+{
+    LOG_DEBUG("Response received");
+}
+
+void CoapTransport::nackHandler(coap_context_t* context, coap_session_t* session, coap_pdu_t* sent,
+                                coap_nack_reason_t reason, const coap_tid_t id)
+{
+    static_cast<CoapTransport*>(context->app)->onNack(session, sent, reason, id);
+}
+
+void CoapTransport::onNack(coap_session_t* session, coap_pdu_t* sent, coap_nack_reason_t reason, const coap_tid_t id)
+{
+    LOG_DEBUG("Nack received");
 }
