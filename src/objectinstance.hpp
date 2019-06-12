@@ -17,10 +17,11 @@ public:
 
 private:
     friend class Object;
-    friend class StorageBase<ObjectInstance>;
-    friend class StorageItem<ObjectInstance, ResourceDesc::Storage&>;
+    friend class StorageList<ObjectInstance>;
+    friend class Lwm2mStorage<ObjectInstance, ResourceDesc::Storage&>;
+    friend class Lwm2mDynamicStorage<ObjectInstance, ResourceDesc::Storage&>;
 
-    typedef StorageItem<ObjectInstance, ResourceDesc::Storage&> Storage;
+    typedef Lwm2mDynamicStorage<ObjectInstance, ResourceDesc::Storage&> Storage;
     typedef Node<ObjectInstance> StorageNode;
 
     Resource::Storage mResourceStorage;

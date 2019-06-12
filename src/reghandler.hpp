@@ -14,10 +14,11 @@ class Client;
 class RegHandler : public ItemBase {
 private:
     friend class Client;
-    friend class StorageBase<RegHandler>;
-    friend class StorageItem<RegHandler, Client&>;
+    friend class StorageList<RegHandler>;
+    friend class Lwm2mStorage<RegHandler, Client&>;
+    friend class Lwm2mDynamicStorage<RegHandler, Client&>;
 
-    typedef StorageItem<RegHandler, Client&> Storage;
+    typedef Lwm2mDynamicStorage<RegHandler, Client&> Storage;
     typedef Node<RegHandler> StorageNode;
 
     enum State { STATE_INIT, STATE_INIT_DELAY, STATE_REGISTRATION };

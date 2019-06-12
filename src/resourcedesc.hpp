@@ -71,12 +71,10 @@ private:
     friend class ObjectInstance;
     friend class Resource;
     friend class ResourceInstance;
-    friend class ResourceInstanceString;
-    friend class ResourceInstanceInt;
-    friend class StorageBase<ResourceDesc>;
-    friend class StorageArray<ResourceDesc, Params>;
+    friend class StorageList<ResourceDesc>;
+    friend class Lwm2mStorage<ResourceDesc, Params>;
 
-    typedef StorageArray<ResourceDesc, Params> Storage;
+    typedef Lwm2mStorage<ResourceDesc, Params> Storage;
 
     Params mParams;
 

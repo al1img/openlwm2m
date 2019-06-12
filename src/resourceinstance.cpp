@@ -138,22 +138,4 @@ void ResourceInstance::valueChanged()
     }
 }
 
-/*******************************************************************************
- * ResourceInstanceString
- ******************************************************************************/
-#if 0
-
-
-Status ResourceInstanceInt::setInt(int64_t value)
-{
-}
-
-/*******************************************************************************
- * ResourceInstanceInt
- ******************************************************************************/
-
-Status ResourceInstanceBool::setBool(uint8_t value)
-{
-}
-#endif
 }  // namespace openlwm2m

@@ -17,10 +17,7 @@ protected:
 
 private:
     template <class, class>
-    friend class StorageItem;
-
-    template <class, class>
-    friend class StorageArray;
+    friend class Lwm2mDynamicStorage;
 
     ItemBase* mParent;
     uint16_t mId;

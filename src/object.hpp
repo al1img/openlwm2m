@@ -59,10 +59,10 @@ private:
     };
 
     friend class Client;
-    friend class StorageBase<Object>;
-    friend class StorageArray<Object, Params>;
+    friend class StorageList<Object>;
+    friend class Lwm2mStorage<Object, Params>;
 
-    typedef StorageArray<Object, Params> Storage;
+    typedef Lwm2mStorage<Object, Params> Storage;
     typedef Node<Object> StorageNode;
 
     Params mParams;

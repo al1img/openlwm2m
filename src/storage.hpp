@@ -134,11 +134,24 @@ private:
 };
 
 template <class T>
-class StorageBase : public List<T> {
+class StorageList : public List<T> {
 public:
-    StorageBase() {}
+    StorageList(size_t maxItems = 0) : mMaxItems(maxItems) {}
 
-    ~StorageBase()
+    Status push(T* item)
+    {
+        if (mMaxItems > 0 && this->size() == mMaxItems) {
+            return STS_ERR_NO_MEM;
+        }
+
+        Node<T>* newNode = new Node<T>(item);
+
+        this->insertEnd(newNode);
+
+        return STS_OK;
+    }
+
+    ~StorageList()
     {
         Node<T>* node = this->begin();
 
@@ -150,6 +163,42 @@ public:
             delete tmp->get();
             delete tmp;
         }
+    }
+
+protected:
+    size_t mMaxItems;
+};
+
+template <class T, class P>
+class Lwm2mStorage : public StorageList<T> {
+public:
+    Lwm2mStorage(size_t maxItems = 0) : StorageList<T>(maxItems) {}
+
+    T* newItem(ItemBase* parent, uint16_t id, P param, Status* status = NULL)
+    {
+        if (this->mMaxItems > 0 && this->size() == this->mMaxItems) {
+            if (status) *status = STS_ERR_NO_MEM;
+            return NULL;
+        }
+
+        Node<T>* node;
+        Status retStatus;
+
+        if ((retStatus = this->findNodeAndId(&id, &node)) != STS_OK) {
+            if (status) *status = retStatus;
+            return NULL;
+        }
+
+        Node<T>* newNode = new Node<T>(new T(parent, id, param));
+
+        if (node) {
+            this->insertAfter(node, newNode);
+        }
+        else {
+            this->insertBegin(newNode);
+        }
+
+        return newNode->get();
     }
 
     T* getItemById(uint16_t id)
@@ -165,6 +214,28 @@ public:
 
         return NULL;
     }
+
+    void init()
+    {
+        Node<T>* node = this->begin();
+
+        while (node) {
+            node->get()->init();
+            node = node->next();
+        }
+    }
+
+    void release()
+    {
+        Node<T>* node = this->begin();
+
+        while (node) {
+            node->get()->release();
+            node = node->next();
+        }
+    }
+
+    bool hasFreeItem() const { return this->mMaxItems == 0 || this->mSize < this->mMaxItems; }
 
 protected:
     Status findNodeAndId(uint16_t* id, Node<T>** node)
@@ -202,14 +273,14 @@ protected:
 };
 
 template <class T, class P>
-class StorageItem : public StorageBase<T> {
+class Lwm2mDynamicStorage : public Lwm2mStorage<T, P> {
 public:
-    StorageItem(P param, size_t maxItems) : mMaxItems(maxItems)
+    Lwm2mDynamicStorage(P param, size_t maxItems) : Lwm2mStorage<T, P>(maxItems)
     {
 #if CONFIG_RESERVE_MEMORY
-        ASSERT_MESSAGE(mMaxItems, "Unlimited instances is not supported with memory reservation");
+        ASSERT_MESSAGE(this->mMaxItems, "Unlimited instances is not supported with memory reservation");
 
-        for (size_t i = 0; i < mMaxItems; i++) {
+        for (size_t i = 0; i < this->mMaxItems; i++) {
             T* item = new T(NULL, INVALID_ID, param);
 
             Node<T>* newNode = new Node<T>(item);
@@ -219,7 +290,7 @@ public:
 #endif
     }
 
-    ~StorageItem()
+    ~Lwm2mDynamicStorage()
     {
 #if CONFIG_RESERVE_MEMORY
         Node<T>* node = mFreeList.begin();
@@ -237,7 +308,7 @@ public:
 
     T* newItem(ItemBase* parent, uint16_t id, P param, Status* status = NULL)
     {
-        if (mMaxItems != 0 && this->size() == mMaxItems) {
+        if (this->mMaxItems != 0 && this->size() == this->mMaxItems) {
             if (status) *status = STS_ERR_NO_MEM;
             return NULL;
         }
@@ -325,61 +396,10 @@ public:
         }
     }
 
-    bool hasFreeItem() const { return mMaxItems == 0 || this->mSize < mMaxItems; }
-
 private:
-    size_t mMaxItems;
 #if CONFIG_RESERVE_MEMORY
     List<T> mFreeList;
 #endif
-};
-
-template <class T, class P>
-class StorageArray : public StorageBase<T> {
-public:
-    StorageArray() {}
-
-    T* newItem(ItemBase* parent, uint16_t id, P param, Status* status = NULL)
-    {
-        Node<T>* node;
-        Status retStatus;
-
-        if ((retStatus = this->findNodeAndId(&id, &node)) != STS_OK) {
-            if (status) *status = retStatus;
-            return NULL;
-        }
-
-        Node<T>* newNode = new Node<T>(new T(parent, id, param));
-
-        if (node) {
-            this->insertAfter(node, newNode);
-        }
-        else {
-            this->insertBegin(newNode);
-        }
-
-        return newNode->get();
-    }
-
-    void init()
-    {
-        Node<T>* node = this->begin();
-
-        while (node) {
-            node->get()->init();
-            node = node->next();
-        }
-    }
-
-    void release()
-    {
-        Node<T>* node = this->begin();
-
-        while (node) {
-            node->get()->release();
-            node = node->next();
-        }
-    }
 };
 
 }  // namespace openlwm2m

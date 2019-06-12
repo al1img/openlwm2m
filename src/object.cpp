@@ -157,8 +157,6 @@ Object::~Object()
 
 void Object::init()
 {
-    //    LOG_DEBUG("Init object /%d", getId());
-
     if (!mInstanceStorage) {
         mInstanceStorage = new ObjectInstance::Storage(mResourceDescStorage, mParams.maxInstances);
 

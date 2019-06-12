@@ -46,10 +46,11 @@ public:
 
 private:
     friend class Resource;
-    friend class StorageBase<ResourceInstance>;
-    friend class StorageItem<ResourceInstance, ResourceDesc&>;
+    friend class StorageList<ResourceInstance>;
+    friend class Lwm2mStorage<ResourceInstance, ResourceDesc&>;
+    friend class Lwm2mDynamicStorage<ResourceInstance, ResourceDesc&>;
 
-    typedef StorageItem<ResourceInstance, ResourceDesc&> Storage;
+    typedef Lwm2mDynamicStorage<ResourceInstance, ResourceDesc&> Storage;
     typedef Node<ResourceInstance> StorageNode;
 
     ResourceDesc& mDesc;

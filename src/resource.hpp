@@ -21,10 +21,10 @@ public:
 
 private:
     friend class ObjectInstance;
-    friend class StorageBase<Resource>;
-    friend class StorageArray<Resource, ResourceDesc&>;
+    friend class StorageList<Resource>;
+    friend class Lwm2mStorage<Resource, ResourceDesc&>;
 
-    typedef StorageArray<Resource, ResourceDesc&> Storage;
+    typedef Lwm2mStorage<Resource, ResourceDesc&> Storage;
 
     ResourceDesc& mDesc;
     ResourceInstance::Storage mInstanceStorage;
