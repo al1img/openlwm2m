@@ -126,7 +126,7 @@ Status RegHandler::onTimerCallback()
             LOG_DEBUG("Send reg request /%d, objects: %s", getId(), objectsStr);
 
             mClient.mTransport.registrationRequest(
-                mClient.mName, mServerInstance->getResourceInstance(RES_LIFETIME)->getInt(), LWM2M_VERSION,
+                mSession, mClient.mName, mServerInstance->getResourceInstance(RES_LIFETIME)->getInt(), LWM2M_VERSION,
                 mServerInstance->getResourceInstance(RES_BINDING)->getString(), mClient.mQueueMode, NULL, NULL,
                 &RegHandler::registrationCallback, this);
             break;
