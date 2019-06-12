@@ -104,11 +104,15 @@ Status ResourceInstance::setBool(uint8_t value)
 ResourceInstance::ResourceInstance(ItemBase* parent, uint16_t id, ResourceDesc& desc)
     : ItemBase(parent, id), mDesc(desc)
 {
-#if CONFIG_RESERVE_MEMORY
     if (mDesc.mParams.type == ResourceDesc::TYPE_STRING) {
+#if CONFIG_RESERVE_MEMORY
         mValueString = new char[(mDesc.mParams.maxUint ? mDesc.mParams.maxUint : CONFIG_DEFAULT_STRING_LEN) + 1];
-    }
+#else
+        mValueString = new char[1];
 #endif
+
+        mValueString[0] = '\0';
+    }
 }
 
 ResourceInstance::~ResourceInstance()
