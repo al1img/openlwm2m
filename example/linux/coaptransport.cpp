@@ -27,7 +27,7 @@ CoapTransport::~CoapTransport()
  * Public
  ******************************************************************************/
 
-void* CoapTransport::createConnection(const char* uri, openlwm2m::Status* status)
+void* CoapTransport::createSession(const char* uri, openlwm2m::Status* status)
 {
     coap_address_t dst;
 
@@ -40,9 +40,9 @@ void* CoapTransport::createConnection(const char* uri, openlwm2m::Status* status
     return coap_new_client_session(mContext, NULL, &dst, COAP_PROTO_UDP);
 }
 
-openlwm2m::Status CoapTransport::deleteConnection(void* connection)
+openlwm2m::Status CoapTransport::deleteSession(void* session)
 {
-    coap_session_release(static_cast<coap_session_t*>(connection));
+    coap_session_release(static_cast<coap_session_t*>(session));
 
     return openlwm2m::STS_OK;
 }

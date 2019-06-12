@@ -24,7 +24,7 @@ private:
     enum State { STATE_INIT, STATE_INIT_DELAY, STATE_REGISTRATION };
 
     Client& mClient;
-    void* mConnection;
+    void* mSession;
     ObjectInstance* mServerInstance;
     ObjectInstance* mSecurityInstance;
     State mState;

@@ -14,7 +14,7 @@ namespace openlwm2m {
  ******************************************************************************/
 
 RegHandler::RegHandler(ItemBase* parent, uint16_t id, Client& client)
-    : ItemBase(parent, id), mClient(client), mConnection(NULL)
+    : ItemBase(parent, id), mClient(client), mSession(NULL)
 {
 }
 
@@ -26,7 +26,7 @@ void RegHandler::init()
 {
     LOG_DEBUG("Create /%d", getId());
 
-    mConnection = mServerInstance = mSecurityInstance = NULL;
+    mSession = mServerInstance = mSecurityInstance = NULL;
     mState = STATE_INIT;
 }
 
@@ -34,11 +34,11 @@ void RegHandler::release()
 {
     LOG_DEBUG("Delete /%d", getId());
 
-    if (mConnection) {
-        Status status = mClient.getTransport().deleteConnection(mConnection);
+    if (mSession) {
+        Status status = mClient.getTransport().deleteSession(mSession);
 
         if (status != STS_OK) {
-            LOG_ERROR("Can't delete connection: %d", status);
+            LOG_ERROR("Can't delete session: %d", status);
         }
     }
 
@@ -78,7 +78,7 @@ Status RegHandler::bind(ObjectInstance* serverInstance)
 
     Status status = STS_OK;
 
-    mConnection = mClient.getTransport().createConnection(serverUri, &status);
+    mSession = mClient.getTransport().createSession(serverUri, &status);
 
     return status;
 }

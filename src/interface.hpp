@@ -32,8 +32,8 @@ enum Interface {
 
 class TransportItf {
 public:
-    virtual void* createConnection(const char* uri, Status* status = NULL) = 0;
-    virtual Status deleteConnection(void* connection) = 0;
+    virtual void* createSession(const char* uri, Status* status = NULL) = 0;
+    virtual Status deleteSession(void* session) = 0;
 
     // Bootstrap
     typedef void (*BootstrapRequestHandler)(void* context);

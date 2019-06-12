@@ -10,8 +10,8 @@ public:
     CoapTransport();
     ~CoapTransport();
 
-    void* createConnection(const char* uri, openlwm2m::Status* status = NULL);
-    openlwm2m::Status deleteConnection(void* connection);
+    void* createSession(const char* uri, openlwm2m::Status* status = NULL);
+    openlwm2m::Status deleteSession(void* session);
 
     // Bootstrap
     void bootstrapRequest(BootstrapRequestHandler handler, void* context);
