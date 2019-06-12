@@ -35,31 +35,28 @@ public:
     virtual void* createSession(const char* uri, Status* status = NULL) = 0;
     virtual Status deleteSession(void* session) = 0;
 
-    // Bootstrap
-    typedef void (*BootstrapRequestHandler)(void* context);
+    typedef void (*RequestHandler)(void* context, Status status);
 
-    virtual void bootstrapRequest(void* session, BootstrapRequestHandler handler, void* context) = 0;
+    // Bootstrap
+
+    virtual void bootstrapRequest(void* session, RequestHandler handler, void* context) = 0;
 
     // Registration
-    typedef void (*RegistrationRequestHandler)(void* context, Status status);
-    typedef void (*RegistrationUpdateHandler)(void* context);
-    typedef void (*RegistrationDeregisterHandler)(void* context);
 
     virtual void registrationRequest(void* session, const char* clientName, uint64_t lifetime, const char* version,
                                      const char* bindingMode, bool queueMode, const char* smsNumber,
-                                     const char* objects, RegistrationRequestHandler handler, void* context) = 0;
+                                     const char* objects, RequestHandler handler, void* context) = 0;
     virtual void registrationUpdate(void* session, const uint32_t* lifetime, const char* bindingMode,
-                                    const char* smsNumber, const char* objects, RegistrationUpdateHandler handler,
+                                    const char* smsNumber, const char* objects, RequestHandler handler,
                                     void* context) = 0;
-    virtual void registrationDeregister(void* session, RegistrationDeregisterHandler handler, void* context) = 0;
+    virtual void registrationDeregister(void* session, RequestHandler handler, void* context) = 0;
 
     // Device
-    typedef void (*DeviceSendHandler)(void* context);
 
-    virtual void deviceSend(void* session, DeviceSendHandler handler, void* context) = 0;
+    virtual void deviceSend(void* session, RequestHandler handler, void* context) = 0;
 
     // Reporting
-    virtual void reportingNotify(void* session) = 0;
+    virtual void reportingNotify(void* session, RequestHandler handler, void* context) = 0;
 };
 
 class ClientItf {
