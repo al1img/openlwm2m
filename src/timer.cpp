@@ -14,6 +14,8 @@ namespace openlwm2m {
 
 Status Timer::poll(uint64_t currentTimeMs, uint64_t* poolInMs)
 {
+    LOG_DEBUG("Poll, current time: %lu", currentTimeMs);
+
     uint64_t timerPoolInMs = ULONG_MAX;
     Status retStatus = STS_OK;
 
@@ -53,7 +55,7 @@ Timer::~Timer()
 
 void Timer::start(uint64_t period, TimerCallback callback, void* context, bool oneShot)
 {
-    LOG_DEBUG("Start %d , period: %lu, oneshot: %d", mId, period, oneShot);
+    LOG_DEBUG("Start %d, period: %lu, oneshot: %d", mId, period, oneShot);
 
     mPeriod = period;
     mCallback = callback;
@@ -103,6 +105,8 @@ Status Timer::processTimer(uint64_t currentTimeMs, uint64_t* poolInMs)
         }
 
         mFireAt = currentTimeMs + mPeriod;
+
+        LOG_DEBUG("Timer %d will fire at: %lu", mId, mFireAt);
     }
 
     uint64_t poolIn = mFireAt - currentTimeMs;

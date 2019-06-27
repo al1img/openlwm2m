@@ -15,7 +15,7 @@ public:
     Timer(uint16_t id);
     ~Timer();
 
-    void start(uint64_t period, TimerCallback callback, void* context, bool oneShot = false);
+    void start(uint64_t period, TimerCallback callback, void* context = NULL, bool oneShot = false);
     void stop();
 
 private:
