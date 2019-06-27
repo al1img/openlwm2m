@@ -62,12 +62,7 @@ void Timer::start(uint64_t period, TimerCallback callback, void* context, bool o
 
 void Timer::stop()
 {
-    mPeriod = 0;
-    mCallback = NULL;
-    mContext = NULL;
-    mOneShot = false;
     mStarted = false;
-    mFireAt = ULONG_MAX;
 }
 
 /*******************************************************************************
@@ -80,28 +75,31 @@ Status Timer::processTimer(uint64_t currentTimeMs, uint64_t* poolInMs)
 {
     Status status = STS_OK;
 
-    if (mStarted) {
-        if (currentTimeMs >= mFireAt) {
-            status = mCallback(mContext);
+    if (!mStarted) {
+        return status;
+    }
 
-            if (mOneShot) {
-                stop();
-            }
-            else {
-                mFireAt = currentTimeMs + mPeriod;
-            }
+    // Initialize just started timer
+    if (mFireAt == 0) {
+        mFireAt = currentTimeMs + mPeriod;
+    }
+
+    if (currentTimeMs >= mFireAt) {
+        status = mCallback(mContext);
+
+        if (mOneShot) {
+            stop();
+
+            return status;
         }
 
-        if (mFireAt == 0) {
-            mFireAt = currentTimeMs + mPeriod;
-        }
+        mFireAt = currentTimeMs + mPeriod;
+    }
 
-        if (mStarted) {
-            uint64_t poolIn = mFireAt - currentTimeMs;
-            if (poolInMs && poolIn < *poolInMs) {
-                *poolInMs = poolIn;
-            }
-        }
+    uint64_t poolIn = mFireAt - currentTimeMs;
+
+    if (poolInMs && poolIn < *poolInMs) {
+        *poolInMs = poolIn;
     }
 
     return status;

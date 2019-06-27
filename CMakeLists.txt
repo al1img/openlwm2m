@@ -40,7 +40,7 @@ add_subdirectory(example/${LWM2M_PLATFORM}/platform)
 
 if(WITH_TEST)
 	enable_testing()
-	add_subdirectory(tests)
+	add_subdirectory(test)
 	if (CMAKE_BUILD_TYPE STREQUAL "Coverage")
 		set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 		include(CodeCoverage)
