@@ -45,6 +45,7 @@ target_link_libraries(
 	unitTests
 	Catch2::Catch2
 	lwm2mclient
+	platform
 )
 
 include(CTest)

@@ -12,7 +12,7 @@ public:
 
     typedef Status (*TimerCallback)(void* context);
 
-    Timer();
+    Timer(uint16_t id);
     ~Timer();
 
     void start(uint64_t period, TimerCallback callback, void* context, bool oneShot = false);
@@ -21,6 +21,7 @@ public:
 private:
     static List<Timer> sTimerList;
 
+    uint16_t mId;
     uint64_t mPeriod;
     bool mStarted;
     bool mOneShot;

@@ -65,6 +65,7 @@ public:
     {
         if (mEnd) {
             mEnd->mNext = node;
+            mEnd = node;
         }
         else {
             mEnd = node;

@@ -36,7 +36,8 @@ Status Timer::poll(uint64_t currentTimeMs, uint64_t* poolInMs)
     return retStatus;
 }
 
-Timer::Timer() : mPeriod(0), mStarted(false), mOneShot(false), mCallback(NULL), mContext(NULL), mFireAt(0)
+Timer::Timer(uint16_t id)
+    : mId(id), mPeriod(0), mStarted(false), mOneShot(false), mCallback(NULL), mContext(NULL), mFireAt(0)
 {
     Node<Timer>* node = new Node<Timer>(this);
 
@@ -52,6 +53,8 @@ Timer::~Timer()
 
 void Timer::start(uint64_t period, TimerCallback callback, void* context, bool oneShot)
 {
+    LOG_DEBUG("Start %d , period: %lu, oneshot: %d", mId, period, oneShot);
+
     mPeriod = period;
     mCallback = callback;
     mContext = context;
@@ -62,6 +65,8 @@ void Timer::start(uint64_t period, TimerCallback callback, void* context, bool o
 
 void Timer::stop()
 {
+    LOG_DEBUG("Stop %d", mId);
+
     mStarted = false;
 }
 
@@ -82,9 +87,13 @@ Status Timer::processTimer(uint64_t currentTimeMs, uint64_t* poolInMs)
     // Initialize just started timer
     if (mFireAt == 0) {
         mFireAt = currentTimeMs + mPeriod;
+
+        LOG_DEBUG("Timer %d will fire at: %lu", mId, mFireAt);
     }
 
     if (currentTimeMs >= mFireAt) {
+        LOG_DEBUG("Timer %d fired", mId);
+
         status = mCallback(mContext);
 
         if (mOneShot) {

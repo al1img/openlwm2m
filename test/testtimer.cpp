@@ -6,46 +6,84 @@
 
 using namespace openlwm2m;
 
-static bool sTimerIsFired = false;
+static bool timer1IsFired = false;
+static bool timer2IsFired = false;
+static bool timer3IsFired = false;
 
-Status timerCallback(void* context)
+Status timer1Callback(void* context)
 {
-    sTimerIsFired = true;
+    timer1IsFired = true;
+
+    return STS_OK;
+}
+
+Status timer2Callback(void* context)
+{
+    timer2IsFired = true;
+
+    return STS_OK;
+}
+
+Status timer3Callback(void* context)
+{
+    timer3IsFired = true;
 
     return STS_OK;
 }
 
 TEST_CASE("test timer", "[timer]")
 {
-    Timer timer;
+    Timer timer1(1), timer2(2), timer3(3);
     uint64_t pollInMs = ULONG_MAX;
     uint64_t currentTimeMs = 0;
 
-    sTimerIsFired = false;
+    timer1IsFired = false;
+    timer2IsFired = false;
+    timer3IsFired = false;
 
     SECTION("test one shot")
     {
-        timer.start(100, timerCallback, nullptr, true);
+        timer1.start(100, timer1Callback, nullptr, true);
+        timer2.start(200, timer2Callback, nullptr, true);
+        timer3.start(300, timer3Callback, nullptr, true);
 
-        timer.poll(currentTimeMs, &pollInMs);
+        Timer::poll(currentTimeMs, &pollInMs);
 
         REQUIRE(pollInMs == 100);
 
         currentTimeMs += pollInMs;
         pollInMs = ULONG_MAX;
 
-        timer.poll(currentTimeMs, &pollInMs);
+        Timer::poll(currentTimeMs, &pollInMs);
 
-        REQUIRE(sTimerIsFired);
+        REQUIRE(pollInMs == 100);
+        REQUIRE((timer1IsFired && !timer2IsFired && !timer3IsFired));
+
+        timer1IsFired = false;
+
+        currentTimeMs += pollInMs;
+        pollInMs = ULONG_MAX;
+
+        Timer::poll(currentTimeMs, &pollInMs);
+
+        REQUIRE(pollInMs == 100);
+        REQUIRE((!timer1IsFired && timer2IsFired && !timer3IsFired));
+
+        timer2IsFired = false;
+
+        currentTimeMs += pollInMs;
+        pollInMs = ULONG_MAX;
+
+        Timer::poll(currentTimeMs, &pollInMs);
+
         REQUIRE(pollInMs == ULONG_MAX);
+        REQUIRE((!timer1IsFired && !timer2IsFired && timer3IsFired));
 
-        sTimerIsFired = false;
+        timer3IsFired = false;
 
-        currentTimeMs += 200;
+        currentTimeMs += 1000;
 
-        timer.poll(currentTimeMs, &pollInMs);
-
-        REQUIRE(!sTimerIsFired);
         REQUIRE(pollInMs == ULONG_MAX);
+        REQUIRE((!timer1IsFired && !timer2IsFired && !timer3IsFired));
     }
 }
