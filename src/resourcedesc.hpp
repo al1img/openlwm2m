@@ -7,17 +7,31 @@
 #include "itembase.hpp"
 #include "storage.hpp"
 
+// clang-format off
+
 // LwM2M Object: LwM2M Security
-#define RES_LWM2M_SERVER_URI 0
-#define RES_BOOTSTRAP_SERVER 1
-#define RES_SECURITY_SHORT_SERVER_ID 10
+#define RES_LWM2M_SERVER_URI            0
+#define RES_BOOTSTRAP_SERVER            1
+#define RES_SECURITY_SHORT_SERVER_ID    10
 
 // LwM2M Object: LwM2M Server
-#define RES_SHORT_SERVER_ID 0
-#define RES_LIFETIME 1
-#define RES_BINDING 7
+#define RES_SHORT_SERVER_ID             0
+#define RES_LIFETIME                    1
+#define RES_DEFAULT_MIN_PERIOD          2
+#define RES_DEFAULT_MAX_PERIOD          3
+#define RES_DISBALE                     4
+#define RES_DISABLE_TIMEOUT             5
+#define RES_NOTIFICATION_STORING        6
+#define RES_BINDING                     7
+#define RES_REGISTRATION_UPDATE_TRIGGER 8
+#define RES_BOOTSTRAP_REQUEST_TRIGGER   9
+#define RES_APN_LINK                    10
+#define RES_TLS_DTLS_ALERT_CODE         11
+#define RES_LAST_BOOTSTRAPPED           12
 #define RES_REGISTRATION_PRIORITY_ORDER 13
-#define RES_INITIAL_REGISTRATION_DELAY 14
+#define RES_INITIAL_REGISTRATION_DELAY  14
+
+// clang-format on
 
 namespace openlwm2m {
 

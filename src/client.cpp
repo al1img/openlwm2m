@@ -74,8 +74,8 @@ Client::Client(const char* name, bool queueMode, TransportItf& transport)
                                        ResourceDesc::MANDATORY);
     ASSERT(status == STS_OK);
     // Notification Storing When Disabled or Offline
-    status =
-        object->createResourceBool(6, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY);
+    status = object->createResourceBool(RES_NOTIFICATION_STORING, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0,
+                                        ResourceDesc::MANDATORY);
     ASSERT(status == STS_OK);
     // Binding
     status = object->createResourceString(RES_BINDING, ResourceDesc::OP_READWRITE, ResourceDesc::SINGLE, 0,
@@ -84,6 +84,8 @@ Client::Client(const char* name, bool queueMode, TransportItf& transport)
     // Registration Update Trigger
     status = object->createResourceNone(8, ResourceDesc::OP_EXECUTE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY);
     ASSERT(status == STS_OK);
+
+#if CONFIG_MINIMAL_CLIENT == 0
     // Registration Priority Oreder
     status = object->createResourceUint(RES_REGISTRATION_PRIORITY_ORDER, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
                                         ResourceDesc::OPTIONAL);
@@ -92,6 +94,7 @@ Client::Client(const char* name, bool queueMode, TransportItf& transport)
     status = object->createResourceUint(RES_INITIAL_REGISTRATION_DELAY, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
                                         ResourceDesc::OPTIONAL);
     ASSERT(status == STS_OK);
+#endif
 
     /***************************************************************************
      * E.4 LwM2M Object: Device
