@@ -53,11 +53,11 @@ Timer::~Timer()
     delete node;
 }
 
-void Timer::start(uint64_t period, TimerCallback callback, void* context, bool oneShot)
+void Timer::start(uint64_t periodMs, TimerCallback callback, void* context, bool oneShot)
 {
-    LOG_DEBUG("Start %d, period: %lu, oneshot: %d", mId, period, oneShot);
+    LOG_DEBUG("Start %d, period: %lu, oneshot: %d", mId, periodMs, oneShot);
 
-    mPeriod = period;
+    mPeriod = periodMs;
     mCallback = callback;
     mContext = context;
     mOneShot = oneShot;
