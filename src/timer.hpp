@@ -36,6 +36,13 @@ public:
     ~Timer();
 
     /**
+     * Sets timer ID.
+     *
+     * @param[in] id Timer ID.
+     */
+    void setId(uint16_t id) { mId = id; }
+
+    /**
      * Starts the timer.
      *
      * @param[in] periodMs Timer period in msec.

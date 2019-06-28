@@ -16,7 +16,6 @@ Client::Client(const char* name, bool queueMode, TransportItf& transport)
       mQueueMode(queueMode),
       mTransport(transport),
       mObjectStorage(),
-      mObjectNode(NULL),
       mRegHandlerStorage(*this, CONFIG_NUM_SERVERS),
       mState(STATE_INIT)
 {
@@ -172,19 +171,18 @@ Object* Client::getObject(Interface interface, uint16_t id)
 
 Object* Client::getFirstObject(Interface interface)
 {
-    mObjectNode = mObjectStorage.begin();
+    Object* object = mObjectStorage.getFirstItem();
 
-    while (mObjectNode) {
-        if (mObjectNode) {
-            if (interface && mObjectNode->get() && !(mObjectNode->get()->mParams.interfaces & interface)) {
-                LOG_DEBUG("Object /%d not accesible by interface %d", mObjectNode->get()->getId(), interface);
-            }
-            else {
-                return mObjectNode->get();
-            }
+    while (object) {
+        if (interface && !(object->mParams.interfaces & interface)) {
+            LOG_DEBUG("Object /%d not accesible by interface %d", object->getId(), interface);
+
+            object = mObjectStorage.getNextItem();
+
+            continue;
         }
 
-        mObjectNode = mObjectNode->next();
+        return object;
     }
 
     return NULL;
@@ -192,19 +190,18 @@ Object* Client::getFirstObject(Interface interface)
 
 Object* Client::getNextObject(Interface interface)
 {
-    if (mObjectNode) {
-        mObjectNode = mObjectNode->next();
+    Object* object = mObjectStorage.getNextItem();
 
-        if (mObjectNode) {
-            if (interface && mObjectNode->get() && !(mObjectNode->get()->mParams.interfaces & interface)) {
-                LOG_DEBUG("Object /%d not accesible by interface %d", mObjectNode->get()->getId(), interface);
-            }
-            else {
-                return mObjectNode->get();
-            }
+    while (object) {
+        if (interface && !(object->mParams.interfaces & interface)) {
+            LOG_DEBUG("Object /%d not accesible by interface %d", object->getId(), interface);
 
-            mObjectNode = mObjectNode->next();
+            object = mObjectStorage.getNextItem();
+
+            continue;
         }
+
+        return object;
     }
 
     return NULL;

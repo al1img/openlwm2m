@@ -28,7 +28,6 @@ private:
 
     ResourceDesc& mDesc;
     ResourceInstance::Storage mInstanceStorage;
-    ResourceInstance::StorageNode* mInstanceNode;
 
     Resource(ItemBase* parent, uint16_t id, ResourceDesc& desc);
     ~Resource();

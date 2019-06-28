@@ -216,6 +216,30 @@ public:
         return NULL;
     }
 
+    T* getFirstItem()
+    {
+        mCurrentNode = this->begin();
+
+        if (mCurrentNode) {
+            return mCurrentNode->get();
+        }
+
+        return NULL;
+    }
+
+    T* getNextItem()
+    {
+        if (mCurrentNode) {
+            mCurrentNode = mCurrentNode->next();
+
+            if (mCurrentNode) {
+                return mCurrentNode->get();
+            }
+        }
+
+        return NULL;
+    }
+
     void init()
     {
         Node<T>* node = this->begin();
@@ -271,6 +295,9 @@ protected:
 
         return STS_OK;
     }
+
+private:
+    Node<T>* mCurrentNode;
 };
 
 template <class T, class P>

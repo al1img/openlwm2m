@@ -26,6 +26,7 @@ void RegHandler::init()
 {
     LOG_DEBUG("Create /%d", getId());
 
+    mTimer.setId(getId());
     mSession = mServerInstance = mSecurityInstance = NULL;
     mState = STATE_INIT;
 }

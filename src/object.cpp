@@ -104,11 +104,7 @@ ObjectInstance* Object::createInstance(uint16_t id, Status* status)
 ObjectInstance* Object::getFirstInstance()
 {
     if (mInstanceStorage) {
-        mInstanceNode = mInstanceStorage->begin();
-
-        if (mInstanceNode) {
-            return mInstanceNode->get();
-        }
+        return mInstanceStorage->getFirstItem();
     }
 
     return NULL;
@@ -116,12 +112,8 @@ ObjectInstance* Object::getFirstInstance()
 
 ObjectInstance* Object::getNextInstance()
 {
-    if (mInstanceNode) {
-        mInstanceNode = mInstanceNode->next();
-
-        if (mInstanceNode) {
-            return mInstanceNode->get();
-        }
+    if (mInstanceStorage) {
+        return mInstanceStorage->getNextItem();
     }
 
     return NULL;
@@ -143,7 +135,7 @@ ResourceInstance* Object::getResourceInstance(uint16_t objInstanceId, uint16_t r
  ******************************************************************************/
 
 Object::Object(ItemBase* parent, uint16_t id, Params params)
-    : ItemBase(parent, id), mParams(params), mInstanceStorage(NULL), mInstanceNode(NULL)
+    : ItemBase(parent, id), mParams(params), mInstanceStorage(NULL)
 {
     LOG_DEBUG("Create /%d", getId());
 }

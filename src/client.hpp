@@ -106,7 +106,6 @@ private:
     TransportItf& mTransport;
 
     Object::Storage mObjectStorage;
-    Object::StorageNode* mObjectNode;
     RegHandler::Storage mRegHandlerStorage;
 
     State mState;

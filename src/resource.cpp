@@ -30,26 +30,12 @@ ResourceInstance* Resource::getInstanceById(uint16_t id)
 
 ResourceInstance* Resource::getFirstInstance()
 {
-    mInstanceNode = mInstanceStorage.begin();
-
-    if (mInstanceNode) {
-        return mInstanceNode->get();
-    }
-
-    return NULL;
+    return mInstanceStorage.getFirstItem();
 }
 
 ResourceInstance* Resource::getNextInstance()
 {
-    if (mInstanceNode) {
-        mInstanceNode = mInstanceNode->next();
-
-        if (mInstanceNode) {
-            return mInstanceNode->get();
-        }
-    }
-
-    return NULL;
+    return mInstanceStorage.getNextItem();
 }
 
 /*******************************************************************************
