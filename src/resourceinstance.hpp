@@ -46,7 +46,6 @@ public:
 
 private:
     friend class Resource;
-    friend class StorageList<ResourceInstance>;
     friend class Lwm2mStorage<ResourceInstance, ResourceDesc&>;
     friend class Lwm2mDynamicStorage<ResourceInstance, ResourceDesc&>;
 

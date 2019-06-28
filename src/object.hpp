@@ -59,7 +59,6 @@ private:
     };
 
     friend class Client;
-    friend class StorageList<Object>;
     friend class Lwm2mStorage<Object, Params>;
 
     typedef Lwm2mStorage<Object, Params> Storage;

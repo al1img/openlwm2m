@@ -14,7 +14,6 @@ class Client;
 class RegHandler : public ItemBase {
 private:
     friend class Client;
-    friend class StorageList<RegHandler>;
     friend class Lwm2mStorage<RegHandler, Client&>;
     friend class Lwm2mDynamicStorage<RegHandler, Client&>;
 

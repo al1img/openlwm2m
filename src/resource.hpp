@@ -21,7 +21,6 @@ public:
 
 private:
     friend class ObjectInstance;
-    friend class StorageList<Resource>;
     friend class Lwm2mStorage<Resource, ResourceDesc&>;
 
     typedef Lwm2mStorage<Resource, ResourceDesc&> Storage;

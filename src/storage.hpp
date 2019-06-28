@@ -134,50 +134,14 @@ private:
     }
 };
 
-template <class T>
-class StorageList : public List<T> {
-public:
-    StorageList(size_t maxItems = 0) : mMaxItems(maxItems) {}
-
-    Status push(T* item)
-    {
-        if (mMaxItems > 0 && this->size() == mMaxItems) {
-            return STS_ERR_NO_MEM;
-        }
-
-        Node<T>* newNode = new Node<T>(item);
-
-        this->insertEnd(newNode);
-
-        return STS_OK;
-    }
-
-    ~StorageList()
-    {
-        Node<T>* node = this->begin();
-
-        while (node) {
-            Node<T>* tmp = node;
-
-            node = node->next();
-
-            delete tmp->get();
-            delete tmp;
-        }
-    }
-
-protected:
-    size_t mMaxItems;
-};
-
 template <class T, class P>
-class Lwm2mStorage : public StorageList<T> {
+class Lwm2mStorage : public List<T> {
 public:
-    Lwm2mStorage(size_t maxItems = 0) : StorageList<T>(maxItems) {}
+    Lwm2mStorage(size_t maxItems = 0) : mMaxItems(maxItems) {}
 
     T* newItem(ItemBase* parent, uint16_t id, P param, Status* status = NULL)
     {
-        if (this->mMaxItems > 0 && this->size() == this->mMaxItems) {
+        if (mMaxItems > 0 && this->size() == mMaxItems) {
             if (status) *status = STS_ERR_NO_MEM;
             return NULL;
         }
@@ -260,9 +224,11 @@ public:
         }
     }
 
-    bool hasFreeItem() const { return this->mMaxItems == 0 || this->mSize < this->mMaxItems; }
+    bool hasFreeItem() const { return mMaxItems == 0 || this->mSize < mMaxItems; }
 
 protected:
+    size_t mMaxItems;
+
     Status findNodeAndId(uint16_t* id, Node<T>** node)
     {
         uint16_t newId = 0;

@@ -17,7 +17,6 @@ public:
 
 private:
     friend class Object;
-    friend class StorageList<ObjectInstance>;
     friend class Lwm2mStorage<ObjectInstance, ResourceDesc::Storage&>;
     friend class Lwm2mDynamicStorage<ObjectInstance, ResourceDesc::Storage&>;
 
