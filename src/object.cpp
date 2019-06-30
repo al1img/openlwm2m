@@ -98,7 +98,7 @@ ObjectInstance* Object::createInstance(uint16_t id, Status* status)
         return NULL;
     }
 
-    return mInstanceStorage->newItem(this, id, mResourceDescStorage, status);
+    return mInstanceStorage->newItem(id, status);
 }
 
 ObjectInstance* Object::getFirstInstance()
@@ -134,23 +134,23 @@ ResourceInstance* Object::getResourceInstance(uint16_t objInstanceId, uint16_t r
  * Private
  ******************************************************************************/
 
-Object::Object(ItemBase* parent, uint16_t id, Params params)
-    : ItemBase(parent, id), mParams(params), mInstanceStorage(NULL)
+Object::Object(ItemBase* parent, Params params) : ItemBase(parent), mParams(params), mInstanceStorage(NULL)
 {
-    LOG_DEBUG("Create /%d", getId());
 }
 
 Object::~Object()
 {
-    LOG_DEBUG("Delete /%d", getId());
-
     delete mInstanceStorage;
 }
 
 void Object::init()
 {
+    LOG_DEBUG("Create /%d", getId());
+
     if (!mInstanceStorage) {
-        mInstanceStorage = new ObjectInstance::Storage(mResourceDescStorage, mParams.maxInstances);
+        mResourceDescStorage.init();
+
+        mInstanceStorage = new ObjectInstance::Storage(this, mResourceDescStorage, mParams.maxInstances);
 
         // Appendix D.1
         // If the Object field “Mandatory” is “Mandatory” and the Object field “Instances” is “Single”then, the number
@@ -166,7 +166,7 @@ void Object::init()
 
 void Object::release()
 {
-    //    LOG_DEBUG("Release object /%d", getId());
+    LOG_DEBUG("Delete /%d", getId());
 
     if (mInstanceStorage) {
         mInstanceStorage->clear();
@@ -190,6 +190,8 @@ Status Object::createResource(uint16_t id, ResourceDesc::Params& params)
     if (params.instance == ResourceDesc::SINGLE) {
         params.maxInstances = 1;
     }
+
+    LOG_DEBUG("Create resource /%d/%d", getId(), id);
 
     Status status = STS_OK;
 

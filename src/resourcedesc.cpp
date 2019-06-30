@@ -9,22 +9,22 @@ namespace openlwm2m {
  * Private
  ******************************************************************************/
 
-ResourceDesc::ResourceDesc(ItemBase* parent, uint16_t id, Params params) : ItemBase(parent, id), mParams(params)
+ResourceDesc::ResourceDesc(ItemBase* parent, Params params) : ItemBase(parent), mParams(params)
 {
-    LOG_DEBUG("Create /%d/%d", getParent()->getId(), getId());
 }
 
 ResourceDesc::~ResourceDesc()
 {
-    LOG_DEBUG("Delete /%d/%d", getParent()->getId(), getId());
 }
 
 void ResourceDesc::init()
 {
+    LOG_DEBUG("Create /%d/%d", getParent()->getId(), getId());
 }
 
 void ResourceDesc::release()
 {
+    LOG_DEBUG("Delete /%d/%d", getParent()->getId(), getId());
 }
 
 }  // namespace openlwm2m

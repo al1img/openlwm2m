@@ -138,6 +138,18 @@ template <class T, class P>
 class Lwm2mStorage : public List<T> {
 public:
     Lwm2mStorage(size_t maxItems = 0) : mMaxItems(maxItems) {}
+    ~Lwm2mStorage()
+    {
+        Node<T>* node = this->begin();
+        while (node) {
+            Node<T>* tmp = node;
+
+            node = node->next();
+
+            delete tmp->get();
+            delete tmp;
+        }
+    }
 
     T* newItem(ItemBase* parent, uint16_t id, P param, Status* status = NULL)
     {
@@ -154,7 +166,9 @@ public:
             return NULL;
         }
 
-        Node<T>* newNode = new Node<T>(new T(parent, id, param));
+        Node<T>* newNode = new Node<T>(new T(parent, param));
+
+        newNode->get()->setId(id);
 
         if (node) {
             this->insertAfter(node, newNode);
@@ -269,13 +283,19 @@ private:
 template <class T, class P>
 class Lwm2mDynamicStorage : public Lwm2mStorage<T, P> {
 public:
-    Lwm2mDynamicStorage(P param, size_t maxItems) : Lwm2mStorage<T, P>(maxItems)
+    Lwm2mDynamicStorage(ItemBase* parent, P param, size_t maxItems)
+        : Lwm2mStorage<T, P>(maxItems)
+#if !CONFIG_RESERVE_MEMORY
+          ,
+          mParent(parent),
+          mParam(param)
+#endif
     {
 #if CONFIG_RESERVE_MEMORY
         ASSERT_MESSAGE(this->mMaxItems, "Unlimited instances is not supported with memory reservation");
 
         for (size_t i = 0; i < this->mMaxItems; i++) {
-            T* item = new T(NULL, INVALID_ID, param);
+            T* item = new T(parent, param);
 
             Node<T>* newNode = new Node<T>(item);
 
@@ -300,7 +320,7 @@ public:
 #endif
     }
 
-    T* newItem(ItemBase* parent, uint16_t id, P param, Status* status = NULL)
+    T* newItem(uint16_t id, Status* status = NULL)
     {
         if (this->mMaxItems != 0 && this->size() == this->mMaxItems) {
             if (status) *status = STS_ERR_NO_MEM;
@@ -324,14 +344,12 @@ public:
         }
 
         mFreeList.remove(newNode);
-
-        newNode->get()->setParent(parent);
-        newNode->get()->setId(id);
 #else
-        T* newItem = new T(parent, id, param);
+        T* newItem = new T(mParent, mParam);
         Node<T>* newNode = new Node<T>(newItem);
 #endif
 
+        newNode->get()->setId(id);
         newNode->get()->init();
 
         if (node) {
@@ -393,6 +411,9 @@ public:
 private:
 #if CONFIG_RESERVE_MEMORY
     List<T> mFreeList;
+#else
+    ItemBase* mParent;
+    P mParam;
 #endif
 };
 

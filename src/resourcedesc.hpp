@@ -91,7 +91,7 @@ private:
 
     Params mParams;
 
-    ResourceDesc(ItemBase* parent, uint16_t id, Params params);
+    ResourceDesc(ItemBase* parent, Params params);
     ~ResourceDesc();
 
     void init();

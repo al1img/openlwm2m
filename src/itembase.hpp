@@ -13,17 +13,18 @@ public:
     uint16_t getId() const { return mId; }
 
 protected:
-    ItemBase(ItemBase* parent, uint16_t id) : mParent(parent), mId(id) {}
+    ItemBase(ItemBase* parent) : mParent(parent), mId(INVALID_ID) {}
 
 private:
     template <class, class>
     friend class Lwm2mDynamicStorage;
+    template <class, class>
+    friend class Lwm2mStorage;
 
     ItemBase* mParent;
     uint16_t mId;
 
     void setId(uint16_t id) { mId = id; }
-    void setParent(ItemBase* parent) { mParent = parent; }
 };
 
 }  // namespace openlwm2m

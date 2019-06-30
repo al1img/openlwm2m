@@ -62,7 +62,7 @@ private:
         uint8_t mValueBool;
     };
 
-    ResourceInstance(ItemBase* parent, uint16_t id, ResourceDesc& desc);
+    ResourceInstance(ItemBase* parent, ResourceDesc& desc);
     ~ResourceInstance();
 
     void init();

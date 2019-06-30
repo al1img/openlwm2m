@@ -16,7 +16,7 @@ Client::Client(const char* name, bool queueMode, TransportItf& transport)
       mQueueMode(queueMode),
       mTransport(transport),
       mObjectStorage(),
-      mRegHandlerStorage(*this, CONFIG_NUM_SERVERS),
+      mRegHandlerStorage(NULL, *this, CONFIG_NUM_SERVERS),
       mState(STATE_INIT)
 {
     LOG_DEBUG("Create client");
@@ -151,6 +151,8 @@ Object* Client::createObject(uint16_t id, Object::Instance instance, size_t maxI
     if (instance == Object::SINGLE) {
         maxInstances = 1;
     }
+
+    LOG_DEBUG("Create object /%d", id);
 
     Object::Params params = {instance, mandatory, interfaces, maxInstances};
 
@@ -364,7 +366,7 @@ Status Client::createRegHandlers()
         ResourceInstance* shortServerIdInstance = serverInstance->getResourceInstance(RES_SHORT_SERVER_ID);
         ASSERT(shortServerIdInstance);
 
-        RegHandler* handler = mRegHandlerStorage.newItem(NULL, INVALID_ID, *this);
+        RegHandler* handler = mRegHandlerStorage.newItem(INVALID_ID);
         ASSERT(handler);
 
         Status status = STS_OK;

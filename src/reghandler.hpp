@@ -29,7 +29,7 @@ private:
     State mState;
     Timer mTimer;
 
-    RegHandler(ItemBase* parent, uint16_t id, Client& client);
+    RegHandler(ItemBase* parent, Client& client);
     ~RegHandler();
 
     void init();

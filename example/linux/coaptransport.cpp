@@ -12,7 +12,7 @@
  * CoapTransport
  ******************************************************************************/
 
-CoapTransport::CoapTransport() : mReqStorage(Request::Param(), REQ_STORAGE_SIZE)
+CoapTransport::CoapTransport() : mReqStorage(NULL, Request::Param(), REQ_STORAGE_SIZE)
 {
     coap_startup();
 
@@ -70,7 +70,7 @@ void CoapTransport::registrationRequest(void* session, const char* clientName, u
 {
     Request::Param param = {handler, context};
 
-    Request* request = mReqStorage.newItem(NULL, INVALID_ID, param);
+    Request* request = mReqStorage.newItem(INVALID_ID);
     ASSERT(request);
 
     coap_pdu_t* pdu = coap_pdu_init(COAP_MESSAGE_CON, COAP_REQUEST_GET, request->getId(),

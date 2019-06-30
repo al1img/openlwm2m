@@ -13,8 +13,8 @@ namespace openlwm2m {
  * Private
  ******************************************************************************/
 
-RegHandler::RegHandler(ItemBase* parent, uint16_t id, Client& client)
-    : ItemBase(parent, id), mClient(client), mSession(NULL), mTimer(id)
+RegHandler::RegHandler(ItemBase* parent, Client& client)
+    : ItemBase(parent), mClient(client), mSession(NULL), mTimer(INVALID_ID)
 {
 }
 

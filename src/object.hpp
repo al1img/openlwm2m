@@ -69,7 +69,7 @@ private:
     ResourceDesc::Storage mResourceDescStorage;
     ObjectInstance::Storage* mInstanceStorage;
 
-    Object(ItemBase* parent, uint16_t id, Params params);
+    Object(ItemBase* parent, Params params);
     ~Object();
 
     void init();

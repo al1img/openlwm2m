@@ -101,8 +101,7 @@ Status ResourceInstance::setBool(uint8_t value)
  * Private
  ******************************************************************************/
 
-ResourceInstance::ResourceInstance(ItemBase* parent, uint16_t id, ResourceDesc& desc)
-    : ItemBase(parent, id), mDesc(desc)
+ResourceInstance::ResourceInstance(ItemBase* parent, ResourceDesc& desc) : ItemBase(parent), mDesc(desc)
 {
     if (mDesc.mParams.type == ResourceDesc::TYPE_STRING) {
 #if CONFIG_RESERVE_MEMORY

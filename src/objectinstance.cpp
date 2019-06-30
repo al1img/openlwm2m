@@ -30,8 +30,8 @@ ResourceInstance* ObjectInstance::getResourceInstance(uint16_t resId, uint16_t r
  * Private
  ******************************************************************************/
 
-ObjectInstance::ObjectInstance(ItemBase* parent, uint16_t id, ResourceDesc::Storage& resourceDescStorage)
-    : ItemBase(parent, id), mResourceStorage()
+ObjectInstance::ObjectInstance(ItemBase* parent, ResourceDesc::Storage& resourceDescStorage)
+    : ItemBase(parent), mResourceStorage()
 {
     Node<ResourceDesc>* node = resourceDescStorage.begin();
 

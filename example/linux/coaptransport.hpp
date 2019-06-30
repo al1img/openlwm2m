@@ -43,7 +43,7 @@ private:
             void* context;
         };
 
-        Request(ItemBase* parent, uint16_t id, Param param) : openlwm2m::ItemBase(parent, id), mParam(param) {}
+        Request(ItemBase* parent, Param param) : openlwm2m::ItemBase(parent), mParam(param) {}
 
         void init() {}
         void release() {}
