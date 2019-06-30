@@ -12,11 +12,11 @@ public:
      * Polls all timers.
      *
      * @param[in]      currentTimeMs Current time in msec.
-     * @param[in, out] pollInMs      Indicates when to poll timers next time.
+     * @param[in, out] pollTimeMs      Indicates when to poll timers next time.
      *
      * @retval Status.
      */
-    static Status poll(uint64_t currentTimeMs, uint64_t* poolInMs);
+    static Status poll(uint64_t currentTimeMs, uint64_t* poolTimeMs);
 
     /**
      * Timer callback.

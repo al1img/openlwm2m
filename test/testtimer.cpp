@@ -34,7 +34,7 @@ Status timer3Callback(void* context)
 TEST_CASE("test timer", "[timer]")
 {
     Timer timer1(1), timer2(2), timer3(3);
-    uint64_t pollInMs = ULONG_MAX;
+    uint64_t pollTimeMs = ULONG_MAX;
     uint64_t currentTimeMs = 0;
 
     timer1IsFired = false;
@@ -48,50 +48,50 @@ TEST_CASE("test timer", "[timer]")
         timer3.start(300, timer3Callback, nullptr, true);
 
         // time 0
-        Timer::poll(currentTimeMs, &pollInMs);
+        Timer::poll(currentTimeMs, &pollTimeMs);
 
-        REQUIRE(pollInMs == 100);
+        REQUIRE(pollTimeMs == currentTimeMs + 100);
 
-        currentTimeMs += pollInMs;
-        pollInMs = ULONG_MAX;
+        currentTimeMs = pollTimeMs;
+        pollTimeMs = ULONG_MAX;
 
         // time 100
-        Timer::poll(currentTimeMs, &pollInMs);
+        Timer::poll(currentTimeMs, &pollTimeMs);
 
-        REQUIRE(pollInMs == 100);
+        REQUIRE(pollTimeMs == currentTimeMs + 100);
         REQUIRE((timer1IsFired && !timer2IsFired && !timer3IsFired));
 
         timer1IsFired = false;
 
-        currentTimeMs += pollInMs;
-        pollInMs = ULONG_MAX;
+        currentTimeMs = pollTimeMs;
+        pollTimeMs = ULONG_MAX;
 
         // time 200
-        Timer::poll(currentTimeMs, &pollInMs);
+        Timer::poll(currentTimeMs, &pollTimeMs);
 
-        REQUIRE(pollInMs == 100);
+        REQUIRE(pollTimeMs == currentTimeMs + 100);
         REQUIRE((!timer1IsFired && timer2IsFired && !timer3IsFired));
 
         timer2IsFired = false;
 
-        currentTimeMs += pollInMs;
-        pollInMs = ULONG_MAX;
+        currentTimeMs = pollTimeMs;
+        pollTimeMs = ULONG_MAX;
 
         // time 300
-        Timer::poll(currentTimeMs, &pollInMs);
+        Timer::poll(currentTimeMs, &pollTimeMs);
 
-        REQUIRE(pollInMs == ULONG_MAX);
+        REQUIRE(pollTimeMs == ULONG_MAX);
         REQUIRE((!timer1IsFired && !timer2IsFired && timer3IsFired));
 
         timer3IsFired = false;
 
         currentTimeMs += 1000;
-        pollInMs = ULONG_MAX;
+        pollTimeMs = ULONG_MAX;
 
-        Timer::poll(currentTimeMs, &pollInMs);
+        Timer::poll(currentTimeMs, &pollTimeMs);
 
         // time 1300
-        REQUIRE(pollInMs == ULONG_MAX);
+        REQUIRE(pollTimeMs == ULONG_MAX);
         REQUIRE((!timer1IsFired && !timer2IsFired && !timer3IsFired));
     }
 
@@ -102,84 +102,84 @@ TEST_CASE("test timer", "[timer]")
         timer3.start(300, timer3Callback);
 
         // time 0
-        Timer::poll(currentTimeMs, &pollInMs);
+        Timer::poll(currentTimeMs, &pollTimeMs);
 
-        REQUIRE(pollInMs == 100);
+        REQUIRE(pollTimeMs == currentTimeMs + 100);
 
-        currentTimeMs += pollInMs;
-        pollInMs = ULONG_MAX;
+        currentTimeMs = pollTimeMs;
+        pollTimeMs = ULONG_MAX;
 
         for (int i = 0; i < 5; i++) {
             // time 100: timer1
-            Timer::poll(currentTimeMs, &pollInMs);
+            Timer::poll(currentTimeMs, &pollTimeMs);
 
-            REQUIRE(pollInMs == 100);
+            REQUIRE(pollTimeMs == currentTimeMs + 100);
             REQUIRE((timer1IsFired && !timer2IsFired && !timer3IsFired));
 
             timer1IsFired = false;
 
-            currentTimeMs += pollInMs;
-            pollInMs = ULONG_MAX;
+            currentTimeMs = pollTimeMs;
+            pollTimeMs = ULONG_MAX;
 
             // time 200 timer1, timer2
-            Timer::poll(currentTimeMs, &pollInMs);
+            Timer::poll(currentTimeMs, &pollTimeMs);
 
-            REQUIRE(pollInMs == 100);
+            REQUIRE(pollTimeMs == currentTimeMs + 100);
             REQUIRE((timer1IsFired && timer2IsFired && !timer3IsFired));
 
             timer1IsFired = false;
             timer2IsFired = false;
 
-            currentTimeMs += pollInMs;
-            pollInMs = ULONG_MAX;
+            currentTimeMs = pollTimeMs;
+            pollTimeMs = ULONG_MAX;
 
             // time 300 timer1, timer3
-            Timer::poll(currentTimeMs, &pollInMs);
+            Timer::poll(currentTimeMs, &pollTimeMs);
 
-            REQUIRE(pollInMs == 100);
+            REQUIRE(pollTimeMs == currentTimeMs + 100);
             REQUIRE((timer1IsFired && !timer2IsFired && timer3IsFired));
 
             timer1IsFired = false;
             timer3IsFired = false;
 
-            currentTimeMs += pollInMs;
-            pollInMs = ULONG_MAX;
+            currentTimeMs = pollTimeMs;
+            pollTimeMs = ULONG_MAX;
 
             // time 400 timer 1, timer2
-            Timer::poll(currentTimeMs, &pollInMs);
+            Timer::poll(currentTimeMs, &pollTimeMs);
 
-            REQUIRE(pollInMs == 100);
+            REQUIRE(pollTimeMs == currentTimeMs + 100);
             REQUIRE((timer1IsFired && timer2IsFired && !timer3IsFired));
 
             timer1IsFired = false;
             timer2IsFired = false;
 
-            currentTimeMs += pollInMs;
-            pollInMs = ULONG_MAX;
+            currentTimeMs = pollTimeMs;
+            pollTimeMs = ULONG_MAX;
 
             // time 500 timer 1
-            Timer::poll(currentTimeMs, &pollInMs);
+            Timer::poll(currentTimeMs, &pollTimeMs);
 
-            REQUIRE(pollInMs == 100);
+            REQUIRE(pollTimeMs == currentTimeMs + 100);
             REQUIRE((timer1IsFired && !timer2IsFired && !timer3IsFired));
 
             timer1IsFired = false;
 
-            currentTimeMs += pollInMs;
-            pollInMs = ULONG_MAX;
+            currentTimeMs = pollTimeMs;
+            pollTimeMs = ULONG_MAX;
 
             // time 600 timer 1, timer2, timer3
-            Timer::poll(currentTimeMs, &pollInMs);
+            Timer::poll(currentTimeMs, &pollTimeMs);
 
-            REQUIRE(pollInMs == 100);
+            REQUIRE(pollTimeMs == currentTimeMs + 100);
             REQUIRE((timer1IsFired && timer2IsFired && timer3IsFired));
 
             timer1IsFired = false;
             timer2IsFired = false;
             timer3IsFired = false;
 
-            currentTimeMs += pollInMs;
-            pollInMs = ULONG_MAX;
+            currentTimeMs = pollTimeMs;
+            pollTimeMs = ULONG_MAX;
         }
     }
 }

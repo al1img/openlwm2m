@@ -36,7 +36,7 @@ void RegHandler::release()
     LOG_DEBUG("Delete /%d", getId());
 
     if (mSession) {
-        Status status = mClient.getTransport().deleteSession(mSession);
+        Status status = mClient.getTransport()->deleteSession(mSession);
 
         if (status != STS_OK) {
             LOG_ERROR("Can't delete session: %d", status);
@@ -79,7 +79,7 @@ Status RegHandler::bind(ObjectInstance* serverInstance)
 
     Status status = STS_OK;
 
-    mSession = mClient.getTransport().createSession(serverUri, &status);
+    mSession = mClient.getTransport()->createSession(serverUri, &status);
 
     return status;
 }
@@ -117,7 +117,7 @@ Status RegHandler::onTimerCallback()
             mState = STATE_REGISTRATION;
             char objectsStr[CONFIG_DEFAULT_STRING_LEN];
 
-            status = getObjectsString(objectsStr, CONFIG_DEFAULT_STRING_LEN);
+            status = getObjectsStr(objectsStr, CONFIG_DEFAULT_STRING_LEN);
 
             if (status != STS_OK) {
                 registrationStatus(status);
@@ -126,10 +126,16 @@ Status RegHandler::onTimerCallback()
 
             LOG_DEBUG("Send reg request /%d, objects: %s", getId(), objectsStr);
 
-            mClient.mTransport.registrationRequest(
+            status = mClient.mTransport->registrationRequest(
                 mSession, mClient.mName, mServerInstance->getResourceInstance(RES_LIFETIME)->getInt(), LWM2M_VERSION,
-                mServerInstance->getResourceInstance(RES_BINDING)->getString(), mClient.mQueueMode, NULL, NULL,
+                mServerInstance->getResourceInstance(RES_BINDING)->getString(), mClient.mQueueMode, NULL, objectsStr,
                 &RegHandler::registrationCallback, this);
+
+            if (status != STS_OK) {
+                registrationStatus(status);
+                return status;
+            }
+
             break;
 
         default:
@@ -146,9 +152,10 @@ void RegHandler::registrationCallback(void* context, Status status)
 
 void RegHandler::onRegistrationCallback(Status status)
 {
+    mClient.mPollRequest();
 }
 
-Status RegHandler::getObjectsString(char* str, int maxSize)
+Status RegHandler::getObjectsStr(char* str, int maxSize)
 {
     int size = 0;
 
@@ -165,6 +172,7 @@ Status RegHandler::getObjectsString(char* str, int maxSize)
             }
             else {
                 ret = snprintf(&str[size], maxSize - size, "<%d/%d>,", object->getId(), instance->getId());
+
                 instance = object->getNextInstance();
             }
 

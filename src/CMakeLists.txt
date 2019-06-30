@@ -19,6 +19,7 @@ set(SOURCES
 	resourcedesc.cpp
 	resourceinstance.cpp
 	timer.cpp
+	utils.cpp
 )
 
 ################################################################################

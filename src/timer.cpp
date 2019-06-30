@@ -12,27 +12,22 @@ namespace openlwm2m {
  * Public
  ******************************************************************************/
 
-Status Timer::poll(uint64_t currentTimeMs, uint64_t* poolInMs)
+Status Timer::poll(uint64_t currentTimeMs, uint64_t* pollTimeMs)
 {
     LOG_DEBUG("Poll, current time: %lu", currentTimeMs);
 
-    uint64_t timerPoolInMs = ULONG_MAX;
     Status retStatus = STS_OK;
 
     Node<Timer>* node = sTimerList.begin();
 
     while (node) {
-        Status status = node->get()->processTimer(currentTimeMs, &timerPoolInMs);
+        Status status = node->get()->processTimer(currentTimeMs, pollTimeMs);
 
         if (status != STS_OK && retStatus == STS_OK) {
             retStatus = status;
         }
 
         node = node->next();
-    }
-
-    if (poolInMs && timerPoolInMs < *poolInMs) {
-        *poolInMs = timerPoolInMs;
     }
 
     return retStatus;
@@ -78,7 +73,7 @@ void Timer::stop()
 
 List<Timer> Timer::sTimerList;
 
-Status Timer::processTimer(uint64_t currentTimeMs, uint64_t* poolInMs)
+Status Timer::processTimer(uint64_t currentTimeMs, uint64_t* poolTimeMs)
 {
     Status status = STS_OK;
 
@@ -109,10 +104,8 @@ Status Timer::processTimer(uint64_t currentTimeMs, uint64_t* poolInMs)
         LOG_DEBUG("Timer %d will fire at: %lu", mId, mFireAt);
     }
 
-    uint64_t poolIn = mFireAt - currentTimeMs;
-
-    if (poolInMs && poolIn < *poolInMs) {
-        *poolInMs = poolIn;
+    if (poolTimeMs && mFireAt < *poolTimeMs) {
+        *poolTimeMs = mFireAt;
     }
 
     return status;

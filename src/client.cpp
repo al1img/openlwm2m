@@ -11,10 +11,10 @@ namespace openlwm2m {
  * Client
  ******************************************************************************/
 
-Client::Client(const char* name, bool queueMode, TransportItf& transport)
+Client::Client(const char* name, bool queueMode, PollRequest pollRequest)
     : mName(name),
       mQueueMode(queueMode),
-      mTransport(transport),
+      mPollRequest(pollRequest),
       mObjectStorage(),
       mRegHandlerStorage(NULL, *this, CONFIG_NUM_SERVERS),
       mState(STATE_INIT)
@@ -125,15 +125,15 @@ Client::~Client()
  * Public
  ******************************************************************************/
 
-Status Client::poll(uint64_t currentTimeMs, uint64_t* pollInMs)
+Status Client::poll(uint64_t currentTimeMs, uint64_t* pollTimeMs)
 {
-    if (pollInMs) {
-        *pollInMs = ULONG_MAX;
+    if (pollTimeMs) {
+        *pollTimeMs = ULONG_MAX;
     }
 
     Status status = STS_OK;
 
-    if ((status = Timer::poll(currentTimeMs, pollInMs)) != STS_OK) {
+    if ((status = Timer::poll(currentTimeMs, pollTimeMs)) != STS_OK) {
         return status;
     }
 
@@ -221,13 +221,15 @@ ResourceInstance* Client::getResourceInstance(Interface interface, uint16_t objI
     return object->getResourceInstance(objInstanceId, resId, resInstanceId);
 }
 
-Status Client::init()
+Status Client::init(TransportItf* transport)
 {
     LOG_DEBUG("Init client");
 
     if (mState != STATE_INIT) {
         return STS_ERR_INVALID_STATE;
     }
+
+    mTransport = transport;
 
     mObjectStorage.init();
 
@@ -338,7 +340,7 @@ void Client::reportingCancelObserveComposite()
 
 void Client::resBootstrapChanged(void* context, ResourceInstance* resInstance)
 {
-    // E.1 ThisResource MUST be set when the Bootstrap-ServerResource has a value of 'false'.
+    // E.1 This Resource MUST be set when the Bootstrap-Server Resource has a value of 'false'.
     ObjectInstance* securityObjectInstance = static_cast<ObjectInstance*>(resInstance->getParent()->getParent());
     ASSERT(securityObjectInstance);
 

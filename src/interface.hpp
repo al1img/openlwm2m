@@ -43,9 +43,9 @@ public:
 
     // Registration
 
-    virtual void registrationRequest(void* session, const char* clientName, uint64_t lifetime, const char* version,
-                                     const char* bindingMode, bool queueMode, const char* smsNumber,
-                                     const char* objects, RequestHandler handler, void* context) = 0;
+    virtual Status registrationRequest(void* session, const char* clientName, uint64_t lifetime, const char* version,
+                                       const char* bindingMode, bool queueMode, const char* smsNumber,
+                                       const char* objects, RequestHandler handler, void* context) = 0;
     virtual void registrationUpdate(void* session, const uint32_t* lifetime, const char* bindingMode,
                                     const char* smsNumber, const char* objects, RequestHandler handler,
                                     void* context) = 0;

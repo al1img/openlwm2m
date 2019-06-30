@@ -21,13 +21,15 @@ namespace openlwm2m {
  */
 class Client : public ClientItf {
 public:
+    typedef void (*PollRequest)();
+
     /**
      * Constructor.
      */
-    Client(const char* name, bool queueMode, TransportItf& transport);
+    Client(const char* name, bool queueMode, PollRequest pollRequest);
     ~Client();
 
-    Status poll(uint64_t currentTimeMs, uint64_t* pollInMs);
+    Status poll(uint64_t currentTimeMs, uint64_t* pollTimeMs);
 
     /**
      * Creates lwm2m object.
@@ -65,9 +67,9 @@ public:
     ResourceInstance* getResourceInstance(Interface interface, uint16_t objId, uint16_t objInstanceId, uint16_t resId,
                                           uint16_t resInstanceId = 0);
 
-    TransportItf& getTransport() const { return mTransport; }
+    TransportItf* getTransport() const { return mTransport; }
 
-    Status init();
+    Status init(TransportItf* transport);
 
     Status registration();
 
@@ -103,7 +105,9 @@ private:
 
     const char* mName;
     bool mQueueMode;
-    TransportItf& mTransport;
+    PollRequest mPollRequest;
+
+    TransportItf* mTransport;
 
     Object::Storage mObjectStorage;
     RegHandler::Storage mRegHandlerStorage;

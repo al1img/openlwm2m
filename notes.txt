@@ -1,0 +1,2 @@
+28.06.2019 23:36:06 | INF | memory           | Total allocated memory: 10173
+
