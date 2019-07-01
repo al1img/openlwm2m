@@ -137,7 +137,7 @@ private:
 template <class T, class P>
 class Lwm2mStorage : public List<T> {
 public:
-    Lwm2mStorage(size_t maxItems = 0) : mMaxItems(maxItems) {}
+    Lwm2mStorage(size_t maxItems = 0, T* (*newFunc)(ItemBase*, P) = NULL) : mMaxItems(maxItems), mNewFunc(newFunc) {}
     ~Lwm2mStorage()
     {
         Node<T>* node = this->begin();
@@ -166,7 +166,16 @@ public:
             return NULL;
         }
 
-        Node<T>* newNode = new Node<T>(new T(parent, param));
+        T* newItem;
+
+        if (mNewFunc) {
+            newItem = mNewFunc(parent, param);
+        }
+        else {
+            newItem = new T(parent, param);
+        }
+
+        Node<T>* newNode = new Node<T>(newItem);
 
         newNode->get()->setId(id);
 
@@ -242,6 +251,7 @@ public:
 
 protected:
     size_t mMaxItems;
+    T* (*mNewFunc)(ItemBase*, P);
 
     Status findNodeAndId(uint16_t* id, Node<T>** node)
     {
@@ -283,8 +293,8 @@ private:
 template <class T, class P>
 class Lwm2mDynamicStorage : public Lwm2mStorage<T, P> {
 public:
-    Lwm2mDynamicStorage(ItemBase* parent, P param, size_t maxItems)
-        : Lwm2mStorage<T, P>(maxItems)
+    Lwm2mDynamicStorage(ItemBase* parent, P param, size_t maxItems, T*(newFunc)(ItemBase*, P) = NULL)
+        : Lwm2mStorage<T, P>(maxItems, newFunc)
 #if !CONFIG_RESERVE_MEMORY
           ,
           mParent(parent),
@@ -295,7 +305,14 @@ public:
         ASSERT_MESSAGE(this->mMaxItems, "Unlimited instances is not supported with memory reservation");
 
         for (size_t i = 0; i < this->mMaxItems; i++) {
-            T* item = new T(parent, param);
+            T* item;
+
+            if (this->mNewFunc) {
+                item = this->mNewFunc(parent, param);
+            }
+            else {
+                item = new T(parent, param);
+            }
 
             Node<T>* newNode = new Node<T>(item);
 
@@ -345,7 +362,15 @@ public:
 
         mFreeList.remove(newNode);
 #else
-        T* newItem = new T(mParent, mParam);
+        T* newItem;
+
+        if (this->mNewFunc) {
+            item = this->mNewFunc(parent, param);
+        }
+        else {
+            newItem = new T(mParent, mParam);
+        }
+
         Node<T>* newNode = new Node<T>(newItem);
 #endif
 
