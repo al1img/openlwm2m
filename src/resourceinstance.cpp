@@ -12,85 +12,43 @@ namespace openlwm2m {
  * Public
  ******************************************************************************/
 
-Status ResourceInstance::setString(const char* value)
+/*******************************************************************************
+ * ResourceString
+ ******************************************************************************/
+
+ResourceString::ResourceString(ItemBase* parent, ResourceDesc& desc) : ResourceInstance(parent, desc)
+{
+#if CONFIG_RESERVE_MEMORY
+    mValue = new char[(mDesc.mParams.maxUint ? mDesc.mParams.maxUint : CONFIG_DEFAULT_STRING_LEN) + 1];
+#else
+    mValue = new char[1];
+#endif
+
+    mValue[0] = '\0';
+}
+
+ResourceString::~ResourceString()
+{
+    delete[] mValue;
+}
+
+Status ResourceString::setString(const char* value)
 {
     LOG_DEBUG("Set string /%d/%d/%d/%d, value: %s", getParent()->getParent()->getParent()->getId(),
               getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
 
     ASSERT_MESSAGE(mDesc.mParams.type == ResourceDesc::TYPE_STRING, "Method not supported");
 
-    if (strcmp(value, mValueString) == 0) {
+    if (strcmp(value, mValue) == 0) {
         return STS_OK;
     }
 
 #if !CONFIG_RESERVE_MEMORY
-    delete[] mValueString;
-    mValueString = new char[(mDesc.mParams.maxUint ? mDesc.mParams.maxUint : strlen(value)) + 1];
+    delete[] mValue;
+    mValue = new char[(mDesc.mParams.maxUint ? mDesc.mParams.maxUint : strlen(value)) + 1];
 #endif
 
-    strncpy(mValueString, value, (mDesc.mParams.maxUint ? mDesc.mParams.maxUint : strlen(value)) + 1);
-
-    valueChanged();
-
-    return STS_OK;
-}
-
-Status ResourceInstance::setInt(int64_t value)
-{
-    LOG_DEBUG("Set int /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
-              getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
-
-    ASSERT_MESSAGE(mDesc.mParams.type == ResourceDesc::TYPE_INT, "Method not supported");
-
-    if (value == mValueInt) {
-        return STS_OK;
-    }
-
-    if (value < mDesc.mParams.minInt || value > mDesc.mParams.maxInt) {
-        return STS_ERR_INVALID_VALUE;
-    }
-
-    mValueInt = value;
-
-    valueChanged();
-
-    return STS_OK;
-}
-
-Status ResourceInstance::setUint(uint64_t value)
-{
-    LOG_DEBUG("Set uint /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
-              getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
-
-    ASSERT_MESSAGE(mDesc.mParams.type == ResourceDesc::TYPE_UINT, "Method not supported");
-
-    if (value == mValueUint) {
-        return STS_OK;
-    }
-
-    if (value < mDesc.mParams.minUint || value > mDesc.mParams.maxUint) {
-        return STS_ERR_INVALID_VALUE;
-    }
-
-    mValueUint = value;
-
-    valueChanged();
-
-    return STS_OK;
-}
-
-Status ResourceInstance::setBool(uint8_t value)
-{
-    LOG_DEBUG("Set instance /%d/%d/%d/%d, value: %u", getParent()->getParent()->getParent()->getId(),
-              getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
-
-    ASSERT_MESSAGE(mDesc.mParams.type == ResourceDesc::TYPE_BOOL, "Method not supported");
-
-    if (value == mValueBool) {
-        return STS_OK;
-    }
-
-    mValueBool = value;
+    strncpy(mValue, value, (mDesc.mParams.maxUint ? mDesc.mParams.maxUint : strlen(value)) + 1);
 
     valueChanged();
 
@@ -98,27 +56,111 @@ Status ResourceInstance::setBool(uint8_t value)
 }
 
 /*******************************************************************************
- * Private
+ * ResourceInt
+ ******************************************************************************/
+
+ResourceInt::ResourceInt(ItemBase* parent, ResourceDesc& desc) : ResourceInstance(parent, desc), mValue(0)
+{
+}
+
+ResourceInt::~ResourceInt()
+{
+}
+
+Status ResourceInt::setInt(int64_t value)
+{
+    LOG_DEBUG("Set int /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
+              getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
+
+    if (value == mValue) {
+        return STS_OK;
+    }
+
+    if (value < mDesc.mParams.minInt || value > mDesc.mParams.maxInt) {
+        return STS_ERR_INVALID_VALUE;
+    }
+
+    mValue = value;
+
+    valueChanged();
+
+    return STS_OK;
+}
+
+/*******************************************************************************
+ * ResourceUint
+ ******************************************************************************/
+
+ResourceUint::ResourceUint(ItemBase* parent, ResourceDesc& desc) : ResourceInstance(parent, desc), mValue(0)
+{
+}
+
+ResourceUint::~ResourceUint()
+{
+}
+
+Status ResourceUint::setUint(uint64_t value)
+{
+    LOG_DEBUG("Set uint /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
+              getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
+
+    ASSERT_MESSAGE(mDesc.mParams.type == ResourceDesc::TYPE_UINT, "Method not supported");
+
+    if (value == mValue) {
+        return STS_OK;
+    }
+
+    if (value < mDesc.mParams.minUint || value > mDesc.mParams.maxUint) {
+        return STS_ERR_INVALID_VALUE;
+    }
+
+    mValue = value;
+
+    valueChanged();
+
+    return STS_OK;
+}
+
+/*******************************************************************************
+ * ResourceBool
+ ******************************************************************************/
+
+ResourceBool::ResourceBool(ItemBase* parent, ResourceDesc& desc) : ResourceInstance(parent, desc), mValue(0)
+{
+}
+
+ResourceBool::~ResourceBool()
+{
+}
+
+Status ResourceBool::setBool(uint8_t value)
+{
+    LOG_DEBUG("Set instance /%d/%d/%d/%d, value: %u", getParent()->getParent()->getParent()->getId(),
+              getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
+
+    ASSERT_MESSAGE(mDesc.mParams.type == ResourceDesc::TYPE_BOOL, "Method not supported");
+
+    if (value == mValue) {
+        return STS_OK;
+    }
+
+    mValue = value;
+
+    valueChanged();
+
+    return STS_OK;
+}
+
+/*******************************************************************************
+ * ResourceInstance
  ******************************************************************************/
 
 ResourceInstance::ResourceInstance(ItemBase* parent, ResourceDesc& desc) : ItemBase(parent), mDesc(desc)
 {
-    if (mDesc.mParams.type == ResourceDesc::TYPE_STRING) {
-#if CONFIG_RESERVE_MEMORY
-        mValueString = new char[(mDesc.mParams.maxUint ? mDesc.mParams.maxUint : CONFIG_DEFAULT_STRING_LEN) + 1];
-#else
-        mValueString = new char[1];
-#endif
-
-        mValueString[0] = '\0';
-    }
 }
 
 ResourceInstance::~ResourceInstance()
 {
-    if (mDesc.mParams.type == ResourceDesc::TYPE_STRING) {
-        delete[] mValueString;
-    }
 }
 
 void ResourceInstance::init()

@@ -28,6 +28,8 @@ private:
     ResourceDesc& mDesc;
     ResourceInstance::Storage mInstanceStorage;
 
+    static ResourceInstance* newInstance(ItemBase* parent, ResourceDesc& desc);
+
     Resource(ItemBase* parent, ResourceDesc& desc);
     ~Resource();
 

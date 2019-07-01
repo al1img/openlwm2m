@@ -85,6 +85,10 @@ private:
     friend class ObjectInstance;
     friend class Resource;
     friend class ResourceInstance;
+    friend class ResourceString;
+    friend class ResourceInt;
+    friend class ResourceUint;
+    friend class ResourceBool;
     friend class Lwm2mStorage<ResourceDesc, Params>;
 
     typedef Lwm2mStorage<ResourceDesc, Params> Storage;
