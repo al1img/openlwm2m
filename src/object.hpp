@@ -62,7 +62,6 @@ private:
     friend class Lwm2mStorage<Object, Params>;
 
     typedef Lwm2mStorage<Object, Params> Storage;
-    typedef Node<Object> StorageNode;
 
     Params mParams;
 

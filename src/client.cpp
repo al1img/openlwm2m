@@ -260,18 +260,19 @@ Status Client::registration()
 
     // Starts all non priority handlers
 
-    for (RegHandler::StorageNode* node = mRegHandlerStorage.begin(); node; node = node->next()) {
+    for (RegHandler* regHandler = mRegHandlerStorage.getFirstItem(); regHandler;
+         regHandler = mRegHandlerStorage.getNextItem()) {
         // Skip already started handlers
-        if (node->get()->mState != RegHandler::STATE_INIT) {
+        if (regHandler->mState != RegHandler::STATE_INIT) {
             continue;
         }
 
         // Skip handlers with priority order
-        if (node->get()->mServerInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER)) {
+        if (regHandler->mServerInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER)) {
             continue;
         }
 
-        if ((status = node->get()->startRegistration()) != STS_OK) {
+        if ((status = regHandler->startRegistration()) != STS_OK) {
             mRegHandlerStorage.clear();
             return status;
         }
@@ -396,14 +397,15 @@ Status Client::startNextPriorityReg()
     RegHandler* minPriorityHandler = NULL;
     uint64_t minPriority = ULONG_MAX;
 
-    for (RegHandler::StorageNode* node = mRegHandlerStorage.begin(); node; node = node->next()) {
+    for (RegHandler* regHandler = mRegHandlerStorage.getFirstItem(); regHandler;
+         regHandler = mRegHandlerStorage.getNextItem()) {
         // Skip already started handlers
-        if (node->get()->mState != RegHandler::STATE_INIT) {
+        if (regHandler->mState != RegHandler::STATE_INIT) {
             continue;
         }
 
         ResourceInstance* regPriority =
-            node->get()->mServerInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER);
+            regHandler->mServerInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER);
 
         // Skip handlers without priority order
         if (!regPriority) {
@@ -411,7 +413,7 @@ Status Client::startNextPriorityReg()
         }
 
         if (regPriority->getUint() <= minPriority) {
-            minPriorityHandler = node->get();
+            minPriorityHandler = regHandler;
             minPriority = regPriority->getUint();
         }
     }

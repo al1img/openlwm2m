@@ -18,7 +18,6 @@ private:
     friend class Lwm2mDynamicStorage<RegHandler, Client&>;
 
     typedef Lwm2mDynamicStorage<RegHandler, Client&> Storage;
-    typedef Node<RegHandler> StorageNode;
 
     enum State { STATE_INIT, STATE_INIT_DELAY, STATE_REGISTRATION };
 

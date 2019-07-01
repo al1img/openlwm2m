@@ -21,7 +21,6 @@ private:
     friend class Lwm2mDynamicStorage<ObjectInstance, ResourceDesc::Storage&>;
 
     typedef Lwm2mDynamicStorage<ObjectInstance, ResourceDesc::Storage&> Storage;
-    typedef Node<ObjectInstance> StorageNode;
 
     Resource::Storage mResourceStorage;
 

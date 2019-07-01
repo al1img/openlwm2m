@@ -50,7 +50,6 @@ private:
     friend class Lwm2mDynamicStorage<ResourceInstance, ResourceDesc&>;
 
     typedef Lwm2mDynamicStorage<ResourceInstance, ResourceDesc&> Storage;
-    typedef Node<ResourceInstance> StorageNode;
 
     ResourceDesc& mDesc;
 
