@@ -13,8 +13,8 @@ namespace openlwm2m {
  * Private
  ******************************************************************************/
 
-RegHandler::RegHandler(ItemBase* parent, Client& client)
-    : ItemBase(parent), mClient(client), mSession(NULL), mTimer(INVALID_ID)
+RegHandler::RegHandler(ItemBase* parent, Param param)
+    : ItemBase(parent), mParam(param), mSession(NULL), mTimer(INVALID_ID)
 {
 }
 
@@ -35,8 +35,8 @@ void RegHandler::release()
 {
     LOG_DEBUG("Delete /%d", getId());
 
-    if (mSession) {
-        Status status = mClient.getTransport()->deleteSession(mSession);
+    if (mTransport && mSession) {
+        Status status = mTransport->deleteSession(mSession);
 
         if (status != STS_OK) {
             LOG_ERROR("Can't delete session: %d", status);
@@ -47,11 +47,16 @@ void RegHandler::release()
     mState = STATE_INIT;
 }
 
+void RegHandler::setTransport(TransportItf* transport)
+{
+    mTransport = transport;
+}
+
 Status RegHandler::bind(ObjectInstance* serverInstance)
 {
     mServerInstance = serverInstance;
 
-    Object* object = mClient.getObject(ITF_CLIENT, OBJ_LWM2M_SECURITY);
+    Object* object = mParam.objectManager.getObject(ITF_CLIENT, OBJ_LWM2M_SECURITY);
     ASSERT(object);
 
     mSecurityInstance = object->getFirstInstance();
@@ -77,9 +82,11 @@ Status RegHandler::bind(ObjectInstance* serverInstance)
 
     LOG_DEBUG("Bind /%d to: %s", getId(), serverUri);
 
+    ASSERT(mTransport);
+
     Status status = STS_OK;
 
-    mSession = mClient.getTransport()->createSession(serverUri, &status);
+    mSession = mTransport->createSession(serverUri, &status);
 
     return status;
 }
@@ -126,10 +133,12 @@ Status RegHandler::onTimerCallback()
 
             LOG_DEBUG("Send reg request /%d, objects: %s", getId(), objectsStr);
 
-            status = mClient.mTransport->registrationRequest(
-                mSession, mClient.mName, mServerInstance->getResourceInstance(RES_LIFETIME)->getInt(), LWM2M_VERSION,
-                mServerInstance->getResourceInstance(RES_BINDING)->getString(), mClient.mQueueMode, NULL, objectsStr,
-                &RegHandler::registrationCallback, this);
+            ASSERT(mTransport)
+
+            status = mTransport->registrationRequest(
+                mSession, mParam.clientName, mServerInstance->getResourceInstance(RES_LIFETIME)->getInt(),
+                LWM2M_VERSION, mServerInstance->getResourceInstance(RES_BINDING)->getString(), mParam.queueMode, NULL,
+                objectsStr, &RegHandler::registrationCallback, this);
 
             if (status != STS_OK) {
                 registrationStatus(status);
@@ -152,14 +161,16 @@ void RegHandler::registrationCallback(void* context, Status status)
 
 void RegHandler::onRegistrationCallback(Status status)
 {
-    mClient.mPollRequest();
+    if (mParam.pollRequest) {
+        mParam.pollRequest();
+    }
 }
 
 Status RegHandler::getObjectsStr(char* str, int maxSize)
 {
     int size = 0;
 
-    Object* object = mClient.getFirstObject(ITF_REGISTER);
+    Object* object = mParam.objectManager.getFirstObject(ITF_REGISTER);
 
     while (object) {
         ObjectInstance* instance = object->getFirstInstance();
@@ -191,7 +202,7 @@ Status RegHandler::getObjectsStr(char* str, int maxSize)
             }
         }
 
-        object = mClient.getNextObject(ITF_REGISTER);
+        object = mParam.objectManager.getNextObject(ITF_REGISTER);
     }
 
     if (size > 0 && str[size - 1] == ',') {
