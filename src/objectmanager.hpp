@@ -8,6 +8,7 @@ namespace openlwm2m {
 class ObjectManager {
 private:
     friend class Client;
+    friend class RegHandler;
 
     Object::Storage mObjectStorage;
 

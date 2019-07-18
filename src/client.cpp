@@ -15,7 +15,7 @@ Client::Client(const char* name, bool queueMode, PollRequest pollRequest)
     : mName(name),
       mQueueMode(queueMode),
       mPollRequest(pollRequest),
-      mRegHandlerStorage(NULL, RegHandler::Param{}, CONFIG_NUM_SERVERS),
+      mRegHandlerStorage(NULL, (RegHandler::Params){mObjectManager, name, queueMode, pollRequest}, CONFIG_NUM_SERVERS),
       mState(STATE_INIT)
 {
     LOG_DEBUG("Create client");

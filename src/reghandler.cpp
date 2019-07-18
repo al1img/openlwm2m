@@ -13,8 +13,8 @@ namespace openlwm2m {
  * Private
  ******************************************************************************/
 
-RegHandler::RegHandler(ItemBase* parent, Param param)
-    : ItemBase(parent), mParam(param), mSession(NULL), mTimer(INVALID_ID)
+RegHandler::RegHandler(ItemBase* parent, Params params)
+    : ItemBase(parent), mParams(params), mSession(NULL), mTimer(INVALID_ID)
 {
 }
 
@@ -56,7 +56,7 @@ Status RegHandler::bind(ObjectInstance* serverInstance)
 {
     mServerInstance = serverInstance;
 
-    Object* object = mParam.objectManager.getObject(ITF_CLIENT, OBJ_LWM2M_SECURITY);
+    Object* object = mParams.objectManager.getObject(ITF_CLIENT, OBJ_LWM2M_SECURITY);
     ASSERT(object);
 
     mSecurityInstance = object->getFirstInstance();
@@ -136,8 +136,8 @@ Status RegHandler::onTimerCallback()
             ASSERT(mTransport)
 
             status = mTransport->registrationRequest(
-                mSession, mParam.clientName, mServerInstance->getResourceInstance(RES_LIFETIME)->getInt(),
-                LWM2M_VERSION, mServerInstance->getResourceInstance(RES_BINDING)->getString(), mParam.queueMode, NULL,
+                mSession, mParams.clientName, mServerInstance->getResourceInstance(RES_LIFETIME)->getInt(),
+                LWM2M_VERSION, mServerInstance->getResourceInstance(RES_BINDING)->getString(), mParams.queueMode, NULL,
                 objectsStr, &RegHandler::registrationCallback, this);
 
             if (status != STS_OK) {
@@ -161,8 +161,8 @@ void RegHandler::registrationCallback(void* context, Status status)
 
 void RegHandler::onRegistrationCallback(Status status)
 {
-    if (mParam.pollRequest) {
-        mParam.pollRequest();
+    if (mParams.pollRequest) {
+        mParams.pollRequest();
     }
 }
 
@@ -170,7 +170,7 @@ Status RegHandler::getObjectsStr(char* str, int maxSize)
 {
     int size = 0;
 
-    Object* object = mParam.objectManager.getFirstObject(ITF_REGISTER);
+    Object* object = mParams.objectManager.getFirstObject(ITF_REGISTER);
 
     while (object) {
         ObjectInstance* instance = object->getFirstInstance();
@@ -202,7 +202,7 @@ Status RegHandler::getObjectsStr(char* str, int maxSize)
             }
         }
 
-        object = mParam.objectManager.getNextObject(ITF_REGISTER);
+        object = mParams.objectManager.getNextObject(ITF_REGISTER);
     }
 
     if (size > 0 && str[size - 1] == ',') {

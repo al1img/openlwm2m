@@ -5,6 +5,7 @@
 #include "itembase.hpp"
 #include "object.hpp"
 #include "objectinstance.hpp"
+#include "objectmanager.hpp"
 #include "storage.hpp"
 #include "timer.hpp"
 
@@ -14,7 +15,7 @@ class Client;
 
 class RegHandler : public ItemBase {
 private:
-    struct Param {
+    struct Params {
         ObjectManager& objectManager;
         const char* clientName;
         bool queueMode;
@@ -22,14 +23,14 @@ private:
     };
 
     friend class Client;
-    friend class Lwm2mStorage<RegHandler, Client&>;
-    friend class Lwm2mDynamicStorage<RegHandler, Client&>;
+    friend class Lwm2mStorage<RegHandler, Params>;
+    friend class Lwm2mDynamicStorage<RegHandler, Params>;
 
-    typedef Lwm2mDynamicStorage<RegHandler, Param> Storage;
+    typedef Lwm2mDynamicStorage<RegHandler, Params> Storage;
 
     enum State { STATE_INIT, STATE_INIT_DELAY, STATE_REGISTRATION };
 
-    Param mParam;
+    Params mParams;
     TransportItf* mTransport;
     void* mSession;
     ObjectInstance* mServerInstance;
@@ -37,7 +38,7 @@ private:
     State mState;
     Timer mTimer;
 
-    RegHandler(ItemBase* parent, Param param);
+    RegHandler(ItemBase* parent, Params params);
     ~RegHandler();
 
     void init();
