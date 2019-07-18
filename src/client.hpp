@@ -9,6 +9,7 @@
 
 #include "interface.hpp"
 #include "object.hpp"
+#include "objectmanager.hpp"
 #include "reghandler.hpp"
 #include "status.hpp"
 
@@ -109,7 +110,7 @@ private:
 
     TransportItf* mTransport;
 
-    Object::Storage mObjectStorage;
+    ObjectManager mObjectManager;
     RegHandler::Storage mRegHandlerStorage;
 
     State mState;

@@ -15,7 +15,6 @@ Client::Client(const char* name, bool queueMode, PollRequest pollRequest)
     : mName(name),
       mQueueMode(queueMode),
       mPollRequest(pollRequest),
-      mObjectStorage(),
       mRegHandlerStorage(NULL, *this, CONFIG_NUM_SERVERS),
       mState(STATE_INIT)
 {
@@ -118,7 +117,6 @@ Client::~Client()
     LOG_DEBUG("Delete client");
 
     mRegHandlerStorage.clear();
-    mObjectStorage.release();
 }
 
 /*******************************************************************************
@@ -148,65 +146,22 @@ Object* Client::createObject(uint16_t id, Object::Instance instance, size_t maxI
         return NULL;
     }
 
-    if (instance == Object::SINGLE) {
-        maxInstances = 1;
-    }
-
-    LOG_DEBUG("Create object /%d", id);
-
-    Object::Params params = {instance, mandatory, interfaces, maxInstances};
-
-    return mObjectStorage.newItem(NULL, id, params, status);
+    return mObjectManager.createObject(id, instance, maxInstances, mandatory, interfaces, status);
 }
 
 Object* Client::getObject(Interface interface, uint16_t id)
 {
-    Object* object = mObjectStorage.getItemById(id);
-
-    if (interface && object && !(object->mParams.interfaces & interface)) {
-        LOG_DEBUG("Object /%d not accesible by interface %d", id, interface);
-        return NULL;
-    }
-
-    return object;
+    return mObjectManager.getObject(interface, id);
 }
 
 Object* Client::getFirstObject(Interface interface)
 {
-    Object* object = mObjectStorage.getFirstItem();
-
-    while (object) {
-        if (interface && !(object->mParams.interfaces & interface)) {
-            LOG_DEBUG("Object /%d not accesible by interface %d", object->getId(), interface);
-
-            object = mObjectStorage.getNextItem();
-
-            continue;
-        }
-
-        return object;
-    }
-
-    return NULL;
+    return mObjectManager.getFirstObject(interface);
 }
 
 Object* Client::getNextObject(Interface interface)
 {
-    Object* object = mObjectStorage.getNextItem();
-
-    while (object) {
-        if (interface && !(object->mParams.interfaces & interface)) {
-            LOG_DEBUG("Object /%d not accesible by interface %d", object->getId(), interface);
-
-            object = mObjectStorage.getNextItem();
-
-            continue;
-        }
-
-        return object;
-    }
-
-    return NULL;
+    return mObjectManager.getNextObject(interface);
 }
 
 ResourceInstance* Client::getResourceInstance(Interface interface, uint16_t objId, uint16_t objInstanceId,
@@ -231,7 +186,7 @@ Status Client::init(TransportItf* transport)
 
     mTransport = transport;
 
-    mObjectStorage.init();
+    mObjectManager.init();
 
     mState = STATE_INITIALIZED;
 

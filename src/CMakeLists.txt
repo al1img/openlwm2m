@@ -14,6 +14,7 @@ set(SOURCES
 	client.cpp
 	object.cpp
 	objectinstance.cpp
+	objectmanager.cpp
 	reghandler.cpp
 	resource.cpp
 	resourcedesc.cpp
