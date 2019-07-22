@@ -218,12 +218,12 @@ Status Client::registration()
     for (RegHandler* regHandler = mRegHandlerStorage.getFirstItem(); regHandler;
          regHandler = mRegHandlerStorage.getNextItem()) {
         // Skip already started handlers
-        if (regHandler->mState != RegHandler::STATE_INIT) {
+        if (regHandler->getState() != RegHandler::STATE_INIT) {
             continue;
         }
 
         // Skip handlers with priority order
-        if (regHandler->mServerInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER)) {
+        if (regHandler->getServerInstance()->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER)) {
             continue;
         }
 
@@ -242,8 +242,9 @@ void Client::bootstrapDiscover()
 void Client::bootstrapRead()
 {
 }
-void Client::bootstrapWrite()
+Status Client::bootstrapWrite(DataFormat dataFormat, const char* path, void* data, size_t size)
 {
+    return STS_OK;
 }
 void Client::bootstrapDelete()
 {
@@ -321,9 +322,6 @@ Status Client::createRegHandlers()
     ObjectInstance* serverInstance = object->getFirstInstance();
 
     while (serverInstance) {
-        ResourceInstance* shortServerIdInstance = serverInstance->getResourceInstance(RES_SHORT_SERVER_ID);
-        ASSERT(shortServerIdInstance);
-
         RegHandler* handler = mRegHandlerStorage.newItem(INVALID_ID);
         ASSERT(handler);
 
@@ -355,12 +353,12 @@ Status Client::startNextPriorityReg()
     for (RegHandler* regHandler = mRegHandlerStorage.getFirstItem(); regHandler;
          regHandler = mRegHandlerStorage.getNextItem()) {
         // Skip already started handlers
-        if (regHandler->mState != RegHandler::STATE_INIT) {
+        if (regHandler->getState() != RegHandler::STATE_INIT) {
             continue;
         }
 
         ResourceInstance* regPriority =
-            regHandler->mServerInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER);
+            regHandler->getServerInstance()->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER);
 
         // Skip handlers without priority order
         if (!regPriority) {
@@ -385,7 +383,7 @@ void Client::registrationStatus(RegHandler* handler, Status status)
     LOG_DEBUG("Handler /%d reg status: %d", handler->getId(), status);
 
     // if priority handler finished, start next priority handler
-    if (handler->mServerInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER)) {
+    if (handler->getServerInstance()->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER)) {
         startNextPriorityReg();
     }
 }

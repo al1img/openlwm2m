@@ -78,7 +78,7 @@ public:
 
     void bootstrapDiscover();
     void bootstrapRead();
-    void bootstrapWrite();
+    Status bootstrapWrite(DataFormat dataFormat, const char* path, void* data, size_t size);
     void bootstrapDelete();
 
     // Device

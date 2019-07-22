@@ -189,6 +189,35 @@ public:
         return newNode->get();
     }
 
+    Status addItem(T* item)
+    {
+        if (mMaxItems > 0 && this->size() == mMaxItems) {
+            return STS_ERR_NO_MEM;
+        }
+
+        uint16_t id = item->getId();
+
+        Node<T>* node;
+        Status retStatus;
+
+        if ((retStatus = this->findNodeAndId(&id, &node)) != STS_OK) {
+            return retStatus;
+        }
+
+        Node<T>* newNode = new Node<T>(item);
+
+        newNode->get()->setId(id);
+
+        if (node) {
+            this->insertAfter(node, newNode);
+        }
+        else {
+            this->insertBegin(newNode);
+        }
+
+        return STS_OK;
+    }
+
     T* getItemById(uint16_t id)
     {
         Node<T>* node = this->begin();

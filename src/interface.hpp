@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <cstddef>
 
+#include "dataformat.hpp"
 #include "status.hpp"
 
 namespace openlwm2m {
@@ -64,7 +65,7 @@ public:
     // Bootstrap
     virtual void bootstrapDiscover() = 0;
     virtual void bootstrapRead() = 0;
-    virtual void bootstrapWrite() = 0;
+    virtual Status bootstrapWrite(DataFormat dataFormat, const char* path, void* data, size_t size) = 0;
     virtual void bootstrapDelete() = 0;
 
     // Device

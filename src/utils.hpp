@@ -7,7 +7,8 @@ namespace openlwm2m {
 
 class Utils {
 public:
-    static int stringCopy(char* dst, const char* src, size_t len);
+    static int strCopy(char* dst, const char* src, size_t len);
+    static int strCat(char* dst, const char* src, size_t len);
 };
 
 }  // namespace openlwm2m

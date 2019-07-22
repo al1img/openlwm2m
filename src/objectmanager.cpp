@@ -8,10 +8,6 @@ namespace openlwm2m {
  * Public
  ******************************************************************************/
 
-/*******************************************************************************
- * Private
- ******************************************************************************/
-
 ObjectManager::ObjectManager()
 {
 }
@@ -89,4 +85,27 @@ Object* ObjectManager::getNextObject(Interface interface)
 
     return NULL;
 }
+
+Status ObjectManager::addConverter(DataConverter* converter)
+{
+    return mConverterStorage.addItem(converter);
+}
+
+Status ObjectManager::write(Interface interface, DataFormat format, const char* path, void* data, size_t size)
+{
+    DataConverter* converter = mConverterStorage.getItemById(format);
+
+    if (converter == NULL) {
+        return STS_ERR_NOT_EXIST;
+    }
+
+    //    converter->dataToObjects(data, size);
+
+    return STS_OK;
+}
+
+/*******************************************************************************
+ * Private
+ ******************************************************************************/
+
 }  // namespace openlwm2m

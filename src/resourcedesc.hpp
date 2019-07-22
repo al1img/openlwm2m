@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <cstddef>
 
+#include "dataformat.hpp"
 #include "itembase.hpp"
 #include "storage.hpp"
 
@@ -45,19 +46,6 @@ public:
 
     enum Instance { SINGLE, MULTIPLE };
 
-    enum Type {
-        TYPE_STRING,
-        TYPE_INT,
-        TYPE_UINT,
-        TYPE_FLOAT,
-        TYPE_BOOL,
-        TYPE_OPAQUE,
-        TYPE_TIME,
-        TYPE_OBJLINK,
-        TYPE_CORELINK,
-        TYPE_NONE
-    };
-
     enum Operation { OP_NONE = 0x00, OP_READ = 0x01, OP_WRITE = 0x02, OP_READWRITE = 0x03, OP_EXECUTE = 0x04 };
 
 private:
@@ -66,7 +54,7 @@ private:
         Instance instance;
         size_t maxInstances;
         Mandatory mandatory;
-        Type type;
+        DataType type;
         ResourceDesc::ValueChangeCbk cbk;
         void* context;
         union {

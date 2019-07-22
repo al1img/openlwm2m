@@ -28,6 +28,8 @@ include_directories(
 
 set(TEST_SOURCES
 	main.cpp
+	testjsonconverter.cpp
+	testreghandler.cpp
 	testtimer.cpp
 )
 

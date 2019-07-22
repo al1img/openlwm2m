@@ -14,7 +14,7 @@ namespace openlwm2m {
 class Client;
 
 class RegHandler : public ItemBase {
-private:
+public:
     struct Params {
         ObjectManager& objectManager;
         const char* clientName;
@@ -22,21 +22,9 @@ private:
         void (*pollRequest)();
     };
 
-    friend class Client;
-    friend class Lwm2mStorage<RegHandler, Params>;
-    friend class Lwm2mDynamicStorage<RegHandler, Params>;
-
     typedef Lwm2mDynamicStorage<RegHandler, Params> Storage;
 
     enum State { STATE_INIT, STATE_INIT_DELAY, STATE_REGISTRATION };
-
-    Params mParams;
-    TransportItf* mTransport;
-    void* mSession;
-    ObjectInstance* mServerInstance;
-    ObjectInstance* mSecurityInstance;
-    State mState;
-    Timer mTimer;
 
     RegHandler(ItemBase* parent, Params params);
     ~RegHandler();
@@ -48,6 +36,19 @@ private:
 
     Status bind(ObjectInstance* serverInstance);
     Status startRegistration();
+
+    State getState() const { return mState; }
+
+    ObjectInstance* getServerInstance() const { return mServerInstance; }
+
+private:
+    Params mParams;
+    TransportItf* mTransport;
+    void* mSession;
+    ObjectInstance* mServerInstance;
+    ObjectInstance* mSecurityInstance;
+    State mState;
+    Timer mTimer;
 
     static Status timerCallback(void* context);
     Status onTimerCallback();

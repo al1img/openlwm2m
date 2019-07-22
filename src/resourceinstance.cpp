@@ -37,7 +37,7 @@ Status ResourceString::setString(const char* value)
     LOG_DEBUG("Set string /%d/%d/%d/%d, value: %s", getParent()->getParent()->getParent()->getId(),
               getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
 
-    ASSERT_MESSAGE(mDesc.mParams.type == ResourceDesc::TYPE_STRING, "Method not supported");
+    ASSERT_MESSAGE(mDesc.mParams.type == DATA_TYPE_STRING, "Method not supported");
 
     if (strcmp(value, mValue) == 0) {
         return STS_OK;
@@ -104,7 +104,7 @@ Status ResourceUint::setUint(uint64_t value)
     LOG_DEBUG("Set uint /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
               getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
 
-    ASSERT_MESSAGE(mDesc.mParams.type == ResourceDesc::TYPE_UINT, "Method not supported");
+    ASSERT_MESSAGE(mDesc.mParams.type == DATA_TYPE_UINT, "Method not supported");
 
     if (value == mValue) {
         return STS_OK;
@@ -138,7 +138,7 @@ Status ResourceBool::setBool(uint8_t value)
     LOG_DEBUG("Set instance /%d/%d/%d/%d, value: %u", getParent()->getParent()->getParent()->getId(),
               getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
 
-    ASSERT_MESSAGE(mDesc.mParams.type == ResourceDesc::TYPE_BOOL, "Method not supported");
+    ASSERT_MESSAGE(mDesc.mParams.type == DATA_TYPE_BOOL, "Method not supported");
 
     if (value == mValue) {
         return STS_OK;

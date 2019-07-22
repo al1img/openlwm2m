@@ -45,16 +45,16 @@ ResourceInstance* Resource::getNextInstance()
 ResourceInstance* Resource::newInstance(ItemBase* parent, ResourceDesc& desc)
 {
     switch (desc.mParams.type) {
-        case ResourceDesc::TYPE_STRING:
+        case DATA_TYPE_STRING:
             return new ResourceString(parent, desc);
 
-        case ResourceDesc::TYPE_INT:
+        case DATA_TYPE_INT:
             return new ResourceInt(parent, desc);
 
-        case ResourceDesc::TYPE_UINT:
+        case DATA_TYPE_UINT:
             return new ResourceUint(parent, desc);
 
-        case ResourceDesc::TYPE_BOOL:
+        case DATA_TYPE_BOOL:
             return new ResourceBool(parent, desc);
 
         default:

@@ -6,12 +6,7 @@
 namespace openlwm2m {
 
 class ObjectManager {
-private:
-    friend class Client;
-    friend class RegHandler;
-
-    Object::Storage mObjectStorage;
-
+public:
     ObjectManager();
     ~ObjectManager();
 
@@ -23,6 +18,14 @@ private:
 
     Object* getFirstObject(Interface interface);
     Object* getNextObject(Interface interface);
+
+    Status write(Interface interface, DataFormat format, const char* path, void* data, size_t size);
+
+    Status addConverter(DataConverter* converter);
+
+private:
+    Object::Storage mObjectStorage;
+    DataConverter::Storage mConverterStorage;
 };
 
 }  // namespace openlwm2m
