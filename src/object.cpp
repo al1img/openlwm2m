@@ -83,6 +83,10 @@ Status Object::createResourceNone(uint16_t id, uint16_t operations, ResourceDesc
 
 ObjectInstance* Object::getInstanceById(uint16_t id)
 {
+    if (!mInstanceStorage) {
+        return NULL;
+    }
+
     return mInstanceStorage->getItemById(id);
 }
 

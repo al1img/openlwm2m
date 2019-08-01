@@ -67,6 +67,17 @@ ResourceInt::~ResourceInt()
 {
 }
 
+Status ResourceInt::setFloat(double value)
+{
+    int64_t nativeValue = value;
+
+    if (value != nativeValue) {
+        return STS_ERR_INVALID_VALUE;
+    }
+
+    return setInt(nativeValue);
+}
+
 Status ResourceInt::setInt(int64_t value)
 {
     LOG_DEBUG("Set int /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
@@ -97,6 +108,17 @@ ResourceUint::ResourceUint(ItemBase* parent, ResourceDesc& desc) : ResourceInsta
 
 ResourceUint::~ResourceUint()
 {
+}
+
+Status ResourceUint::setFloat(double value)
+{
+    uint64_t nativeValue = value;
+
+    if (value != nativeValue) {
+        return STS_ERR_INVALID_VALUE;
+    }
+
+    return setUint(nativeValue);
 }
 
 Status ResourceUint::setUint(uint64_t value)

@@ -26,6 +26,11 @@ public:
 private:
     Object::Storage mObjectStorage;
     DataConverter::Storage mConverterStorage;
+
+    static void resBootstrapChanged(void* context, ResourceInstance* resInstance);
+
+    Status bootstrapWrite(DataConverter* converter, const char* path, void* data, size_t size);
+    Status writeResource(ResourceInstance* instance, DataConverter::ResourceData* resourceData);
 };
 
 }  // namespace openlwm2m

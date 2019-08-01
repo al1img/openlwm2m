@@ -72,7 +72,7 @@ void testDecoding(JsonConverter* converter, const char* jsonData, DataConverter:
     REQUIRE(converter->nextDecoding(&data) == STS_ERR_NOT_EXIST);
 }
 
-TEST_CASE("test json converter", "[jsonconverter]")
+TEST_CASE("test jsonconverter decoding", "[jsonconverter]")
 {
     JsonConverter converter;
 

@@ -115,8 +115,6 @@ private:
 
     State mState;
 
-    static void resBootstrapChanged(void* context, ResourceInstance* resInstance);
-
     Status createRegHandlers();
 
     Status startNextPriorityReg();

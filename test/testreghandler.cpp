@@ -10,7 +10,7 @@ void pollRequest()
 {
 }
 
-TEST_CASE("test reg handler", "[reghandler]")
+TEST_CASE("test reghandler", "[reghandler]")
 {
     Status status = STS_OK;
     ObjectManager objectManager;

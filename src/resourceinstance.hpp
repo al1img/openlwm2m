@@ -14,49 +14,61 @@ class ResourceInstance : public ItemBase {
 public:
     virtual const char* getString() const
     {
-        ASSERT_MESSAGE(true, "Method not supported");
+        ASSERT_MESSAGE(false, "Method not supported");
         return "";
     }
 
     virtual Status setString(const char* value)
     {
-        ASSERT_MESSAGE(true, "Method not supported");
+        ASSERT_MESSAGE(false, "Method not supported");
         return STS_ERR_NOT_EXIST;
     }
 
     virtual int64_t getInt() const
     {
-        ASSERT_MESSAGE(true, "Method not supported");
+        ASSERT_MESSAGE(false, "Method not supported");
         return 0;
     }
 
     virtual Status setInt(int64_t value)
     {
-        ASSERT_MESSAGE(true, "Method not supported");
+        ASSERT_MESSAGE(false, "Method not supported");
         return STS_ERR_NOT_EXIST;
     }
 
     virtual uint64_t getUint() const
     {
-        ASSERT_MESSAGE(true, "Method not supported");
+        ASSERT_MESSAGE(false, "Method not supported");
         return 0;
     }
 
     virtual Status setUint(uint64_t value)
     {
-        ASSERT_MESSAGE(true, "Method not supported");
+        ASSERT_MESSAGE(false, "Method not supported");
         return STS_ERR_NOT_EXIST;
     }
 
     virtual uint8_t getBool() const
     {
-        ASSERT_MESSAGE(true, "Method not supported");
+        ASSERT_MESSAGE(false, "Method not supported");
         return 0;
     };
 
     virtual Status setBool(uint8_t value)
     {
-        ASSERT_MESSAGE(true, "Method not supported");
+        ASSERT_MESSAGE(false, "Method not supported");
+        return STS_ERR_NOT_EXIST;
+    }
+
+    virtual double getFloat() const
+    {
+        ASSERT_MESSAGE(false, "Method not supported");
+        return 0;
+    };
+
+    virtual Status setFloat(double value)
+    {
+        ASSERT_MESSAGE(false, "Method not supported");
         return STS_ERR_NOT_EXIST;
     }
 
@@ -97,6 +109,9 @@ public:
     int64_t getInt() const { return mValue; }
     Status setInt(int64_t value);
 
+    double getFloat() const { return mValue; }
+    Status setFloat(double value);
+
 private:
     friend class Resource;
 
@@ -110,6 +125,9 @@ class ResourceUint : public ResourceInstance {
 public:
     uint64_t getUint() const { return mValue; }
     Status setUint(uint64_t value);
+
+    double getFloat() const { return mValue; }
+    Status setFloat(double value);
 
 private:
     friend class Resource;

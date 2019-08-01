@@ -13,6 +13,10 @@
 // LwM2M Object: LwM2M Security
 #define RES_LWM2M_SERVER_URI            0
 #define RES_BOOTSTRAP_SERVER            1
+#define RES_SECURITY_MODE               2
+#define RES_PUBLIC_KEY_OR_IDENTITY      3
+#define RES_SERVER_PUBLIC_KEY           4
+#define RES_SECRET_KEY                  5
 #define RES_SECURITY_SHORT_SERVER_ID    10
 
 // LwM2M Object: LwM2M Server
