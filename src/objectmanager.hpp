@@ -23,6 +23,8 @@ public:
 
     Status addConverter(DataConverter* converter);
 
+    ObjectInstance* getServerInstance(uint16_t shortServerId);
+
 private:
     Object::Storage mObjectStorage;
     DataConverter::Storage mConverterStorage;

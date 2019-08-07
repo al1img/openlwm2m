@@ -43,7 +43,7 @@ public:
 
 private:
     static const int sStringSize = 64;
-    static const int sBufferSize = CONFIG_DEFAULT_STRING_LEN;
+    static const int sBufferSize = CONFIG_DEFAULT_STRING_LEN + 1;
 
     char* mCurPos;
     char* mEndPos;

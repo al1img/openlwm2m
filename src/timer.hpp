@@ -16,7 +16,7 @@ public:
      *
      * @retval Status.
      */
-    static Status poll(uint64_t currentTimeMs, uint64_t* poolTimeMs);
+    static Status poll(uint64_t currentTimeMs, uint64_t* poolTimeMs = NULL);
 
     /**
      * Timer callback.

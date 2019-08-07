@@ -18,7 +18,7 @@ namespace openlwm2m {
 
 ResourceString::ResourceString(ItemBase* parent, ResourceDesc& desc) : ResourceInstance(parent, desc)
 {
-    mSize = mDesc.mParams.maxUint ? mDesc.mParams.maxUint : CONFIG_DEFAULT_STRING_LEN - 1;
+    mSize = mDesc.mParams.maxUint ? mDesc.mParams.maxUint : CONFIG_DEFAULT_STRING_LEN;
     mValue = new char[mSize + 1];
     mValue[0] = '\0';
 }

@@ -1,6 +1,7 @@
 #include "reghandler.hpp"
 
 #include <cstdio>
+#include <cstring>
 
 #include "client.hpp"
 #include "log.hpp"
@@ -10,11 +11,11 @@
 namespace openlwm2m {
 
 /*******************************************************************************
- * Private
+ * Public
  ******************************************************************************/
 
 RegHandler::RegHandler(ItemBase* parent, Params params)
-    : ItemBase(parent), mParams(params), mSession(NULL), mTimer(INVALID_ID)
+    : ItemBase(parent), mParams(params), mTransport(NULL), mSession(NULL), mTimer(INVALID_ID)
 {
 }
 
@@ -24,7 +25,7 @@ RegHandler::~RegHandler()
 
 void RegHandler::init()
 {
-    LOG_DEBUG("Create /%d", getId());
+    LOG_DEBUG("Create %d", getId());
 
     mTimer.setId(getId());
     mSession = mServerInstance = mSecurityInstance = NULL;
@@ -33,7 +34,7 @@ void RegHandler::init()
 
 void RegHandler::release()
 {
-    LOG_DEBUG("Delete /%d", getId());
+    LOG_DEBUG("Delete %d", getId());
 
     if (mTransport && mSession) {
         Status status = mTransport->deleteSession(mSession);
@@ -47,14 +48,12 @@ void RegHandler::release()
     mState = STATE_INIT;
 }
 
-void RegHandler::setTransport(TransportItf* transport)
+Status RegHandler::bind(TransportItf* transport)
 {
     mTransport = transport;
-}
 
-Status RegHandler::bind(ObjectInstance* serverInstance)
-{
-    mServerInstance = serverInstance;
+    mServerInstance = mParams.objectManager.getServerInstance(getId());
+    ASSERT(mServerInstance);
 
     Object* object = mParams.objectManager.getObject(ITF_CLIENT, OBJ_LWM2M_SECURITY);
     ASSERT(object);
@@ -80,9 +79,7 @@ Status RegHandler::bind(ObjectInstance* serverInstance)
 
     const char* serverUri = mSecurityInstance->getResourceInstance(RES_LWM2M_SERVER_URI)->getString();
 
-    LOG_DEBUG("Bind /%d to: %s", getId(), serverUri);
-
-    ASSERT(mTransport);
+    LOG_INFO("Bind %d to: %s", getId(), serverUri);
 
     Status status = STS_OK;
 
@@ -91,17 +88,23 @@ Status RegHandler::bind(ObjectInstance* serverInstance)
     return status;
 }
 
-Status RegHandler::startRegistration()
+Status RegHandler::registration(RegistrationHandler handler, void* context)
 {
+    if (mState != STATE_INIT) {
+        return STS_ERR_INVALID_STATE;
+    }
+
+    mRegistrationContext = (ContextHandler){handler, context};
+
     ResourceInstance* initRegDelay = mServerInstance->getResourceInstance(RES_INITIAL_REGISTRATION_DELAY);
 
     uint64_t initDelayMs = 0;
 
     if (initRegDelay) {
-        initDelayMs = initRegDelay->getUint();
+        initDelayMs = initRegDelay->getUint() * 1000;
     }
 
-    LOG_DEBUG("Start /%d, delay: %lu", getId(), initDelayMs);
+    LOG_INFO("Start %d, delay: %lu", getId(), initDelayMs);
 
     mTimer.start(initDelayMs, &RegHandler::timerCallback, this, true);
 
@@ -110,6 +113,31 @@ Status RegHandler::startRegistration()
     return STS_OK;
 }
 
+Status RegHandler::deregistration(RegistrationHandler handler, void* context)
+{
+    Status status = STS_OK;
+
+    if (mState != STATE_REGISTERED) {
+        return STS_ERR_INVALID_STATE;
+    }
+
+    mTimer.stop();
+
+    mState = STATE_DEREGISTRATION;
+
+    LOG_INFO("Send deregistration reqest");
+
+    if ((status = mTransport->deregistrationRequest(mSession, &RegHandler::deregistrationCallback, this)) != STS_OK) {
+        return status;
+    }
+
+    return STS_OK;
+}
+
+/*******************************************************************************
+ * Private
+ ******************************************************************************/
+
 Status RegHandler::timerCallback(void* context)
 {
     return static_cast<RegHandler*>(context)->onTimerCallback();
@@ -117,41 +145,16 @@ Status RegHandler::timerCallback(void* context)
 
 Status RegHandler::onTimerCallback()
 {
-    Status status = STS_OK;
-
     switch (mState) {
         case STATE_INIT_DELAY:
-            mState = STATE_REGISTRATION;
-            char objectsStr[CONFIG_DEFAULT_STRING_LEN];
+            return sendRegistration();
 
-            status = getObjectsStr(objectsStr, CONFIG_DEFAULT_STRING_LEN);
-
-            if (status != STS_OK) {
-                registrationStatus(status);
-                return status;
-            }
-
-            LOG_DEBUG("Send reg request /%d, objects: %s", getId(), objectsStr);
-
-            ASSERT(mTransport)
-
-            status = mTransport->registrationRequest(
-                mSession, mParams.clientName, mServerInstance->getResourceInstance(RES_LIFETIME)->getInt(),
-                LWM2M_VERSION, mServerInstance->getResourceInstance(RES_BINDING)->getString(), mParams.queueMode, NULL,
-                objectsStr, &RegHandler::registrationCallback, this);
-
-            if (status != STS_OK) {
-                registrationStatus(status);
-                return status;
-            }
-
-            break;
+        case STATE_REGISTERED:
+            return sendUpdate();
 
         default:
-            break;
+            return STS_ERR;
     }
-
-    return STS_OK;
 }
 
 void RegHandler::registrationCallback(void* context, Status status)
@@ -161,6 +164,33 @@ void RegHandler::registrationCallback(void* context, Status status)
 
 void RegHandler::onRegistrationCallback(Status status)
 {
+    registrationStatus(status);
+
+    if (mParams.pollRequest) {
+        mParams.pollRequest();
+    }
+}
+
+void RegHandler::deregistrationCallback(void* context, Status status)
+{
+    static_cast<RegHandler*>(context)->onDeregistrationCallback(status);
+}
+
+void RegHandler::onDeregistrationCallback(Status status)
+{
+    mState = STATE_DEREGISTERED;
+
+    if (status == STS_OK) {
+        LOG_INFO("Deregistration success");
+    }
+    else {
+        LOG_ERROR("Deregistration failed: %s", status);
+    }
+
+    if (mDeregistrationContext.handler) {
+        mDeregistrationContext.handler(mDeregistrationContext.context, status);
+    }
+
     if (mParams.pollRequest) {
         mParams.pollRequest();
     }
@@ -215,11 +245,91 @@ Status RegHandler::getObjectsStr(char* str, int maxSize)
 void RegHandler::registrationStatus(Status status)
 {
     if (status == STS_OK) {
-        LOG_INFO("Registration success /%d", getId());
+        LOG_INFO("Registration success %d", getId());
+
+        if (mState == STATE_REGISTRATION) {
+            mState = STATE_REGISTERED;
+
+            if (mRegistrationContext.handler) {
+                mRegistrationContext.handler(mRegistrationContext.context, status);
+            }
+        }
+
+        if (mState == STATE_REGISTERED) {
+            mTimer.start(mLifetime * CONFIG_LIFETIME_SCALE * 1000, &RegHandler::timerCallback, this, true);
+        }
     }
     else {
-        LOG_ERROR("Registration failed /%d, status: %d", getId(), status);
+        LOG_ERROR("Registration failed %d, status: %d", getId(), status);
     }
+}
+
+Status RegHandler::sendRegistration()
+{
+    Status status = STS_OK;
+
+    mState = STATE_REGISTRATION;
+
+    if ((status = getObjectsStr(mObjectsStr, CONFIG_DEFAULT_STRING_LEN)) != STS_OK) {
+        return status;
+    }
+
+    mLifetime = mServerInstance->getResourceInstance(RES_LIFETIME)->getInt();
+    strncpy(mBindingStr, mServerInstance->getResourceInstance(RES_BINDING)->getString(), CONFIG_BINDING_STR_MAX_LEN);
+    mBindingStr[CONFIG_BINDING_STR_MAX_LEN] = '\0';
+
+    LOG_INFO("Send registration request %d, lifetime: %d, objects: %s, bindings: %s", getId(), mLifetime, mObjectsStr,
+             mBindingStr);
+
+    if ((status = mTransport->registrationRequest(mSession, mParams.clientName, mLifetime, LWM2M_VERSION, mBindingStr,
+                                                  mParams.queueMode, NULL, mObjectsStr,
+                                                  &RegHandler::registrationCallback, this)) != STS_OK) {
+        return status;
+    }
+
+    return STS_OK;
+}
+
+Status RegHandler::sendUpdate()
+{
+    Status status = STS_OK;
+    int64_t* lifetimePtr = NULL;
+    char* bindingPtr = NULL;
+    char* objectsPtr = NULL;
+
+    char objectsStr[CONFIG_DEFAULT_STRING_LEN + 1];
+
+    if ((status = getObjectsStr(objectsStr, CONFIG_DEFAULT_STRING_LEN)) != STS_OK) {
+        return status;
+    }
+
+    if (strcmp(mObjectsStr, objectsStr) != 0) {
+        strncpy(mObjectsStr, objectsStr, CONFIG_DEFAULT_STRING_LEN);
+        mObjectsStr[CONFIG_DEFAULT_STRING_LEN] = '\n';
+        objectsPtr = mObjectsStr;
+    }
+
+    if (strcmp(mBindingStr, mServerInstance->getResourceInstance(RES_BINDING)->getString()) != 0) {
+        strncpy(mBindingStr, mServerInstance->getResourceInstance(RES_BINDING)->getString(),
+                CONFIG_BINDING_STR_MAX_LEN);
+        mBindingStr[CONFIG_BINDING_STR_MAX_LEN] = '\n';
+        bindingPtr = mBindingStr;
+    }
+
+    if (mLifetime != mServerInstance->getResourceInstance(RES_LIFETIME)->getInt()) {
+        mLifetime = mServerInstance->getResourceInstance(RES_LIFETIME)->getInt();
+        lifetimePtr = &mLifetime;
+    }
+
+    LOG_INFO("Send registration update %d, lifetime: %d, objects: %s, bindings: %s", getId(), mLifetime, mObjectsStr,
+             mBindingStr);
+
+    if ((status = mTransport->registrationUpdate(mSession, lifetimePtr, bindingPtr, NULL, objectsPtr,
+                                                 &RegHandler::registrationCallback, this)) != STS_OK) {
+        return status;
+    }
+
+    return STS_OK;
 }
 
 }  // namespace openlwm2m

@@ -327,4 +327,25 @@ Status ObjectManager::writeResource(ResourceInstance* instance, DataConverter::R
     }
 }
 
+ObjectInstance* ObjectManager::getServerInstance(uint16_t shortServerId)
+{
+    Object* object = mObjectStorage.getItemById(OBJ_LWM2M_SERVER);
+
+    if (!object) {
+        return NULL;
+    }
+
+    ObjectInstance* objectInstance = object->getFirstInstance();
+
+    while (objectInstance) {
+        if (objectInstance->getResourceInstance(RES_SHORT_SERVER_ID)->getInt() == shortServerId) {
+            return objectInstance;
+        }
+
+        objectInstance = object->getNextInstance();
+    }
+
+    return NULL;
+}
+
 }  // namespace openlwm2m

@@ -68,12 +68,12 @@ void CoapTransport::bootstrapRequest(void* session, RequestHandler handler, void
 }
 
 // Registration
-Status CoapTransport::registrationRequest(void* session, const char* clientName, uint64_t lifetime, const char* version,
+Status CoapTransport::registrationRequest(void* session, const char* clientName, int64_t lifetime, const char* version,
                                           const char* bindingMode, bool queueMode, const char* smsNumber,
                                           const char* objects, RequestHandler handler, void* context)
 {
     coap_optlist_t* optList = NULL;
-    char buf[CONFIG_DEFAULT_STRING_LEN];
+    char buf[CONFIG_DEFAULT_STRING_LEN + 1];
     int ret;
 
     coap_insert_optlist(&optList, coap_new_optlist(COAP_OPTION_CONTENT_TYPE,
@@ -95,7 +95,7 @@ Status CoapTransport::registrationRequest(void* session, const char* clientName,
     coap_insert_optlist(&optList, coap_new_optlist(COAP_OPTION_URI_QUERY, ret, reinterpret_cast<const uint8_t*>(buf)));
 
     // Lifetime
-    ret = snprintf(buf, sizeof(buf), "lt=%lu", lifetime);
+    ret = snprintf(buf, sizeof(buf), "lt=%ld", lifetime);
     coap_insert_optlist(&optList, coap_new_optlist(COAP_OPTION_URI_QUERY, ret, reinterpret_cast<const uint8_t*>(buf)));
 
     // Binding
@@ -135,14 +135,16 @@ Status CoapTransport::registrationRequest(void* session, const char* clientName,
     return STS_OK;
 }
 
-void CoapTransport::registrationUpdate(void* session, const uint32_t* lifetime, const char* bindingMode,
-                                       const char* smsNumber, const char* objects, RequestHandler handler,
-                                       void* context)
+Status CoapTransport::registrationUpdate(void* session, const int64_t* lifetime, const char* bindingMode,
+                                         const char* smsNumber, const char* objects, RequestHandler handler,
+                                         void* context)
 {
+    return STS_OK;
 }
 
-void CoapTransport::registrationDeregister(void* session, RequestHandler handler, void* context)
+Status CoapTransport::deregistrationRequest(void* session, RequestHandler handler, void* context)
 {
+    return STS_OK;
 }
 
 // Device

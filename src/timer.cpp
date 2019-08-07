@@ -91,13 +91,15 @@ Status Timer::processTimer(uint64_t currentTimeMs, uint64_t* poolTimeMs)
     if (currentTimeMs >= mFireAt) {
         LOG_DEBUG("Timer %d fired", mId);
 
-        status = mCallback(mContext);
-
         if (mOneShot) {
             stop();
 
+            status = mCallback(mContext);
+
             return status;
         }
+
+        status = mCallback(mContext);
 
         mFireAt = currentTimeMs + mPeriod;
 

@@ -21,12 +21,13 @@ public:
     void bootstrapRequest(void* session, RequestHandler handler, void* context);
 
     // Registration
-    openlwm2m::Status registrationRequest(void* session, const char* clientName, uint64_t lifetime, const char* version,
+    openlwm2m::Status registrationRequest(void* session, const char* clientName, int64_t lifetime, const char* version,
                                           const char* bindingMode, bool queueMode, const char* smsNumber,
                                           const char* objects, RequestHandler handler, void* context);
-    void registrationUpdate(void* session, const uint32_t* lifetime, const char* bindingMode, const char* smsNumber,
-                            const char* objects, RequestHandler handler, void* context);
-    void registrationDeregister(void* session, RequestHandler handler, void* context);
+    openlwm2m::Status registrationUpdate(void* session, const int64_t* lifetime, const char* bindingMode,
+                                         const char* smsNumber, const char* objects, RequestHandler handler,
+                                         void* context);
+    openlwm2m::Status deregistrationRequest(void* session, RequestHandler handler, void* context);
 
     // Device
     void deviceSend(void* session, RequestHandler handler, void* context);

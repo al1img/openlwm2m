@@ -132,11 +132,14 @@ Status Client::registration()
         }
 
         // Skip handlers with priority order
-        if (regHandler->getServerInstance()->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER)) {
+        ObjectInstance* serverInstance = mObjectManager.getServerInstance(regHandler->getId());
+        ASSERT(serverInstance);
+
+        if (serverInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER)) {
             continue;
         }
 
-        if ((status = regHandler->startRegistration()) != STS_OK) {
+        if ((status = regHandler->registration()) != STS_OK) {
             mRegHandlerStorage.clear();
             return status;
         }
@@ -212,12 +215,13 @@ Status Client::createRegHandlers()
     ObjectInstance* serverInstance = object->getFirstInstance();
 
     while (serverInstance) {
-        RegHandler* handler = mRegHandlerStorage.newItem(INVALID_ID);
+        RegHandler* handler =
+            mRegHandlerStorage.newItem(serverInstance->getResourceInstance(RES_SHORT_SERVER_ID)->getInt());
         ASSERT(handler);
 
         Status status = STS_OK;
 
-        if ((status = handler->bind(serverInstance)) != STS_OK) {
+        if ((status = handler->bind(mTransport)) != STS_OK) {
             LOG_ERROR("Can't bind to lwm2m server %d", status);
 
             mRegHandlerStorage.deleteItem(handler);
@@ -247,8 +251,10 @@ Status Client::startNextPriorityReg()
             continue;
         }
 
-        ResourceInstance* regPriority =
-            regHandler->getServerInstance()->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER);
+        ObjectInstance* serverInstance = mObjectManager.getServerInstance(regHandler->getId());
+        ASSERT(serverInstance);
+
+        ResourceInstance* regPriority = serverInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER);
 
         // Skip handlers without priority order
         if (!regPriority) {
@@ -262,7 +268,7 @@ Status Client::startNextPriorityReg()
     }
 
     if (minPriorityHandler) {
-        return minPriorityHandler->startRegistration();
+        return minPriorityHandler->registration();
     }
 
     return STS_OK;
@@ -273,7 +279,10 @@ void Client::registrationStatus(RegHandler* handler, Status status)
     LOG_DEBUG("Handler /%d reg status: %d", handler->getId(), status);
 
     // if priority handler finished, start next priority handler
-    if (handler->getServerInstance()->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER)) {
+    ObjectInstance* serverInstance = mObjectManager.getServerInstance(handler->getId());
+    ASSERT(serverInstance);
+
+    if (serverInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER)) {
         startNextPriorityReg();
     }
 }
