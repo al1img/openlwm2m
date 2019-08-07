@@ -18,12 +18,8 @@ namespace openlwm2m {
 
 ResourceString::ResourceString(ItemBase* parent, ResourceDesc& desc) : ResourceInstance(parent, desc)
 {
-#if CONFIG_RESERVE_MEMORY
-    mValue = new char[(mDesc.mParams.maxUint ? mDesc.mParams.maxUint : CONFIG_DEFAULT_STRING_LEN) + 1];
-#else
-    mValue = new char[1];
-#endif
-
+    mSize = mDesc.mParams.maxUint ? mDesc.mParams.maxUint : CONFIG_DEFAULT_STRING_LEN - 1;
+    mValue = new char[mSize + 1];
     mValue[0] = '\0';
 }
 
@@ -34,21 +30,23 @@ ResourceString::~ResourceString()
 
 Status ResourceString::setString(const char* value)
 {
-    LOG_DEBUG("Set string /%d/%d/%d/%d, value: %s", getParent()->getParent()->getParent()->getId(),
-              getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
-
-    ASSERT_MESSAGE(mDesc.mParams.type == DATA_TYPE_STRING, "Method not supported");
+    LOG_INFO("Set string /%d/%d/%d/%d, value: %s", getParent()->getParent()->getParent()->getId(),
+             getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
 
     if (strcmp(value, mValue) == 0) {
         return STS_OK;
     }
 
 #if !CONFIG_RESERVE_MEMORY
-    delete[] mValue;
-    mValue = new char[(mDesc.mParams.maxUint ? mDesc.mParams.maxUint : strlen(value)) + 1];
+    if (!mDesc.mParams.maxUint && strlen(value) > mSize) {
+        delete[] mValue;
+        mSize = strlen(value);
+        mValue = new char[mSize + 1];
+    }
 #endif
 
-    strncpy(mValue, value, (mDesc.mParams.maxUint ? mDesc.mParams.maxUint : strlen(value)) + 1);
+    strncpy(mValue, value, mSize);
+    mValue[mSize] = '\0';
 
     valueChanged();
 
@@ -80,8 +78,8 @@ Status ResourceInt::setFloat(double value)
 
 Status ResourceInt::setInt(int64_t value)
 {
-    LOG_DEBUG("Set int /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
-              getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
+    LOG_INFO("Set int /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
+             getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
 
     if (value == mValue) {
         return STS_OK;
@@ -123,10 +121,8 @@ Status ResourceUint::setFloat(double value)
 
 Status ResourceUint::setUint(uint64_t value)
 {
-    LOG_DEBUG("Set uint /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
-              getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
-
-    ASSERT_MESSAGE(mDesc.mParams.type == DATA_TYPE_UINT, "Method not supported");
+    LOG_INFO("Set uint /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
+             getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
 
     if (value == mValue) {
         return STS_OK;
@@ -157,10 +153,8 @@ ResourceBool::~ResourceBool()
 
 Status ResourceBool::setBool(uint8_t value)
 {
-    LOG_DEBUG("Set instance /%d/%d/%d/%d, value: %u", getParent()->getParent()->getParent()->getId(),
-              getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
-
-    ASSERT_MESSAGE(mDesc.mParams.type == DATA_TYPE_BOOL, "Method not supported");
+    LOG_INFO("Set instance /%d/%d/%d/%d, value: %u", getParent()->getParent()->getParent()->getId(),
+             getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
 
     if (value == mValue) {
         return STS_OK;

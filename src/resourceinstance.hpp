@@ -99,6 +99,7 @@ private:
     friend class Resource;
 
     char* mValue;
+    size_t mSize;
 
     ResourceString(ItemBase* parent, ResourceDesc& desc);
     virtual ~ResourceString();
