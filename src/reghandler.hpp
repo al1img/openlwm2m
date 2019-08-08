@@ -41,7 +41,7 @@ public:
     void release();
 
     Status bind(TransportItf* transport);
-    Status registration(RegistrationHandler handler = NULL, void* context = NULL);
+    Status registration(bool withRetry = false, RegistrationHandler handler = NULL, void* context = NULL);
     Status deregistration(RegistrationHandler handler = NULL, void* context = NULL);
 
     State getState() const { return mState; }
@@ -61,6 +61,9 @@ private:
     State mState;
     Timer mTimer;
 
+    bool mWithRetry;
+    uint64_t mCurrentSequence;
+
     ContextHandler mRegistrationContext;
     ContextHandler mDeregistrationContext;
 
@@ -74,15 +77,18 @@ private:
     static void registrationCallback(void* context, Status status);
     void onRegistrationCallback(Status status);
 
+    static void updateCallback(void* context, Status status);
+    void onUpdateCallback(Status status);
+
     static void deregistrationCallback(void* context, Status status);
     void onDeregistrationCallback(Status status);
 
     Status getObjectsStr(char* str, int maxSize);
 
-    void registrationStatus(Status status);
-
     Status sendRegistration();
     Status sendUpdate();
+
+    bool setupRetry();
 };
 
 }  // namespace openlwm2m

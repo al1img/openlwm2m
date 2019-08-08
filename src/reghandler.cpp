@@ -88,13 +88,16 @@ Status RegHandler::bind(TransportItf* transport)
     return status;
 }
 
-Status RegHandler::registration(RegistrationHandler handler, void* context)
+Status RegHandler::registration(bool withRetry, RegistrationHandler handler, void* context)
 {
-    if (mState != STATE_INIT) {
+    if (mState != STATE_INIT && mState != STATE_DEREGISTERED) {
         return STS_ERR_INVALID_STATE;
     }
 
     mRegistrationContext = (ContextHandler){handler, context};
+
+    mWithRetry = withRetry;
+    mCurrentSequence = 0;
 
     ResourceInstance* initRegDelay = mServerInstance->getResourceInstance(RES_INITIAL_REGISTRATION_DELAY);
 
@@ -120,6 +123,8 @@ Status RegHandler::deregistration(RegistrationHandler handler, void* context)
     if (mState != STATE_REGISTERED) {
         return STS_ERR_INVALID_STATE;
     }
+
+    mDeregistrationContext = (ContextHandler){handler, context};
 
     mTimer.stop();
 
@@ -147,6 +152,8 @@ Status RegHandler::onTimerCallback()
 {
     switch (mState) {
         case STATE_INIT_DELAY:
+            // fallthrough
+        case STATE_REGISTRATION:
             return sendRegistration();
 
         case STATE_REGISTERED:
@@ -164,7 +171,58 @@ void RegHandler::registrationCallback(void* context, Status status)
 
 void RegHandler::onRegistrationCallback(Status status)
 {
-    registrationStatus(status);
+    if (status == STS_OK) {
+        LOG_INFO("Registration success %d", getId());
+
+        mState = STATE_REGISTERED;
+
+        if (mRegistrationContext.handler) {
+            mRegistrationContext.handler(mRegistrationContext.context, status);
+        }
+
+        mTimer.start(mLifetime * CONFIG_LIFETIME_SCALE * 1000, &RegHandler::timerCallback, this, true);
+    }
+    else {
+        LOG_ERROR("Registration failed %d, status: %d", getId(), status);
+
+        if (!(mWithRetry && setupRetry())) {
+            mState = STATE_DEREGISTERED;
+
+            if (mRegistrationContext.handler) {
+                mRegistrationContext.handler(mRegistrationContext.context, status);
+            }
+        }
+    }
+
+    if (mParams.pollRequest) {
+        mParams.pollRequest();
+    }
+}
+
+void RegHandler::updateCallback(void* context, Status status)
+{
+    static_cast<RegHandler*>(context)->onUpdateCallback(status);
+}
+
+void RegHandler::onUpdateCallback(Status status)
+{
+    uint64_t timeMs = 0;
+
+    if (status == STS_OK) {
+        LOG_INFO("Update success %d", getId());
+
+        timeMs = mLifetime * CONFIG_LIFETIME_SCALE * 1000;
+    }
+    else {
+        LOG_ERROR("Update failed %d, status: %d", getId(), status);
+
+        if (status != STS_ERR_TIMEOUT) {
+            mWithRetry = true;
+            mState = STATE_REGISTRATION;
+        }
+    }
+
+    mTimer.start(timeMs, &RegHandler::timerCallback, this, true);
 
     if (mParams.pollRequest) {
         mParams.pollRequest();
@@ -181,10 +239,10 @@ void RegHandler::onDeregistrationCallback(Status status)
     mState = STATE_DEREGISTERED;
 
     if (status == STS_OK) {
-        LOG_INFO("Deregistration success");
+        LOG_INFO("Deregistration success %d", getId());
     }
     else {
-        LOG_ERROR("Deregistration failed: %s", status);
+        LOG_ERROR("Deregistration failed %d, status: %d", getId(), status);
     }
 
     if (mDeregistrationContext.handler) {
@@ -240,28 +298,6 @@ Status RegHandler::getObjectsStr(char* str, int maxSize)
     }
 
     return STS_OK;
-}
-
-void RegHandler::registrationStatus(Status status)
-{
-    if (status == STS_OK) {
-        LOG_INFO("Registration success %d", getId());
-
-        if (mState == STATE_REGISTRATION) {
-            mState = STATE_REGISTERED;
-
-            if (mRegistrationContext.handler) {
-                mRegistrationContext.handler(mRegistrationContext.context, status);
-            }
-        }
-
-        if (mState == STATE_REGISTERED) {
-            mTimer.start(mLifetime * CONFIG_LIFETIME_SCALE * 1000, &RegHandler::timerCallback, this, true);
-        }
-    }
-    else {
-        LOG_ERROR("Registration failed %d, status: %d", getId(), status);
-    }
 }
 
 Status RegHandler::sendRegistration()
@@ -325,11 +361,38 @@ Status RegHandler::sendUpdate()
              mBindingStr);
 
     if ((status = mTransport->registrationUpdate(mSession, lifetimePtr, bindingPtr, NULL, objectsPtr,
-                                                 &RegHandler::registrationCallback, this)) != STS_OK) {
+                                                 &RegHandler::updateCallback, this)) != STS_OK) {
         return status;
     }
 
     return STS_OK;
+}
+
+bool RegHandler::setupRetry()
+{
+    // Table: 6.2.1.1-1 Registration Procedures Default Values
+    uint64_t delay = 60 * 60 * 24;
+    uint64_t count = 1;
+
+    ResourceInstance* timerInstance = mServerInstance->getResourceInstance(RES_SEQUENCE_DELAY_TIMER);
+    ResourceInstance* countInstance = mServerInstance->getResourceInstance(RES_SEQUENCE_RETRY_COUNT);
+
+    if (countInstance) {
+        count = countInstance->getUint();
+    }
+
+    if (timerInstance) {
+        delay = timerInstance->getUint();
+    }
+
+    if (delay < ULONG_MAX && mCurrentSequence < count) {
+        mTimer.start(delay * 1000, &RegHandler::timerCallback, this, true);
+        mCurrentSequence++;
+
+        return true;
+    }
+
+    return false;
 }
 
 }  // namespace openlwm2m

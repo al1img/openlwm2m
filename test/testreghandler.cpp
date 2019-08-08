@@ -134,8 +134,20 @@ private:
     TestSession* mLastSession;
 };
 
+bool sPoolRequested = false;
+
 void pollRequest()
 {
+    sPoolRequested = true;
+}
+
+void setCurrentTime(uint64_t time)
+{
+    REQUIRE(Timer::poll(time) == STS_OK);
+    if (sPoolRequested) {
+        REQUIRE(Timer::poll(time) == STS_OK);
+        sPoolRequested = false;
+    }
 }
 
 void setupObjects(ObjectManager* objectManager)
@@ -159,7 +171,9 @@ void setupObjects(ObjectManager* objectManager)
 [\
 {\"bn\":\"/1/0/\",\"n\":\"0\",\"v\":1},\
 {\"n\":\"1\",\"v\":30},\
-{\"n\":\"7\",\"vs\":\"U\"}\
+{\"n\":\"7\",\"vs\":\"U\"},\
+{\"n\":\"19\",\"v\":60},\
+{\"n\":\"20\",\"v\":3}\
 ]\
 ";
 
@@ -197,42 +211,115 @@ TEST_CASE("test reghandler", "[reghandler]")
 
         session->setStatus(STS_OK);
 
-        status = regHandler.registration([](void* context, Status status) { REQUIRE(status == STS_OK); });
+        status = regHandler.registration(false);
         REQUIRE(status == STS_OK);
 
-        status = Timer::poll(0);
-        REQUIRE(status == STS_OK);
+        setCurrentTime(0);
 
         CHECK(session->getLifetime() == 30);
         CHECK(session->getBindingMode() == "U");
         CHECK(session->getObjects() == "<1/0>,<3/0>");
 
-        status = Timer::poll(0);
-        REQUIRE(status == STS_OK);
-
-        status = Timer::poll(20000);
-        REQUIRE(status == STS_OK);
+        setCurrentTime(20000);
 
         CHECK_FALSE(session->getUpdateReceived());
 
-        status = Timer::poll(30000);
-        REQUIRE(status == STS_OK);
-
-        status = Timer::poll(30000);
-        REQUIRE(status == STS_OK);
+        setCurrentTime(30000);
 
         CHECK(session->getUpdateReceived());
 
-        status = Timer::poll(60000);
-        REQUIRE(status == STS_OK);
-
-        status = Timer::poll(60000);
-        REQUIRE(status == STS_OK);
+        setCurrentTime(60000);
 
         CHECK(session->getUpdateReceived());
+
+        // Check reregistration
+
+        session->setStatus(STS_ERR);
+
+        setCurrentTime(90000);
+
+        session->setStatus(STS_OK);
+
+        setCurrentTime(100000);
+
+        setCurrentTime(160000);
 
         status = regHandler.deregistration([](void* context, Status status) { REQUIRE(status == STS_OK); });
         REQUIRE(status == STS_OK);
+
+        CHECK(regHandler.getState() == RegHandler::STATE_DEREGISTERED);
+    }
+
+    SECTION("Failed registration without retry")
+    {
+        regHandler.setId(1);
+
+        regHandler.init();
+
+        status = regHandler.bind(&transport);
+        REQUIRE(status == STS_OK);
+
+        TestSession* session = transport.getLastSession();
+        REQUIRE(session);
+        CHECK(session->getUri() == "coap://test");
+
+        session->setStatus(STS_ERR);
+
+        Status registrationStatus = STS_OK;
+
+        auto handler = [&registrationStatus](void* context, Status status) { registrationStatus = status; };
+
+        status = regHandler.registration(
+            false, [](void* context, Status status) { (*static_cast<decltype(handler)*>(context))(context, status); },
+            &handler);
+
+        REQUIRE(status == STS_OK);
+
+        setCurrentTime(0);
+
+        CHECK_FALSE(registrationStatus == STS_OK);
+
+        CHECK(regHandler.getState() == RegHandler::STATE_DEREGISTERED);
+    }
+
+    SECTION("Failed registration with retry")
+    {
+        regHandler.setId(1);
+
+        regHandler.init();
+
+        status = regHandler.bind(&transport);
+        REQUIRE(status == STS_OK);
+
+        TestSession* session = transport.getLastSession();
+        REQUIRE(session);
+        CHECK(session->getUri() == "coap://test");
+
+        session->setStatus(STS_ERR);
+
+        Status registrationStatus = STS_OK;
+
+        auto handler = [&registrationStatus](void* context, Status status) { registrationStatus = status; };
+
+        status = regHandler.registration(
+            true, [](void* context, Status status) { (*static_cast<decltype(handler)*>(context))(context, status); },
+            &handler);
+
+        REQUIRE(status == STS_OK);
+
+        setCurrentTime(0);
+
+        setCurrentTime(60000);
+
+        CHECK(registrationStatus == STS_OK);
+
+        setCurrentTime(1200000);
+
+        CHECK(registrationStatus == STS_OK);
+
+        setCurrentTime(1800000);
+
+        CHECK_FALSE(registrationStatus == STS_OK);
 
         CHECK(regHandler.getState() == RegHandler::STATE_DEREGISTERED);
     }

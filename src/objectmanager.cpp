@@ -82,6 +82,14 @@ ObjectManager::ObjectManager()
     status = object->createResourceUint(RES_INITIAL_REGISTRATION_DELAY, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
                                         ResourceDesc::OPTIONAL);
     ASSERT(status == STS_OK);
+    // Communication Sequence Delay Timer
+    status = object->createResourceUint(RES_SEQUENCE_DELAY_TIMER, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
+                                        ResourceDesc::OPTIONAL);
+    ASSERT(status == STS_OK);
+    // Communication Sequence Retry Count
+    status = object->createResourceUint(RES_SEQUENCE_RETRY_COUNT, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
+                                        ResourceDesc::OPTIONAL);
+    ASSERT(status == STS_OK);
 #endif
 
     /***************************************************************************
