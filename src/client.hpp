@@ -78,6 +78,7 @@ public:
 
     void bootstrapDiscover();
     void bootstrapRead();
+    Status bootstrapWriteJSON(const char* path, const char* dataJSON);
     Status bootstrapWrite(DataFormat dataFormat, const char* path, void* data, size_t size);
     void bootstrapDelete();
 

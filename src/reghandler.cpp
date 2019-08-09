@@ -5,6 +5,7 @@
 
 #include "client.hpp"
 #include "log.hpp"
+#include "utils.hpp"
 
 #define LOG_MODULE "RegHandler"
 
@@ -132,7 +133,8 @@ Status RegHandler::deregistration(RegistrationHandler handler, void* context)
 
     LOG_INFO("Send deregistration reqest");
 
-    if ((status = mTransport->deregistrationRequest(mSession, &RegHandler::deregistrationCallback, this)) != STS_OK) {
+    if ((status = mTransport->deregistrationRequest(mSession, mLocation, &RegHandler::deregistrationCallback, this)) !=
+        STS_OK) {
         return status;
     }
 
@@ -164,15 +166,26 @@ Status RegHandler::onTimerCallback()
     }
 }
 
-void RegHandler::registrationCallback(void* context, Status status)
+void RegHandler::registrationCallback(void* context, void* data, Status status)
 {
-    static_cast<RegHandler*>(context)->onRegistrationCallback(status);
+    static_cast<RegHandler*>(context)->onRegistrationCallback(static_cast<char*>(data), status);
 }
 
-void RegHandler::onRegistrationCallback(Status status)
+void RegHandler::onRegistrationCallback(char* location, Status status)
 {
+    if (mState != STATE_REGISTRATION) {
+        return;
+    }
+
+    if (location) {
+        Utils::strCopy(mLocation, location, CONFIG_DEFAULT_STRING_LEN);
+    }
+    else {
+        mLocation[0] = '\0';
+    }
+
     if (status == STS_OK) {
-        LOG_INFO("Registration success %d", getId());
+        LOG_INFO("Registration success %d, location: %s", getId(), mLocation);
 
         mState = STATE_REGISTERED;
 
@@ -199,19 +212,21 @@ void RegHandler::onRegistrationCallback(Status status)
     }
 }
 
-void RegHandler::updateCallback(void* context, Status status)
+void RegHandler::updateCallback(void* context, void* data, Status status)
 {
     static_cast<RegHandler*>(context)->onUpdateCallback(status);
 }
 
 void RegHandler::onUpdateCallback(Status status)
 {
-    uint64_t timeMs = 0;
+    uint64_t timeMs = mLifetime * CONFIG_LIFETIME_SCALE * 1000;
+
+    if (mState != STATE_REGISTERED) {
+        return;
+    }
 
     if (status == STS_OK) {
         LOG_INFO("Update success %d", getId());
-
-        timeMs = mLifetime * CONFIG_LIFETIME_SCALE * 1000;
     }
     else {
         LOG_ERROR("Update failed %d, status: %d", getId(), status);
@@ -219,6 +234,7 @@ void RegHandler::onUpdateCallback(Status status)
         if (status != STS_ERR_TIMEOUT) {
             mWithRetry = true;
             mState = STATE_REGISTRATION;
+            timeMs = 0;
         }
     }
 
@@ -229,13 +245,17 @@ void RegHandler::onUpdateCallback(Status status)
     }
 }
 
-void RegHandler::deregistrationCallback(void* context, Status status)
+void RegHandler::deregistrationCallback(void* context, void* data, Status status)
 {
     static_cast<RegHandler*>(context)->onDeregistrationCallback(status);
 }
 
 void RegHandler::onDeregistrationCallback(Status status)
 {
+    if (mState != STATE_DEREGISTRATION) {
+        return;
+    }
+
     mState = STATE_DEREGISTERED;
 
     if (status == STS_OK) {
@@ -360,7 +380,7 @@ Status RegHandler::sendUpdate()
     LOG_INFO("Send registration update %d, lifetime: %d, objects: %s, bindings: %s", getId(), mLifetime, mObjectsStr,
              mBindingStr);
 
-    if ((status = mTransport->registrationUpdate(mSession, lifetimePtr, bindingPtr, NULL, objectsPtr,
+    if ((status = mTransport->registrationUpdate(mSession, mLocation, lifetimePtr, bindingPtr, NULL, objectsPtr,
                                                  &RegHandler::updateCallback, this)) != STS_OK) {
         return status;
     }

@@ -1,4 +1,7 @@
 #include "client.hpp"
+
+#include <cstring>
+
 #include "interface.hpp"
 #include "log.hpp"
 #include "timer.hpp"
@@ -113,7 +116,6 @@ Status Client::registration()
     Status status = STS_OK;
 
     if ((status = createRegHandlers()) != STS_OK) {
-        mRegHandlerStorage.clear();
         return status;
     }
 
@@ -139,7 +141,7 @@ Status Client::registration()
             continue;
         }
 
-        if ((status = regHandler->registration()) != STS_OK) {
+        if ((status = regHandler->registration(true)) != STS_OK) {
             mRegHandlerStorage.clear();
             return status;
         }
@@ -151,13 +153,22 @@ Status Client::registration()
 void Client::bootstrapDiscover()
 {
 }
+
 void Client::bootstrapRead()
 {
 }
+
+Status Client::bootstrapWriteJSON(const char* path, const char* dataJSON)
+{
+    return mObjectManager.write(ITF_BOOTSTRAP, DATA_FMT_SENML_JSON, path,
+                                reinterpret_cast<void*>(const_cast<char*>(dataJSON)), strlen(dataJSON));
+}
+
 Status Client::bootstrapWrite(DataFormat dataFormat, const char* path, void* data, size_t size)
 {
-    return STS_OK;
+    return mObjectManager.write(ITF_BOOTSTRAP, dataFormat, path, data, size);
 }
+
 void Client::bootstrapDelete()
 {
 }

@@ -12,8 +12,6 @@ TEST_CASE("test bootstrap write", "[objectmanager]")
     Status status = STS_OK;
     ObjectManager objectManager;
 
-    objectManager.addConverter(new JsonConverter());
-
     objectManager.init();
 
     const char* jsonData =

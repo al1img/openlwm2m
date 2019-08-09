@@ -55,21 +55,26 @@ int main()
     memInitDone();
 #endif
 
-    ObjectInstance* securityObjectInstance = client.getObject(ITF_BOOTSTRAP, OBJ_LWM2M_SECURITY)->createInstance();
-    ObjectInstance* serverObjectInstance = client.getObject(ITF_BOOTSTRAP, OBJ_LWM2M_SERVER)->createInstance();
+    status = client.bootstrapWriteJSON("",
+                                       "\
+[\
+{\"bn\":\"/0/0/\",\"n\":\"0\",\"vs\":\"coap://::1:5683\"},\
+{\"n\":\"10\",\"v\":1}\
+]\
+");
+    ASSERT_MESSAGE(status == STS_OK, "Can't write bootstrap");
 
-    securityObjectInstance->getResourceInstance(RES_LWM2M_SERVER_URI)->setString("coap://::1:5683");
-    securityObjectInstance->getResourceInstance(RES_SECURITY_SHORT_SERVER_ID)->setInt(101);
-    serverObjectInstance->getResourceInstance(RES_SHORT_SERVER_ID)->setInt(101);
-    serverObjectInstance->getResourceInstance(RES_BINDING)->setString("U");
-    serverObjectInstance->getResourceInstance(RES_LIFETIME)->setInt(300);
-
-    securityObjectInstance = client.getObject(ITF_BOOTSTRAP, OBJ_LWM2M_SECURITY)->createInstance();
-    serverObjectInstance = client.getObject(ITF_BOOTSTRAP, OBJ_LWM2M_SERVER)->createInstance();
-
-    securityObjectInstance->getResourceInstance(RES_LWM2M_SERVER_URI)->setString("coap://::1:7777");
-    securityObjectInstance->getResourceInstance(RES_SECURITY_SHORT_SERVER_ID)->setInt(102);
-    serverObjectInstance->getResourceInstance(RES_SHORT_SERVER_ID)->setInt(102);
+    status = client.bootstrapWriteJSON("",
+                                       "\
+[\
+{\"bn\":\"/1/0/\",\"n\":\"0\",\"v\":1},\
+{\"n\":\"1\",\"v\":30},\
+{\"n\":\"7\",\"vs\":\"U\"},\
+{\"n\":\"19\",\"v\":30},\
+{\"n\":\"20\",\"v\":1}\
+]\
+");
+    ASSERT_MESSAGE(status == STS_OK, "Can't write bootstrap");
 
     status = client.registration();
     ASSERT_MESSAGE(status == STS_OK, "Registration failed");

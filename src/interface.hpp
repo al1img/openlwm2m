@@ -36,7 +36,7 @@ public:
     virtual void* createSession(const char* uri, Status* status = NULL) = 0;
     virtual Status deleteSession(void* session) = 0;
 
-    typedef void (*RequestHandler)(void* context, Status status);
+    typedef void (*RequestHandler)(void* context, void* data, Status status);
 
     // Bootstrap
 
@@ -47,10 +47,10 @@ public:
     virtual Status registrationRequest(void* session, const char* clientName, int64_t lifetime, const char* version,
                                        const char* bindingMode, bool queueMode, const char* smsNumber,
                                        const char* objects, RequestHandler handler, void* context) = 0;
-    virtual Status registrationUpdate(void* session, const int64_t* lifetime, const char* bindingMode,
-                                      const char* smsNumber, const char* objects, RequestHandler handler,
-                                      void* context) = 0;
-    virtual Status deregistrationRequest(void* session, RequestHandler handler, void* context) = 0;
+    virtual Status registrationUpdate(void* session, const char* location, const int64_t* lifetime,
+                                      const char* bindingMode, const char* smsNumber, const char* objects,
+                                      RequestHandler handler, void* context) = 0;
+    virtual Status deregistrationRequest(void* session, const char* location, RequestHandler handler, void* context) = 0;
 
     // Device
 

@@ -1,5 +1,9 @@
 #include "objectmanager.hpp"
 
+#if CONFIG_DATA_FORMAT_SENML_JSON
+#include "jsonconverter.hpp"
+#endif
+
 #define LOG_MODULE "ObjectManager"
 
 namespace openlwm2m {
@@ -10,11 +14,116 @@ namespace openlwm2m {
 
 ObjectManager::ObjectManager()
 {
+    createSecurityObject();
+    createServerObject();
+    createDeviceObject();
+
+    createConverters();
+}
+
+ObjectManager::~ObjectManager()
+{
+    mObjectStorage.release();
+}
+
+void ObjectManager::init()
+{
+    mObjectStorage.init();
+}
+
+Object* ObjectManager::createObject(uint16_t id, Object::Instance instance, size_t maxInstances,
+                                    Object::Mandatory mandatory, uint16_t interfaces, Status* status)
+{
+    if (instance == Object::SINGLE) {
+        maxInstances = 1;
+    }
+
+    LOG_DEBUG("Create object /%d", id);
+
+    Object::Params params = {instance, mandatory, interfaces, maxInstances};
+
+    return mObjectStorage.newItem(NULL, id, params, status);
+}
+
+Object* ObjectManager::getObject(Interface interface, uint16_t id)
+{
+    Object* object = mObjectStorage.getItemById(id);
+
+    if (interface && object && !(object->mParams.interfaces & interface)) {
+        return NULL;
+    }
+
+    return object;
+}
+
+Object* ObjectManager::getFirstObject(Interface interface)
+{
+    Object* object = mObjectStorage.getFirstItem();
+
+    while (object) {
+        if (interface && !(object->mParams.interfaces & interface)) {
+            object = mObjectStorage.getNextItem();
+
+            continue;
+        }
+
+        return object;
+    }
+
+    return NULL;
+}
+
+Object* ObjectManager::getNextObject(Interface interface)
+{
+    Object* object = mObjectStorage.getNextItem();
+
+    while (object) {
+        if (interface && !(object->mParams.interfaces & interface)) {
+            object = mObjectStorage.getNextItem();
+
+            continue;
+        }
+
+        return object;
+    }
+
+    return NULL;
+}
+
+Status ObjectManager::addConverter(DataConverter* converter)
+{
+    return mConverterStorage.addItem(converter);
+}
+
+Status ObjectManager::write(Interface interface, DataFormat format, const char* path, void* data, size_t size)
+{
+    DataConverter* converter = mConverterStorage.getItemById(format);
+
+    if (converter == NULL) {
+        return STS_ERR_NOT_EXIST;
+    }
+
+    switch (interface) {
+        case ITF_BOOTSTRAP:
+            return bootstrapWrite(converter, path, data, size);
+
+        default:
+            return STS_ERR_NOT_EXIST;
+    }
+}
+
+/*******************************************************************************
+ * Private
+ ******************************************************************************/
+
+/*******************************************************************************
+ * E.1 LwM2M Object: LwM2M Security
+ ******************************************************************************/
+
+void ObjectManager::createSecurityObject()
+{
     Status status = STS_OK;
 
-    /***************************************************************************
-     * E.1 LwM2M Object: LwM2M Security
-     **************************************************************************/
     Object* object = createObject(OBJ_LWM2M_SECURITY, Object::MULTIPLE,
                                   CONFIG_NUM_SERVERS == 0 ? 0 : CONFIG_NUM_SERVERS + CONFIG_BOOTSTRAP_SERVER,
                                   Object::MANDATORY, ITF_BOOTSTRAP);
@@ -47,11 +156,17 @@ ObjectManager::ObjectManager()
     status = object->createResourceInt(RES_SECURITY_SHORT_SERVER_ID, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
                                        ResourceDesc::OPTIONAL, 1, 65534);
     ASSERT(status == STS_OK);
+}
 
-    /***************************************************************************
-     * E.2 LwM2M Object: LwM2M Server
-     **************************************************************************/
-    object = createObject(OBJ_LWM2M_SERVER, Object::MULTIPLE, CONFIG_NUM_SERVERS, Object::MANDATORY, ITF_ALL);
+/*******************************************************************************
+ * E.2 LwM2M Object: LwM2M Server
+ ******************************************************************************/
+
+void ObjectManager::createServerObject()
+{
+    Status status = STS_OK;
+
+    Object* object = createObject(OBJ_LWM2M_SERVER, Object::MULTIPLE, CONFIG_NUM_SERVERS, Object::MANDATORY, ITF_ALL);
     ASSERT(object);
     // Short Server ID
     status = object->createResourceInt(RES_SHORT_SERVER_ID, ResourceDesc::OP_READ, ResourceDesc::SINGLE, 0,
@@ -91,11 +206,16 @@ ObjectManager::ObjectManager()
                                         ResourceDesc::OPTIONAL);
     ASSERT(status == STS_OK);
 #endif
+}
 
-    /***************************************************************************
-     * E.4 LwM2M Object: Device
-     **************************************************************************/
-    object = createObject(3, Object::SINGLE, 0, Object::MANDATORY, ITF_ALL);
+/*******************************************************************************
+ * E.4 LwM2M Object: Device
+ ******************************************************************************/
+void ObjectManager::createDeviceObject()
+{
+    Status status = STS_OK;
+
+    Object* object = createObject(3, Object::SINGLE, 0, Object::MANDATORY, ITF_ALL);
     ASSERT(object);
     // Reboot
     status = object->createResourceNone(4, ResourceDesc::OP_EXECUTE, ResourceDesc::SINGLE, 0, ResourceDesc::MANDATORY);
@@ -110,105 +230,15 @@ ObjectManager::ObjectManager()
     ASSERT(status == STS_OK);
 }
 
-ObjectManager::~ObjectManager()
+void ObjectManager::createConverters()
 {
-    mObjectStorage.release();
+    Status status = STS_OK;
+
+#if CONFIG_DATA_FORMAT_SENML_JSON
+    status = addConverter(new JsonConverter());
+    ASSERT(status == STS_OK);
+#endif
 }
-
-void ObjectManager::init()
-{
-    mObjectStorage.init();
-}
-
-Object* ObjectManager::createObject(uint16_t id, Object::Instance instance, size_t maxInstances,
-                                    Object::Mandatory mandatory, uint16_t interfaces, Status* status)
-{
-    if (instance == Object::SINGLE) {
-        maxInstances = 1;
-    }
-
-    LOG_DEBUG("Create object /%d", id);
-
-    Object::Params params = {instance, mandatory, interfaces, maxInstances};
-
-    return mObjectStorage.newItem(NULL, id, params, status);
-}
-
-Object* ObjectManager::getObject(Interface interface, uint16_t id)
-{
-    Object* object = mObjectStorage.getItemById(id);
-
-    if (interface && object && !(object->mParams.interfaces & interface)) {
-        LOG_DEBUG("Object /%d not accesible by interface %d", id, interface);
-        return NULL;
-    }
-
-    return object;
-}
-
-Object* ObjectManager::getFirstObject(Interface interface)
-{
-    Object* object = mObjectStorage.getFirstItem();
-
-    while (object) {
-        if (interface && !(object->mParams.interfaces & interface)) {
-            LOG_DEBUG("Object /%d not accesible by interface %d", object->getId(), interface);
-
-            object = mObjectStorage.getNextItem();
-
-            continue;
-        }
-
-        return object;
-    }
-
-    return NULL;
-}
-
-Object* ObjectManager::getNextObject(Interface interface)
-{
-    Object* object = mObjectStorage.getNextItem();
-
-    while (object) {
-        if (interface && !(object->mParams.interfaces & interface)) {
-            LOG_DEBUG("Object /%d not accesible by interface %d", object->getId(), interface);
-
-            object = mObjectStorage.getNextItem();
-
-            continue;
-        }
-
-        return object;
-    }
-
-    return NULL;
-}
-
-Status ObjectManager::addConverter(DataConverter* converter)
-{
-    return mConverterStorage.addItem(converter);
-}
-
-Status ObjectManager::write(Interface interface, DataFormat format, const char* path, void* data, size_t size)
-{
-    DataConverter* converter = mConverterStorage.getItemById(format);
-
-    if (converter == NULL) {
-        return STS_ERR_NOT_EXIST;
-    }
-
-    switch (interface) {
-        case ITF_BOOTSTRAP:
-            return bootstrapWrite(converter, path, data, size);
-
-        default:
-            return STS_ERR_NOT_EXIST;
-    }
-}
-
-/*******************************************************************************
- * Private
- ******************************************************************************/
 
 void ObjectManager::resBootstrapChanged(void* context, ResourceInstance* resInstance)
 {

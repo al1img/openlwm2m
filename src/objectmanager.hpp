@@ -29,6 +29,12 @@ private:
     Object::Storage mObjectStorage;
     DataConverter::Storage mConverterStorage;
 
+    void createSecurityObject();
+    void createServerObject();
+    void createDeviceObject();
+
+    void createConverters();
+
     static void resBootstrapChanged(void* context, ResourceInstance* resInstance);
 
     Status bootstrapWrite(DataConverter* converter, const char* path, void* data, size_t size);

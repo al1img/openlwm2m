@@ -115,34 +115,98 @@ Status CoapTransport::registrationRequest(void* session, const char* clientName,
                             coap_new_optlist(COAP_OPTION_URI_QUERY, ret, reinterpret_cast<const uint8_t*>(buf)));
     }
 
-    Request::Param param = {handler, context};
-    Request* request = mReqStorage.newItem(INVALID_ID);
+    coap_pdu_t* pdu =
+        coap_pdu_init(COAP_MESSAGE_CON, COAP_REQUEST_POST, coap_new_message_id(static_cast<coap_session_t*>(session)),
+                      coap_session_max_pdu_size(static_cast<coap_session_t*>(session)));
+
+    Status status = sendPdu(static_cast<coap_session_t*>(session), pdu, &optList,
+                            reinterpret_cast<const uint8_t*>(objects), strlen(objects));
+
+    if (status != STS_OK) {
+        return status;
+    }
+
+    Request* request = mReqStorage.newItem(pdu->tid);
+
+    request->mParam = (Request::Param){Request::REGISTRATION, handler, context};
 
     if (!request) {
         return STS_ERR_NO_MEM;
     }
 
-    uint16_t token = request->getId();
+    LOG_DEBUG("Send registration request, tid: %d", pdu->tid);
 
-    Status status = sendPdu(static_cast<coap_session_t*>(session), COAP_MESSAGE_CON, COAP_REQUEST_POST, token, &optList,
-                            reinterpret_cast<const uint8_t*>(objects), strlen(objects));
+    return STS_OK;
+}
+
+Status CoapTransport::registrationUpdate(void* session, const char* location, const int64_t* lifetime,
+                                         const char* bindingMode, const char* smsNumber, const char* objects,
+                                         RequestHandler handler, void* context)
+{
+    coap_optlist_t* optList = NULL;
+    char buf[CONFIG_DEFAULT_STRING_LEN + 1];
+    int ret;
+
+    coap_insert_optlist(&optList, coap_new_optlist(COAP_OPTION_CONTENT_TYPE,
+                                                   coap_encode_var_safe(reinterpret_cast<uint8_t*>(buf), sizeof(buf),
+                                                                        COAP_MEDIATYPE_APPLICATION_LINK_FORMAT),
+                                                   reinterpret_cast<const uint8_t*>(buf)));
+
+    insertLocation(location, &optList);
+
+    // Lifetime
+    if (lifetime) {
+        ret = snprintf(buf, sizeof(buf), "lt=%ld", *lifetime);
+        coap_insert_optlist(&optList,
+                            coap_new_optlist(COAP_OPTION_URI_QUERY, ret, reinterpret_cast<const uint8_t*>(buf)));
+    }
+
+    // Binding
+    if (bindingMode) {
+        ret = snprintf(buf, sizeof(buf), "b=%s", bindingMode);
+        coap_insert_optlist(&optList,
+                            coap_new_optlist(COAP_OPTION_URI_QUERY, ret, reinterpret_cast<const uint8_t*>(buf)));
+    }
+
+    // SMS number
+    if (smsNumber) {
+        ret = snprintf(buf, sizeof(buf), "sms=%s", smsNumber);
+        coap_insert_optlist(&optList,
+                            coap_new_optlist(COAP_OPTION_URI_QUERY, ret, reinterpret_cast<const uint8_t*>(buf)));
+    }
+
+    coap_pdu_t* pdu =
+        coap_pdu_init(COAP_MESSAGE_CON, COAP_REQUEST_POST, coap_new_message_id(static_cast<coap_session_t*>(session)),
+                      coap_session_max_pdu_size(static_cast<coap_session_t*>(session)));
+
+    Status status = STS_OK;
+
+    if (objects) {
+        status = sendPdu(static_cast<coap_session_t*>(session), pdu, &optList,
+                         reinterpret_cast<const uint8_t*>(objects), strlen(objects));
+    }
+    else {
+        status = sendPdu(static_cast<coap_session_t*>(session), pdu, &optList, NULL, 0);
+    }
 
     if (status != STS_OK) {
-        mReqStorage.deleteItem(request);
         return status;
     }
 
+    Request* request = mReqStorage.newItem(pdu->tid);
+
+    request->mParam = (Request::Param){Request::REGISTRATION, handler, context};
+
+    if (!request) {
+        return STS_ERR_NO_MEM;
+    }
+
+    LOG_DEBUG("Send registration update, tid: %d", pdu->tid);
+
     return STS_OK;
 }
 
-Status CoapTransport::registrationUpdate(void* session, const int64_t* lifetime, const char* bindingMode,
-                                         const char* smsNumber, const char* objects, RequestHandler handler,
-                                         void* context)
-{
-    return STS_OK;
-}
-
-Status CoapTransport::deregistrationRequest(void* session, RequestHandler handler, void* context)
+Status CoapTransport::deregistrationRequest(void* session, const char* location, RequestHandler handler, void* context)
 {
     return STS_OK;
 }
@@ -228,36 +292,32 @@ Status CoapTransport::resolveAddress(const char* uri, coap_address_t* dst)
     return STS_ERR_NOT_EXIST;
 }
 
-Status CoapTransport::sendPdu(coap_session_t* session, uint8_t type, uint8_t code, uint16_t token,
-                              coap_optlist_t** optList, const uint8_t* data, size_t dataLen)
+Status CoapTransport::sendPdu(coap_session_t* session, coap_pdu_t* pdu, coap_optlist_t** optList, const uint8_t* data,
+                              size_t dataLen)
 {
     Status status = STS_OK;
-
-    coap_pdu_t* pdu = coap_pdu_init(type, code, coap_new_message_id(session), coap_session_max_pdu_size(session));
+    coap_tid_t tid = COAP_INVALID_TID;
 
     if (!pdu) {
         status = STS_ERR_NO_MEM;
         goto err;
     }
 
-    if (!coap_add_token(pdu, sizeof(token), reinterpret_cast<const uint8_t*>(&token))) {
+    if (*optList && !coap_add_optlist_pdu(pdu, optList)) {
         status = STS_ERR_NO_MEM;
         goto err;
     }
 
-    if (!coap_add_optlist_pdu(pdu, optList)) {
-        status = STS_ERR_NO_MEM;
-        goto err;
-    }
-
-    if (!coap_add_data(pdu, dataLen, data)) {
+    if (data && !coap_add_data(pdu, dataLen, data)) {
         status = STS_ERR_NO_MEM;
         goto err;
     }
 
     coap_show_pdu(LOG_DEBUG, pdu);
 
-    coap_send(session, pdu);
+    if ((tid = coap_send(session, pdu)) == COAP_INVALID_TID) {
+        return STS_ERR;
+    }
 
     return STS_OK;
 
@@ -277,7 +337,26 @@ void CoapTransport::responseHandler(coap_context_t* context, coap_session_t* ses
 
 void CoapTransport::onResponse(coap_session_t* session, coap_pdu_t* sent, coap_pdu_t* received, const coap_tid_t id)
 {
-    LOG_DEBUG("Response received");
+    LOG_DEBUG("Response received, tid: %d", id);
+
+    Request* request = mReqStorage.getItemById(id);
+
+    if (request) {
+        switch (request->mParam.type) {
+            case Request::REGISTRATION:
+                registrationResponse(received, request);
+                break;
+
+            default:
+                request->mParam.handler(request->mParam.context, NULL, code2Status(received->code));
+                break;
+        }
+
+        mReqStorage.deleteItem(request);
+    }
+    else {
+        LOG_ERROR("Unknown response received, id: %d", id);
+    }
 }
 
 void CoapTransport::nackHandler(coap_context_t* context, coap_session_t* session, coap_pdu_t* sent,
@@ -288,14 +367,91 @@ void CoapTransport::nackHandler(coap_context_t* context, coap_session_t* session
 
 void CoapTransport::onNack(coap_session_t* session, coap_pdu_t* sent, coap_nack_reason_t reason, const coap_tid_t id)
 {
-    LOG_DEBUG("Nack received, tid: %d, %d", id, sent->tid);
+    LOG_DEBUG("Nack received, tid: %d", id);
 
-    Request* request = mReqStorage.getItemById(sent->tid);
+    Request* request = mReqStorage.getItemById(id);
 
     if (request) {
-        request->mParam.handler(request->mParam.context, STS_ERR);
+        request->mParam.handler(request->mParam.context, NULL, STS_ERR_TIMEOUT);
+        mReqStorage.deleteItem(request);
     }
     else {
-        LOG_ERROR("Unknown response received, tid: %d", sent->tid);
+        LOG_ERROR("Unknown Nack received, tid: %d", id);
     }
+
+    coap_session_connected(session);
+}
+
+Status CoapTransport::code2Status(uint8_t code)
+{
+    if (COAP_RESPONSE_CLASS(code) == 2) {
+        return STS_OK;
+    }
+
+    switch (code) {
+        case COAP_RESPONSE_CODE(400):
+            return STS_ERR_INVALID_VALUE;
+
+        case COAP_RESPONSE_CODE(403):
+            return STS_ERR_NO_ACCESS;
+
+        case COAP_RESPONSE_CODE(404):
+            return STS_ERR_NOT_EXIST;
+
+        case COAP_RESPONSE_CODE(412):
+            return STS_ERR_INVALID_STATE;
+
+        default:
+            return STS_ERR;
+    }
+}
+
+void CoapTransport::insertLocation(const char* location, coap_optlist_t** optList)
+{
+    char* begin = const_cast<char*>(location);
+    char* current = begin;
+
+    while (true) {
+        if (*current == '/' || *current == '\0') {
+            if (current - begin > 0) {
+                coap_insert_optlist(optList, coap_new_optlist(COAP_OPTION_URI_PATH, current - begin,
+                                                              reinterpret_cast<const uint8_t*>(begin)));
+            }
+
+            begin = current + 1;
+        }
+
+        if (*current == '\0') {
+            break;
+        }
+
+        current++;
+    }
+}
+
+void CoapTransport::registrationResponse(coap_pdu_t* received, Request* request)
+{
+    char location[CONFIG_DEFAULT_STRING_LEN + 1];
+    coap_opt_iterator_t optIter;
+    int size = 0;
+
+    coap_opt_t* option = coap_check_option(received, COAP_OPTION_LOCATION_PATH, &optIter);
+
+    while (option) {
+        location[size++] = '/';
+
+        if (size == CONFIG_DEFAULT_STRING_LEN || size + coap_opt_length(option) > CONFIG_DEFAULT_STRING_LEN) {
+            break;
+        }
+
+        strncpy(&location[size], reinterpret_cast<const char*>(coap_opt_value(option)), coap_opt_length(option));
+
+        size += coap_opt_length(option);
+
+        option = coap_option_next(&optIter);
+    }
+
+    location[size] = '\0';
+
+    request->mParam.handler(request->mParam.context, location, code2Status(received->code));
 }

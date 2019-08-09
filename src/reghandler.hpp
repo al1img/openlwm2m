@@ -67,6 +67,7 @@ private:
     ContextHandler mRegistrationContext;
     ContextHandler mDeregistrationContext;
 
+    char mLocation[CONFIG_DEFAULT_STRING_LEN + 1];
     char mObjectsStr[CONFIG_DEFAULT_STRING_LEN + 1];
     char mBindingStr[CONFIG_BINDING_STR_MAX_LEN + 1];
     int64_t mLifetime;
@@ -74,13 +75,13 @@ private:
     static Status timerCallback(void* context);
     Status onTimerCallback();
 
-    static void registrationCallback(void* context, Status status);
-    void onRegistrationCallback(Status status);
+    static void registrationCallback(void* context, void* data, Status status);
+    void onRegistrationCallback(char* location, Status status);
 
-    static void updateCallback(void* context, Status status);
+    static void updateCallback(void* context, void* data, Status status);
     void onUpdateCallback(Status status);
 
-    static void deregistrationCallback(void* context, Status status);
+    static void deregistrationCallback(void* context, void* data, Status status);
     void onDeregistrationCallback(Status status);
 
     Status getObjectsStr(char* str, int maxSize);

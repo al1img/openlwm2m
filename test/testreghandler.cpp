@@ -22,7 +22,7 @@ public:
         mObjects = objects;
 
         if (handler) {
-            handler(context, mStatus);
+            handler(context, const_cast<char*>("/rd/0"), mStatus);
         }
     }
 
@@ -44,14 +44,14 @@ public:
         mUpdateReceived = true;
 
         if (handler) {
-            handler(context, mStatus);
+            handler(context, NULL, mStatus);
         }
     }
 
     void deregistrationRequest(TransportItf::RequestHandler handler, void* context)
     {
         if (handler) {
-            handler(context, mStatus);
+            handler(context, NULL, mStatus);
         }
     }
 
@@ -109,15 +109,15 @@ public:
         return STS_OK;
     }
 
-    Status registrationUpdate(void* session, const int64_t* lifetime, const char* bindingMode, const char* smsNumber,
-                              const char* objects, RequestHandler handler, void* context)
+    Status registrationUpdate(void* session, const char* location, const int64_t* lifetime, const char* bindingMode,
+                              const char* smsNumber, const char* objects, RequestHandler handler, void* context)
     {
         static_cast<TestSession*>(session)->registrationUpdate(lifetime, bindingMode, smsNumber, objects, handler,
                                                                context);
         return STS_OK;
     }
 
-    Status deregistrationRequest(void* session, RequestHandler handler, void* context)
+    Status deregistrationRequest(void* session, const char* location, RequestHandler handler, void* context)
     {
         static_cast<TestSession*>(session)->deregistrationRequest(handler, context);
 
@@ -187,8 +187,6 @@ TEST_CASE("test reghandler", "[reghandler]")
     Status status = STS_OK;
     ObjectManager objectManager;
     TestTransport transport;
-
-    objectManager.addConverter(new JsonConverter());
 
     RegHandler regHandler(NULL, (RegHandler::Params){objectManager, "TestClient", false, pollRequest});
 
