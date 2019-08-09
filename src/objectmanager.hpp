@@ -22,6 +22,7 @@ public:
     Status write(Interface interface, DataFormat format, const char* path, void* data, size_t size);
 
     Status addConverter(DataConverter* converter);
+    bool isFormatSupported(DataFormat format);
 
     ObjectInstance* getServerInstance(uint16_t shortServerId);
 

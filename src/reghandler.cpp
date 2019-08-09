@@ -276,14 +276,28 @@ void RegHandler::onDeregistrationCallback(Status status)
 
 Status RegHandler::getObjectsStr(char* str, int maxSize)
 {
+    int ret = 0;
     int size = 0;
 
     Object* object = mParams.objectManager.getFirstObject(ITF_REGISTER);
 
+    if (mParams.objectManager.isFormatSupported(DATA_FMT_SENML_JSON)) {
+        if (object) {
+            ret = snprintf(&str[size], maxSize, "</>;rt=\"oma.lwm2m\";ct=%d,", DATA_FMT_SENML_JSON);
+        }
+        else {
+            ret = snprintf(&str[size], maxSize, "</>;rt=\"oma.lwm2m\";ct=%d", DATA_FMT_SENML_JSON);
+        }
+
+        if (ret < 0) {
+            return STS_ERR;
+        }
+
+        size += ret;
+    }
+
     while (object) {
         ObjectInstance* instance = object->getFirstInstance();
-
-        int ret = 0;
 
         for (;;) {
             if (!instance) {

@@ -386,4 +386,9 @@ ObjectInstance* ObjectManager::getServerInstance(uint16_t shortServerId)
     return NULL;
 }
 
+bool ObjectManager::isFormatSupported(DataFormat format)
+{
+    return mConverterStorage.getItemById(format);
+}
+
 }  // namespace openlwm2m
