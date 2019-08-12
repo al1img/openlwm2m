@@ -47,6 +47,16 @@ Status Client::poll(uint64_t currentTimeMs, uint64_t* pollTimeMs)
         return status;
     }
 
+    if (Object::isInstanceChanged()) {
+        RegHandler* regHandler = mRegHandlerStorage.getFirstItem();
+
+        while (regHandler) {
+            if (regHandler->getState() == RegHandler::STATE_REGISTERED) {
+                regHandler->updateRegistration();
+            }
+        }
+    }
+
     return STS_OK;
 }
 
@@ -90,6 +100,8 @@ ResourceInstance* Client::getResourceInstance(Interface interface, uint16_t objI
 
 Status Client::init(TransportItf* transport)
 {
+    Status status = STS_OK;
+
     LOG_DEBUG("Init client");
 
     if (mState != STATE_INIT) {
@@ -99,6 +111,10 @@ Status Client::init(TransportItf* transport)
     mTransport = transport;
 
     mObjectManager.init();
+
+    status = mObjectManager.getObject(ITF_BOOTSTRAP, OBJ_LWM2M_SERVER)
+                 ->setResourceChangedCbk(RES_LIFETIME, &Client::updateRegistration, this);
+    ASSERT(status == STS_OK);
 
     mState = STATE_INITIALIZED;
 
@@ -217,6 +233,23 @@ void Client::reportingCancelObserveComposite()
 /*******************************************************************************
  * Private
  ******************************************************************************/
+
+void Client::updateRegistration(void* context, ResourceInstance* resInstance)
+{
+    static_cast<Client*>(context)->onUpdateRegistration(resInstance);
+}
+
+void Client::onUpdateRegistration(ResourceInstance* resInstance)
+{
+    uint16_t shortServerId = static_cast<ObjectInstance*>(resInstance->getParent()->getParent())
+                                 ->getResourceInstance(RES_SHORT_SERVER_ID)
+                                 ->getInt();
+
+    RegHandler* regHandler = mRegHandlerStorage.getItemById(shortServerId);
+
+    if (regHandler != NULL && regHandler->getState() == RegHandler::STATE_REGISTERED) {
+    }
+}
 
 Status Client::createRegHandlers()
 {

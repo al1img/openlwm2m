@@ -116,6 +116,9 @@ private:
 
     State mState;
 
+    static void updateRegistration(void* context, ResourceInstance* resInstance);
+    void onUpdateRegistration(ResourceInstance* resInstance);
+
     Status createRegHandlers();
 
     Status startNextPriorityReg();

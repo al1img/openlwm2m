@@ -43,10 +43,13 @@ public:
     Status bind(TransportItf* transport);
     Status registration(bool withRetry = false, RegistrationHandler handler = NULL, void* context = NULL);
     Status deregistration(RegistrationHandler handler = NULL, void* context = NULL);
+    Status updateRegistration();
 
     State getState() const { return mState; }
 
 private:
+    static const int sUpdateRegistrationTimeout = 1000;
+
     struct ContextHandler {
         RegistrationHandler handler;
         void* context;

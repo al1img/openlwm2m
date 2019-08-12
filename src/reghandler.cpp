@@ -141,6 +141,17 @@ Status RegHandler::deregistration(RegistrationHandler handler, void* context)
     return STS_OK;
 }
 
+Status RegHandler::updateRegistration()
+{
+    if (mState != STATE_REGISTERED) {
+        return STS_ERR_INVALID_STATE;
+    }
+
+    mTimer.start(sUpdateRegistrationTimeout, &RegHandler::timerCallback, this, true);
+
+    return STS_OK;
+}
+
 /*******************************************************************************
  * Private
  ******************************************************************************/

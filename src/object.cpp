@@ -6,6 +6,12 @@
 namespace openlwm2m {
 
 /*******************************************************************************
+ * Static
+ ******************************************************************************/
+
+bool Object::sInstanceChanged = false;
+
+/*******************************************************************************
  * Public
  ******************************************************************************/
 
@@ -97,7 +103,13 @@ ObjectInstance* Object::createInstance(uint16_t id, Status* status)
         return NULL;
     }
 
-    return mInstanceStorage->newItem(id, status);
+    ObjectInstance* instance = mInstanceStorage->newItem(id, status);
+
+    if (instance) {
+        sInstanceChanged = true;
+    }
+
+    return instance;
 }
 
 ObjectInstance* Object::getFirstInstance()
@@ -127,6 +139,19 @@ ResourceInstance* Object::getResourceInstance(uint16_t objInstanceId, uint16_t r
     }
 
     return objInstance->getResourceInstance(resId, resInstanceId);
+}
+
+Status Object::setResourceChangedCbk(uint16_t resourceId, ResourceDesc::ValueChangeCbk cbk, void* context)
+{
+    ResourceDesc* resourceDesc = mResourceDescStorage.getItemById(resourceId);
+
+    if (!resourceDesc) {
+        return STS_ERR_NO_MEM;
+    }
+
+    resourceDesc->setValueChangedCbk(cbk, context);
+
+    return STS_OK;
 }
 
 /*******************************************************************************

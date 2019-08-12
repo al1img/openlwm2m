@@ -216,7 +216,7 @@ TEST_CASE("test reghandler", "[reghandler]")
 
         CHECK(session->getLifetime() == 30);
         CHECK(session->getBindingMode() == "U");
-        CHECK(session->getObjects() == "<1/0>,<3/0>");
+        CHECK(session->getObjects() == "</>;rt=\"oma.lwm2m\";ct=110,<1/0>,<3/0>");
 
         setCurrentTime(20000);
 

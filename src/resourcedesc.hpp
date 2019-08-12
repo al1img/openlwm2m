@@ -54,6 +54,12 @@ public:
 
     enum Operation { OP_NONE = 0x00, OP_READ = 0x01, OP_WRITE = 0x02, OP_READWRITE = 0x03, OP_EXECUTE = 0x04 };
 
+    void setValueChangedCbk(ValueChangeCbk cbk, void* context)
+    {
+        mParams.cbk = cbk;
+        mParams.context = context;
+    }
+
 private:
     struct Params {
         uint16_t operations;

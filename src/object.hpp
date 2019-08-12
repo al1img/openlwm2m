@@ -50,6 +50,16 @@ public:
     ObjectInstance* getNextInstance();
     ResourceInstance* getResourceInstance(uint16_t objInstanceId, uint16_t resId, uint16_t resInstanceId = 0);
 
+    Status setResourceChangedCbk(uint16_t resourceId, ResourceDesc::ValueChangeCbk cbk, void* context);
+
+    static bool isInstanceChanged()
+    {
+        bool result = sInstanceChanged;
+        sInstanceChanged = false;
+
+        return result;
+    }
+
 private:
     struct Params {
         Instance instance;
@@ -63,6 +73,8 @@ private:
     friend class ObjectManager;
 
     typedef Lwm2mStorage<Object, Params> Storage;
+
+    static bool sInstanceChanged;
 
     Params mParams;
 
