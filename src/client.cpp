@@ -125,7 +125,7 @@ Status Client::registration()
 {
     LOG_DEBUG("Register client");
 
-    if (mState != STATE_INITIALIZED && mState != STATE_BOOTSTRAP) {
+    if (mState != STATE_INITIALIZED || mRegHandlerStorage.size()) {
         return STS_ERR_INVALID_STATE;
     }
 
@@ -135,33 +135,12 @@ Status Client::registration()
         return status;
     }
 
-    if ((status = startNextPriorityReg()) != STS_OK) {
+    if ((status = startNextRegistration()) != STS_OK) {
         mRegHandlerStorage.clear();
         return status;
     }
 
-    // Starts all non priority handlers
-
-    for (RegHandler* regHandler = mRegHandlerStorage.getFirstItem(); regHandler;
-         regHandler = mRegHandlerStorage.getNextItem()) {
-        // Skip already started handlers
-        if (regHandler->getState() != RegHandler::STATE_INIT) {
-            continue;
-        }
-
-        // Skip handlers with priority order
-        ObjectInstance* serverInstance = mObjectManager.getServerInstance(regHandler->getId());
-        ASSERT(serverInstance);
-
-        if (serverInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER)) {
-            continue;
-        }
-
-        if ((status = regHandler->registration(true)) != STS_OK) {
-            mRegHandlerStorage.clear();
-            return status;
-        }
-    }
+    mState = STATE_REGISTRATION;
 
     return status;
 }
@@ -283,10 +262,38 @@ Status Client::createRegHandlers()
     return STS_OK;
 }
 
-Status Client::startNextPriorityReg()
+void Client::registrationStatus(void* context, RegHandler* handler, Status status)
 {
-    RegHandler* minPriorityHandler = NULL;
+    static_cast<Client*>(context)->onRegistrationStatus(handler, status);
+}
+
+void Client::onRegistrationStatus(RegHandler* handler, Status status)
+{
+    if (status != STS_OK) {
+        ResourceInstance* bootstrapOnFailure =
+            mObjectManager.getServerInstance(handler->getId())->getResourceInstance(RES_BOOTSTRAP_ON_REG_FAILURE);
+
+        if (bootstrapOnFailure && bootstrapOnFailure->getBool()) {
+            // TODO: start bootstrap and return
+        }
+    }
+
+    if (handler == mCurrentHandler) {
+        Status status = startNextRegistration();
+
+        if (status != STS_OK && mCurrentHandler) {
+            LOG_ERROR("Can't start registration, server: %d, status %d", mCurrentHandler->getId(), status);
+        }
+    }
+}
+
+Status Client::startNextRegistration()
+{
     uint64_t minPriority = ULONG_MAX;
+
+    mCurrentHandler = NULL;
+
+    // Start priority handlers
 
     for (RegHandler* regHandler = mRegHandlerStorage.getFirstItem(); regHandler;
          regHandler = mRegHandlerStorage.getNextItem()) {
@@ -306,29 +313,48 @@ Status Client::startNextPriorityReg()
         }
 
         if (regPriority->getUint() <= minPriority) {
-            minPriorityHandler = regHandler;
+            mCurrentHandler = regHandler;
             minPriority = regPriority->getUint();
         }
     }
 
-    if (minPriorityHandler) {
-        return minPriorityHandler->registration();
+    if (mCurrentHandler) {
+        return mCurrentHandler->registration(true, registrationStatus, this);
     }
+
+    // Non blocking priority order
+
+    for (RegHandler* regHandler = mRegHandlerStorage.getFirstItem(); regHandler;
+         regHandler = mRegHandlerStorage.getNextItem()) {
+        ObjectInstance* serverInstance = mObjectManager.getServerInstance(regHandler->getId());
+        ASSERT(serverInstance);
+
+        ResourceInstance* regPriority = serverInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER);
+        ResourceInstance* failureBlock = serverInstance->getResourceInstance(RES_REG_FAILURE_BLOCK);
+
+        if (regPriority && regHandler->getState() == RegHandler::STATE_DEREGISTERED &&
+            (!failureBlock || !failureBlock->getBool())) {
+            mCurrentHandler = regHandler;
+            return mCurrentHandler->registration(false, registrationStatus, this);
+        }
+    }
+
+    // All other
+
+    for (RegHandler* regHandler = mRegHandlerStorage.getFirstItem(); regHandler;
+         regHandler = mRegHandlerStorage.getNextItem()) {
+        // Skip already started handlers
+        if (regHandler->getState() != RegHandler::STATE_INIT) {
+            continue;
+        }
+
+        mCurrentHandler = regHandler;
+        return mCurrentHandler->registration(false, registrationStatus, this);
+    }
+
+    mState = STATE_READY;
 
     return STS_OK;
-}
-
-void Client::registrationStatus(RegHandler* handler, Status status)
-{
-    LOG_DEBUG("Handler /%d reg status: %d", handler->getId(), status);
-
-    // if priority handler finished, start next priority handler
-    ObjectInstance* serverInstance = mObjectManager.getServerInstance(handler->getId());
-    ASSERT(serverInstance);
-
-    if (serverInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER)) {
-        startNextPriorityReg();
-    }
 }
 
 }  // namespace openlwm2m

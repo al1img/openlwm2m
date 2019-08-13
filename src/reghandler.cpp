@@ -89,7 +89,7 @@ Status RegHandler::bind(TransportItf* transport)
     return status;
 }
 
-Status RegHandler::registration(bool withRetry, RegistrationHandler handler, void* context)
+Status RegHandler::registration(bool ordered, RegistrationHandler handler, void* context)
 {
     if (mState != STATE_INIT && mState != STATE_DEREGISTERED) {
         return STS_ERR_INVALID_STATE;
@@ -97,7 +97,6 @@ Status RegHandler::registration(bool withRetry, RegistrationHandler handler, voi
 
     mRegistrationContext = (ContextHandler){handler, context};
 
-    mWithRetry = withRetry;
     mCurrentSequence = 0;
 
     ResourceInstance* initRegDelay = mServerInstance->getResourceInstance(RES_INITIAL_REGISTRATION_DELAY);
@@ -113,6 +112,7 @@ Status RegHandler::registration(bool withRetry, RegistrationHandler handler, voi
     mTimer.start(initDelayMs, &RegHandler::timerCallback, this, true);
 
     mState = STATE_INIT_DELAY;
+    mOrdered = ordered;
 
     return STS_OK;
 }
@@ -201,7 +201,7 @@ void RegHandler::onRegistrationCallback(char* location, Status status)
         mState = STATE_REGISTERED;
 
         if (mRegistrationContext.handler) {
-            mRegistrationContext.handler(mRegistrationContext.context, status);
+            mRegistrationContext.handler(mRegistrationContext.context, this, status);
         }
 
         mTimer.start(mLifetime * CONFIG_LIFETIME_SCALE * 1000, &RegHandler::timerCallback, this, true);
@@ -209,11 +209,20 @@ void RegHandler::onRegistrationCallback(char* location, Status status)
     else {
         LOG_ERROR("Registration failed %d, status: %d", getId(), status);
 
-        if (!(mWithRetry && setupRetry())) {
+        ResourceInstance* failureBlock = mServerInstance->getResourceInstance(RES_REG_FAILURE_BLOCK);
+
+        if (mOrdered && (!failureBlock || !failureBlock->getBool())) {
             mState = STATE_DEREGISTERED;
 
             if (mRegistrationContext.handler) {
-                mRegistrationContext.handler(mRegistrationContext.context, status);
+                mRegistrationContext.handler(mRegistrationContext.context, this, status);
+            }
+        }
+        else if (!setupRetry()) {
+            mState = STATE_DEREGISTERED;
+
+            if (mRegistrationContext.handler) {
+                mRegistrationContext.handler(mRegistrationContext.context, this, status);
             }
         }
     }
@@ -243,9 +252,9 @@ void RegHandler::onUpdateCallback(Status status)
         LOG_ERROR("Update failed %d, status: %d", getId(), status);
 
         if (status != STS_ERR_TIMEOUT) {
-            mWithRetry = true;
             mState = STATE_REGISTRATION;
             timeMs = 0;
+            mCurrentSequence = 0;
         }
     }
 
@@ -277,7 +286,7 @@ void RegHandler::onDeregistrationCallback(Status status)
     }
 
     if (mDeregistrationContext.handler) {
-        mDeregistrationContext.handler(mDeregistrationContext.context, status);
+        mDeregistrationContext.handler(mDeregistrationContext.context, this, status);
     }
 
     if (mParams.pollRequest) {

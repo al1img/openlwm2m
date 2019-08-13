@@ -153,7 +153,7 @@ ResourceBool::~ResourceBool()
 
 Status ResourceBool::setBool(uint8_t value)
 {
-    LOG_INFO("Set instance /%d/%d/%d/%d, value: %u", getParent()->getParent()->getParent()->getId(),
+    LOG_INFO("Set bool /%d/%d/%d/%d, value: %u", getParent()->getParent()->getParent()->getId(),
              getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
 
     if (value == mValue) {

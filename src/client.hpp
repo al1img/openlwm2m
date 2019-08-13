@@ -103,7 +103,7 @@ public:
 private:
     friend class RegHandler;
 
-    enum State { STATE_INIT, STATE_INITIALIZED, STATE_BOOTSTRAP, STATE_REGISTER, STATE_READY };
+    enum State { STATE_INIT, STATE_INITIALIZED, STATE_BOOTSTRAP, STATE_REGISTRATION, STATE_READY };
 
     const char* mName;
     bool mQueueMode;
@@ -114,15 +114,18 @@ private:
     ObjectManager mObjectManager;
     RegHandler::Storage mRegHandlerStorage;
 
+    RegHandler* mCurrentHandler = NULL;
     State mState;
 
     static void updateRegistration(void* context, ResourceInstance* resInstance);
     void onUpdateRegistration(ResourceInstance* resInstance);
 
+    static void registrationStatus(void* context, RegHandler* handler, Status status);
+    void onRegistrationStatus(RegHandler* handler, Status status);
+
     Status createRegHandlers();
 
-    Status startNextPriorityReg();
-    void registrationStatus(RegHandler* handler, Status status);
+    Status startNextRegistration();
 };
 
 }  // namespace openlwm2m

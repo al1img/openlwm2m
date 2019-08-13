@@ -209,7 +209,7 @@ TEST_CASE("test reghandler", "[reghandler]")
 
         session->setStatus(STS_OK);
 
-        status = regHandler.registration(false);
+        status = regHandler.registration();
         REQUIRE(status == STS_OK);
 
         setCurrentTime(0);
@@ -218,7 +218,7 @@ TEST_CASE("test reghandler", "[reghandler]")
         CHECK(session->getBindingMode() == "U");
         CHECK(session->getObjects() == "</>;rt=\"oma.lwm2m\";ct=110,<1/0>,<3/0>");
 
-        setCurrentTime(20000);
+        setCurrentTime(10000);
 
         CHECK_FALSE(session->getUpdateReceived());
 
@@ -242,14 +242,27 @@ TEST_CASE("test reghandler", "[reghandler]")
 
         setCurrentTime(160000);
 
-        status = regHandler.deregistration([](void* context, Status status) { REQUIRE(status == STS_OK); });
+        status = regHandler.deregistration(
+            [](void* context, RegHandler* handler, Status status) { REQUIRE(status == STS_OK); });
         REQUIRE(status == STS_OK);
 
         CHECK(regHandler.getState() == RegHandler::STATE_DEREGISTERED);
     }
 
-    SECTION("Failed registration without retry")
+    SECTION("Failed unordered registration")
     {
+        /*
+        const char* serverJSON =
+            "\
+[\
+{\"bn\":\"/1/0/\",\"n\":\"15\",\"vb\":true}\
+]\
+";
+
+        status = objectManager.write(ITF_BOOTSTRAP, DATA_FMT_SENML_JSON, "/1",
+                                     reinterpret_cast<void*>(const_cast<char*>(serverJSON)), strlen(serverJSON));
+        REQUIRE(status == STS_OK);
+*/
         regHandler.setId(1);
 
         regHandler.init();
@@ -267,9 +280,11 @@ TEST_CASE("test reghandler", "[reghandler]")
 
         auto handler = [&registrationStatus](void* context, Status status) { registrationStatus = status; };
 
-        status = regHandler.registration(
-            false, [](void* context, Status status) { (*static_cast<decltype(handler)*>(context))(context, status); },
-            &handler);
+        status = regHandler.registration(true,
+                                         [](void* context, RegHandler* handle, Status status) {
+                                             (*static_cast<decltype(handler)*>(context))(context, status);
+                                         },
+                                         &handler);
 
         REQUIRE(status == STS_OK);
 
@@ -297,11 +312,15 @@ TEST_CASE("test reghandler", "[reghandler]")
 
         Status registrationStatus = STS_OK;
 
-        auto handler = [&registrationStatus](void* context, Status status) { registrationStatus = status; };
+        auto inner = [&registrationStatus](void* context, RegHandler* handler, Status status) {
+            registrationStatus = status;
+        };
 
-        status = regHandler.registration(
-            true, [](void* context, Status status) { (*static_cast<decltype(handler)*>(context))(context, status); },
-            &handler);
+        status = regHandler.registration(false,
+                                         [](void* context, RegHandler* handler, Status status) {
+                                             (*static_cast<decltype(inner)*>(context))(context, handler, status);
+                                         },
+                                         &inner);
 
         REQUIRE(status == STS_OK);
 

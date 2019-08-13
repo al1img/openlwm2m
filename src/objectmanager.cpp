@@ -197,6 +197,17 @@ void ObjectManager::createServerObject()
     status = object->createResourceUint(RES_INITIAL_REGISTRATION_DELAY, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
                                         ResourceDesc::OPTIONAL);
     ASSERT(status == STS_OK);
+
+    // Registration Failure Block
+    status = object->createResourceBool(RES_REG_FAILURE_BLOCK, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
+                                        ResourceDesc::OPTIONAL);
+    ASSERT(status == STS_OK);
+
+    // Bootstrap on Registration Failure
+    status = object->createResourceBool(RES_BOOTSTRAP_ON_REG_FAILURE, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
+                                        ResourceDesc::OPTIONAL);
+    ASSERT(status == STS_OK);
+
     // Communication Sequence Delay Timer
     status = object->createResourceUint(RES_SEQUENCE_DELAY_TIMER, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
                                         ResourceDesc::OPTIONAL);

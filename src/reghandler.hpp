@@ -23,7 +23,7 @@ public:
     };
 
     typedef Lwm2mDynamicStorage<RegHandler, Params> Storage;
-    typedef void (*RegistrationHandler)(void* context, Status status);
+    typedef void (*RegistrationHandler)(void* context, RegHandler* handler, Status status);
 
     enum State {
         STATE_INIT,
@@ -41,7 +41,7 @@ public:
     void release();
 
     Status bind(TransportItf* transport);
-    Status registration(bool withRetry = false, RegistrationHandler handler = NULL, void* context = NULL);
+    Status registration(bool ordered = false, RegistrationHandler handler = NULL, void* context = NULL);
     Status deregistration(RegistrationHandler handler = NULL, void* context = NULL);
     Status updateRegistration();
 
@@ -64,7 +64,7 @@ private:
     State mState;
     Timer mTimer;
 
-    bool mWithRetry;
+    bool mOrdered;
     uint64_t mCurrentSequence;
 
     ContextHandler mRegistrationContext;
