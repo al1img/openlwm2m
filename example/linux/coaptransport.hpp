@@ -14,6 +14,8 @@ public:
     CoapTransport();
     ~CoapTransport();
 
+    void setClient(openlwm2m::ClientItf* client) { mClient = client; }
+
     void* createSession(const char* uri, openlwm2m::Status* status = NULL);
     openlwm2m::Status deleteSession(void* session);
 
@@ -38,6 +40,8 @@ public:
     void run();
 
 private:
+    static const int sDataSize = 256;
+
     struct Request : public openlwm2m::ItemBase {
         enum RequestType { REGISTRATION, UPDATE, DEREGISTRATION };
         struct Param {
@@ -53,6 +57,8 @@ private:
 
         Param mParam;
     };
+
+    openlwm2m::ClientItf* mClient;
 
     coap_context_t* mContext;
 
@@ -73,7 +79,24 @@ private:
 
     void onNack(coap_session_t* session, coap_pdu_t* sent, coap_nack_reason_t reason, const coap_tid_t id);
 
+    static void putReceived(coap_context_t* context, coap_resource_t* resource, coap_session_t* session,
+                            coap_pdu_t* request, coap_binary_t* token, coap_string_t* query, coap_pdu_t* response);
+
+    void onPutReceived(coap_resource_t* resource, coap_session_t* session, coap_pdu_t* request, coap_binary_t* token,
+                       coap_string_t* query, coap_pdu_t* response);
+
+    static void getReceived(coap_context_t* context, coap_resource_t* resource, coap_session_t* session,
+                            coap_pdu_t* request, coap_binary_t* token, coap_string_t* query, coap_pdu_t* response);
+
+    void onGetReceived(coap_resource_t* resource, coap_session_t* session, coap_pdu_t* request, coap_binary_t* token,
+                       coap_string_t* query, coap_pdu_t* response);
+
     openlwm2m::Status code2Status(uint8_t code);
+    uint8_t status2Code(openlwm2m::Status status);
+
+    openlwm2m::Status getLocationPath(coap_pdu_t* pdu, char* location, size_t size);
+    openlwm2m::Status getUriPath(coap_pdu_t* pdu, char* location, size_t size);
+    openlwm2m::Status getAccept(coap_pdu_t* pdu, openlwm2m::DataFormat* data);
 
     void insertLocation(const char* location, coap_optlist_t** optList);
 

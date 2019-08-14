@@ -62,8 +62,6 @@ private:
     Status getString(char* src, size_t size);
     Status getFloat(double* value);
 
-    Status convertName(char* name, ResourceData* resourceData);
-
     Status processBaseName(ResourceData* resourceData);
     Status processBaseTime(ResourceData* resourceData);
     Status processName(ResourceData* resourceData);

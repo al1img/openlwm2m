@@ -44,7 +44,10 @@ int main()
     registerSignals();
 
     CoapTransport transport;
+
     Client client("Test client", false, pollRequest);
+
+    transport.setClient(&client);
 
     Status status = STS_OK;
 
@@ -68,7 +71,7 @@ int main()
                                        "\
 [\
 {\"bn\":\"/1/0/\",\"n\":\"0\",\"v\":1},\
-{\"n\":\"1\",\"v\":30},\
+{\"n\":\"1\",\"v\":300},\
 {\"n\":\"7\",\"vs\":\"U\"},\
 {\"n\":\"19\",\"v\":30},\
 {\"n\":\"20\",\"v\":1}\

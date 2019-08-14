@@ -20,7 +20,8 @@ enum DataFormat {
     DATA_FMT_TLV = 11542,
     DATA_FMT_JSON = 11543,
     DATA_FMT_SENML_JSON = 110,
-    DATA_FMT_SENML_CBOR = 112
+    DATA_FMT_SENML_CBOR = 112,
+    DATA_FMT_ANY = 0xFFFF
 };
 
 enum DataType {

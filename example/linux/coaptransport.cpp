@@ -16,7 +16,7 @@ using namespace openlwm2m;
  * CoapTransport
  ******************************************************************************/
 
-CoapTransport::CoapTransport() : mReqStorage(NULL, Request::Param(), REQ_STORAGE_SIZE)
+CoapTransport::CoapTransport() : mClient(NULL), mReqStorage(NULL, Request::Param(), REQ_STORAGE_SIZE)
 {
     coap_startup();
 
@@ -25,6 +25,10 @@ CoapTransport::CoapTransport() : mReqStorage(NULL, Request::Param(), REQ_STORAGE
     mContext->app = this;
 
     coap_set_log_level(LOG_DEBUG);
+
+    coap_resource_t* resource = coap_resource_unknown_init(&CoapTransport::putReceived);
+    coap_register_handler(resource, COAP_REQUEST_GET, &CoapTransport::getReceived);
+    coap_add_resource(mContext, resource);
 
     coap_register_response_handler(mContext, &CoapTransport::responseHandler);
     coap_register_nack_handler(mContext, &CoapTransport::nackHandler);
@@ -289,7 +293,7 @@ Status CoapTransport::resolveAddress(const char* uri, coap_address_t* dst)
         }
     }
 
-    return STS_ERR_NOT_EXIST;
+    return STS_ERR_NOT_FOUND;
 }
 
 Status CoapTransport::sendPdu(coap_session_t* session, coap_pdu_t* pdu, coap_optlist_t** optList, const uint8_t* data,
@@ -382,6 +386,59 @@ void CoapTransport::onNack(coap_session_t* session, coap_pdu_t* sent, coap_nack_
     coap_session_connected(session);
 }
 
+void CoapTransport::getReceived(coap_context_t* context, coap_resource_t* resource, coap_session_t* session,
+                                coap_pdu_t* request, coap_binary_t* token, coap_string_t* query, coap_pdu_t* response)
+{
+    static_cast<CoapTransport*>(context->app)->onGetReceived(resource, session, request, token, query, response);
+}
+
+void CoapTransport::onGetReceived(coap_resource_t* resource, coap_session_t* session, coap_pdu_t* request,
+                                  coap_binary_t* token, coap_string_t* query, coap_pdu_t* response)
+{
+    char uri[CONFIG_DEFAULT_STRING_LEN + 1];
+    uint8_t data[sDataSize];
+    DataFormat reqFormat = DATA_FMT_ANY, outFormat = DATA_FMT_TEXT;
+    Status status = STS_OK;
+
+    response->code = COAP_RESPONSE_CODE(205);
+
+    if ((status = getAccept(request, &reqFormat)) != STS_OK) {
+        response->code = status2Code(status);
+    }
+    else if ((status = getUriPath(request, uri, CONFIG_DEFAULT_STRING_LEN)) != STS_OK) {
+        response->code = status2Code(status);
+    }
+
+    LOG_DEBUG("GET received, uri: %s, format: %d", uri, reqFormat);
+
+    if (mClient && status == STS_OK) {
+        if (reqFormat != DATA_FMT_CORE) {
+            if ((status = mClient->deviceRead(uri, reqFormat, data, sDataSize, &outFormat)) != STS_OK) {
+                response->code = status2Code(status);
+            }
+        }
+        else {
+            // TODO: discover
+        }
+    }
+
+    coap_add_data_blocked_response(resource, session, request, response, token, outFormat, -1, 0, NULL);
+}
+
+void CoapTransport::putReceived(coap_context_t* context, coap_resource_t* resource, coap_session_t* session,
+                                coap_pdu_t* request, coap_binary_t* token, coap_string_t* query, coap_pdu_t* response)
+{
+    static_cast<CoapTransport*>(context->app)->onPutReceived(resource, session, request, token, query, response);
+}
+
+void CoapTransport::onPutReceived(coap_resource_t* resource, coap_session_t* session, coap_pdu_t* request,
+                                  coap_binary_t* token, coap_string_t* query, coap_pdu_t* response)
+{
+    response->code = COAP_RESPONSE_CODE(205);
+
+    coap_add_data_blocked_response(resource, session, request, response, token, COAP_MEDIATYPE_TEXT_PLAIN, -1, 0, NULL);
+}
+
 Status CoapTransport::code2Status(uint8_t code)
 {
     if (COAP_RESPONSE_CLASS(code) == 2) {
@@ -396,7 +453,7 @@ Status CoapTransport::code2Status(uint8_t code)
             return STS_ERR_NO_ACCESS;
 
         case COAP_RESPONSE_CODE(404):
-            return STS_ERR_NOT_EXIST;
+            return STS_ERR_NOT_FOUND;
 
         case COAP_RESPONSE_CODE(412):
             return STS_ERR_INVALID_STATE;
@@ -404,6 +461,112 @@ Status CoapTransport::code2Status(uint8_t code)
         default:
             return STS_ERR;
     }
+}
+
+uint8_t CoapTransport::status2Code(Status status)
+{
+    switch (status) {
+        case STS_ERR_NO_ACCESS:
+            return COAP_RESPONSE_CODE(401);
+
+        case STS_ERR_NOT_FOUND:
+            return COAP_RESPONSE_CODE(404);
+
+        case STS_ERR_INVALID_STATE:
+            return COAP_RESPONSE_CODE(405);
+
+        case STS_ERR_INVALID_VALUE:
+            return COAP_RESPONSE_CODE(406);
+
+        case STS_ERR_NO_MEM:
+            return COAP_RESPONSE_CODE(413);
+
+        case STS_ERR_FORMAT:
+            return COAP_RESPONSE_CODE(415);
+
+        default:
+            return COAP_RESPONSE_CODE(400);
+    }
+}
+
+Status CoapTransport::getAccept(coap_pdu_t* pdu, DataFormat* data)
+{
+    coap_opt_iterator_t optIter;
+    coap_opt_t* option = coap_check_option(pdu, COAP_OPTION_ACCEPT, &optIter);
+
+    *data = DATA_FMT_ANY;
+
+    if (option) {
+        switch (coap_opt_length(option)) {
+            case 1:
+                *data = static_cast<DataFormat>(*coap_opt_value(option));
+                break;
+
+            case 2:
+                *data =
+                    static_cast<DataFormat>(*reinterpret_cast<uint16_t*>(const_cast<uint8_t*>(coap_opt_value(option))));
+                break;
+
+            default:
+                return STS_ERR_INVALID_VALUE;
+        }
+    }
+
+    return STS_OK;
+}
+
+Status CoapTransport::getLocationPath(coap_pdu_t* pdu, char* location, size_t size)
+{
+    size_t curSize = 0;
+    coap_opt_iterator_t optIter;
+    coap_opt_t* option = coap_check_option(pdu, COAP_OPTION_LOCATION_PATH, &optIter);
+
+    location[curSize] = '\0';
+
+    while (option) {
+        location[curSize++] = '/';
+
+        if (curSize == size || curSize + coap_opt_length(option) > size) {
+            return STS_ERR_NO_MEM;
+        }
+
+        strncpy(&location[curSize], reinterpret_cast<const char*>(coap_opt_value(option)), coap_opt_length(option));
+
+        curSize += coap_opt_length(option);
+
+        option = coap_option_next(&optIter);
+    }
+
+    location[curSize] = '\0';
+
+    return STS_OK;
+}
+
+Status CoapTransport::getUriPath(coap_pdu_t* pdu, char* uri, size_t size)
+{
+    size_t curSize = 0;
+    coap_opt_iterator_t optIter;
+    coap_opt_t* option = coap_check_option(pdu, COAP_OPTION_URI_PATH, &optIter);
+
+    uri[curSize] = '\0';
+
+    while (option) {
+        uri[curSize++] = '/';
+
+        if (curSize == size || curSize + coap_opt_length(option) > size) {
+            return STS_ERR_NO_MEM;
+        }
+
+        strncpy(&uri[curSize], reinterpret_cast<const char*>(coap_opt_value(option)), coap_opt_length(option));
+
+        curSize += coap_opt_length(option);
+
+        option = coap_option_next(&optIter);
+    }
+
+    uri[curSize] = '\0';
+
+    return STS_OK;
 }
 
 void CoapTransport::insertLocation(const char* location, coap_optlist_t** optList)
@@ -431,27 +594,12 @@ void CoapTransport::insertLocation(const char* location, coap_optlist_t** optLis
 
 void CoapTransport::registrationResponse(coap_pdu_t* received, Request* request)
 {
+    Status status = code2Status(received->code);
     char location[CONFIG_DEFAULT_STRING_LEN + 1];
-    coap_opt_iterator_t optIter;
-    int size = 0;
 
-    coap_opt_t* option = coap_check_option(received, COAP_OPTION_LOCATION_PATH, &optIter);
-
-    while (option) {
-        location[size++] = '/';
-
-        if (size == CONFIG_DEFAULT_STRING_LEN || size + coap_opt_length(option) > CONFIG_DEFAULT_STRING_LEN) {
-            break;
-        }
-
-        strncpy(&location[size], reinterpret_cast<const char*>(coap_opt_value(option)), coap_opt_length(option));
-
-        size += coap_opt_length(option);
-
-        option = coap_option_next(&optIter);
+    if (status == STS_OK) {
+        status = getLocationPath(received, location, CONFIG_DEFAULT_STRING_LEN);
     }
 
-    location[size] = '\0';
-
-    request->mParam.handler(request->mParam.context, location, code2Status(received->code));
+    request->mParam.handler(request->mParam.context, location, status);
 }

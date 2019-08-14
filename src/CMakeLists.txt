@@ -20,6 +20,7 @@ set(SOURCES
 	resource.cpp
 	resourcedesc.cpp
 	resourceinstance.cpp
+	textconverter.cpp
 	timer.cpp
 	utils.cpp
 )

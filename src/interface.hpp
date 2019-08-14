@@ -31,8 +31,12 @@ enum Interface {
  */
 #define ITF_ALL (ITF_BOOTSTRAP | ITF_REGISTER | ITF_DEVICE | ITF_REPORTTING)
 
+class ClientItf;
+
 class TransportItf {
 public:
+    virtual void setClient(ClientItf* client) = 0;
+
     virtual void* createSession(const char* uri, Status* status = NULL) = 0;
     virtual Status deleteSession(void* session) = 0;
 
@@ -50,7 +54,8 @@ public:
     virtual Status registrationUpdate(void* session, const char* location, const int64_t* lifetime,
                                       const char* bindingMode, const char* smsNumber, const char* objects,
                                       RequestHandler handler, void* context) = 0;
-    virtual Status deregistrationRequest(void* session, const char* location, RequestHandler handler, void* context) = 0;
+    virtual Status deregistrationRequest(void* session, const char* location, RequestHandler handler,
+                                         void* context) = 0;
 
     // Device
 
@@ -65,11 +70,11 @@ public:
     // Bootstrap
     virtual void bootstrapDiscover() = 0;
     virtual void bootstrapRead() = 0;
-    virtual Status bootstrapWrite(DataFormat dataFormat, const char* path, void* data, size_t size) = 0;
+    virtual Status bootstrapWrite(const char* path, DataFormat dataFormat, void* data, size_t size) = 0;
     virtual void bootstrapDelete() = 0;
 
     // Device
-    virtual void deviceRead() = 0;
+    virtual Status deviceRead(const char* path, DataFormat reqFormat, void* data, size_t size, DataFormat* format) = 0;
     virtual void deviceDiscover() = 0;
     virtual void deviceWrite() = 0;
     virtual void deviceWriteAttributes() = 0;

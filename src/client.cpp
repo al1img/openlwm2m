@@ -48,9 +48,8 @@ Status Client::poll(uint64_t currentTimeMs, uint64_t* pollTimeMs)
     }
 
     if (Object::isInstanceChanged()) {
-        RegHandler* regHandler = mRegHandlerStorage.getFirstItem();
-
-        while (regHandler) {
+        for (RegHandler* regHandler = mRegHandlerStorage.getFirstItem(); regHandler;
+             regHandler = mRegHandlerStorage.getNextItem()) {
             if (regHandler->getState() == RegHandler::STATE_REGISTERED) {
                 regHandler->updateRegistration();
             }
@@ -155,22 +154,26 @@ void Client::bootstrapRead()
 
 Status Client::bootstrapWriteJSON(const char* path, const char* dataJSON)
 {
-    return mObjectManager.write(ITF_BOOTSTRAP, DATA_FMT_SENML_JSON, path,
+    return mObjectManager.write(ITF_BOOTSTRAP, path, DATA_FMT_SENML_JSON,
                                 reinterpret_cast<void*>(const_cast<char*>(dataJSON)), strlen(dataJSON));
 }
 
-Status Client::bootstrapWrite(DataFormat dataFormat, const char* path, void* data, size_t size)
+Status Client::bootstrapWrite(const char* path, DataFormat dataFormat, void* data, size_t size)
 {
-    return mObjectManager.write(ITF_BOOTSTRAP, dataFormat, path, data, size);
+    return mObjectManager.write(ITF_BOOTSTRAP, path, dataFormat, data, size);
 }
 
 void Client::bootstrapDelete()
 {
 }
 
-void Client::deviceRead()
+Status Client::deviceRead(const char* path, DataFormat reqFormat, void* data, size_t size, DataFormat* format)
 {
+    LOG_DEBUG("Read, path: %s", path);
+
+    return mObjectManager.read(ITF_DEVICE, path, DATA_FMT_TEXT, NULL, 0, reqFormat, data, size, format);
 }
+
 void Client::deviceDiscover()
 {
 }
@@ -256,7 +259,7 @@ Status Client::createRegHandlers()
     if (mRegHandlerStorage.size() == 0) {
         LOG_ERROR("No valid lwm2m servers found");
 
-        return STS_ERR_NOT_EXIST;
+        return STS_ERR_NOT_FOUND;
     }
 
     return STS_OK;

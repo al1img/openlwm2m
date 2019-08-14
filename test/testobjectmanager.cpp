@@ -24,7 +24,7 @@ TEST_CASE("test bootstrap write", "[objectmanager]")
           {\"n\":\"/1/0/7\",\"vs\":\"U\"}\
         ]";
 
-    status = objectManager.write(ITF_BOOTSTRAP, DATA_FMT_SENML_JSON, "",
+    status = objectManager.write(ITF_BOOTSTRAP, "", DATA_FMT_SENML_JSON,
                                  reinterpret_cast<void*>(const_cast<char*>(jsonData)), strlen(jsonData));
 
     REQUIRE(status == STS_OK);

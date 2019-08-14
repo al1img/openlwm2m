@@ -4,6 +4,8 @@
 #include "jsonconverter.hpp"
 #endif
 
+#include "textconverter.hpp"
+
 #define LOG_MODULE "ObjectManager"
 
 namespace openlwm2m {
@@ -95,12 +97,12 @@ Status ObjectManager::addConverter(DataConverter* converter)
     return mConverterStorage.addItem(converter);
 }
 
-Status ObjectManager::write(Interface interface, DataFormat format, const char* path, void* data, size_t size)
+Status ObjectManager::write(Interface interface, const char* path, DataFormat format, void* data, size_t size)
 {
     DataConverter* converter = mConverterStorage.getItemById(format);
 
     if (converter == NULL) {
-        return STS_ERR_NOT_EXIST;
+        return STS_ERR_FORMAT;
     }
 
     switch (interface) {
@@ -108,8 +110,32 @@ Status ObjectManager::write(Interface interface, DataFormat format, const char* 
             return bootstrapWrite(converter, path, data, size);
 
         default:
-            return STS_ERR_NOT_EXIST;
+            return STS_ERR_NOT_FOUND;
     }
+}
+
+Status ObjectManager::read(Interface Interface, const char* path, DataFormat inFormat, void* inData, size_t inSize,
+                           DataFormat reqFormat, void* outData, size_t* outSize, DataFormat* outFormat)
+{
+    Status status = STS_OK;
+    DataConverter* converter = mConverterStorage.getItemById(inFormat);
+
+    if (converter == NULL) {
+        return STS_ERR_FORMAT;
+    }
+
+    if ((status = converter->startDecoding(path, inData, inSize)) != STS_OK) {
+        return status;
+    }
+    /*
+        while ((status = converter->nextDecoding(&resourceData)) == STS_OK) {
+        }
+    */
+    if (status != STS_ERR_NOT_FOUND) {
+        return status;
+    }
+
+    return STS_OK;
 }
 
 /*******************************************************************************
@@ -249,6 +275,9 @@ void ObjectManager::createConverters()
     status = addConverter(new JsonConverter());
     ASSERT(status == STS_OK);
 #endif
+
+    status = addConverter(new TextConverter());
+    ASSERT(status == STS_OK);
 }
 
 void ObjectManager::resBootstrapChanged(void* context, ResourceInstance* resInstance)
@@ -287,7 +316,7 @@ Status ObjectManager::bootstrapWrite(DataConverter* converter, const char* path,
     while ((status = converter->nextDecoding(&resourceData)) == STS_OK) {
     }
 
-    if (status != STS_ERR_NOT_EXIST) {
+    if (status != STS_ERR_NOT_FOUND) {
         return status;
     }
 

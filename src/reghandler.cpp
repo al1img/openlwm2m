@@ -75,7 +75,7 @@ Status RegHandler::bind(TransportItf* transport)
     }
 
     if (!mSecurityInstance) {
-        return STS_ERR_NOT_EXIST;
+        return STS_ERR_NOT_FOUND;
     }
 
     const char* serverUri = mSecurityInstance->getResourceInstance(RES_LWM2M_SERVER_URI)->getString();

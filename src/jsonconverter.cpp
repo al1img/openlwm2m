@@ -64,7 +64,7 @@ Status JsonConverter::nextDecoding(ResourceData* resourceData)
     }
 
     if (mCurPos == mEndPos) {
-        return STS_ERR_NOT_EXIST;
+        return STS_ERR_NOT_FOUND;
     }
 
     if ((status = skipWhiteSpaces()) != STS_OK) {
@@ -116,8 +116,9 @@ Status JsonConverter::nextDecoding(ResourceData* resourceData)
     }
 
     if (!mNameFound) {
-        if ((convertName(mBaseName, resourceData)) != STS_OK) {
-            return status;
+        if (Utils::convertPath(mBaseName, &resourceData->objectId, &resourceData->objectInstanceId,
+                               &resourceData->resourceId, &resourceData->resourceInstanceId) < 0) {
+            return STS_ERR_INVALID_VALUE;
         }
     }
 
@@ -317,34 +318,6 @@ Status JsonConverter::getFloat(double* value)
     return STS_OK;
 }
 
-Status JsonConverter::convertName(char* name, ResourceData* resourceData)
-{
-    uint16_t* setValues[4] = {&resourceData->objectId, &resourceData->objectInstanceId, &resourceData->resourceId,
-                              &resourceData->resourceInstanceId};
-
-    for (int i = 0; i < 4; i++) {
-        if (name == NULL || *name == '\0') {
-            return STS_OK;
-        }
-
-        if (*name != '/') {
-            return STS_ERR_INVALID_VALUE;
-        }
-
-        name++;
-
-        uint64_t value = strtol(name, &name, 0);
-
-        if (value > UINT16_MAX) {
-            return STS_ERR_INVALID_VALUE;
-        }
-
-        *setValues[i] = value;
-    }
-
-    return STS_OK;
-}
-
 Status JsonConverter::processBaseName(ResourceData* resourceData)
 {
     Status status = STS_OK;
@@ -392,8 +365,9 @@ Status JsonConverter::processName(ResourceData* resourceData)
         return status;
     }
 
-    if ((status = convertName(name, resourceData)) != STS_OK) {
-        return status;
+    if (Utils::convertPath(name, &resourceData->objectId, &resourceData->objectInstanceId, &resourceData->resourceId,
+                           &resourceData->resourceInstanceId) < 0) {
+        return STS_ERR_INVALID_VALUE;
     }
 
     mNameFound = true;

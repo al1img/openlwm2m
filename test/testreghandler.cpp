@@ -85,6 +85,8 @@ class TestTransport : public TransportItf {
 public:
     TestTransport() : mLastSession(NULL) {}
 
+    void setClient(ClientItf* client) {}
+
     void* createSession(const char* uri, Status* status = NULL)
     {
         mLastSession = new TestSession(uri);
@@ -162,7 +164,7 @@ void setupObjects(ObjectManager* objectManager)
 ]\
 ";
 
-    status = objectManager->write(ITF_BOOTSTRAP, DATA_FMT_SENML_JSON, "/0",
+    status = objectManager->write(ITF_BOOTSTRAP, "/0", DATA_FMT_SENML_JSON,
                                   reinterpret_cast<void*>(const_cast<char*>(security1)), strlen(security1));
     REQUIRE(status == STS_OK);
 
@@ -177,7 +179,7 @@ void setupObjects(ObjectManager* objectManager)
 ]\
 ";
 
-    status = objectManager->write(ITF_BOOTSTRAP, DATA_FMT_SENML_JSON, "/1",
+    status = objectManager->write(ITF_BOOTSTRAP, "/1", DATA_FMT_SENML_JSON,
                                   reinterpret_cast<void*>(const_cast<char*>(server1)), strlen(server1));
     REQUIRE(status == STS_OK);
 }

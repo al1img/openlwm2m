@@ -19,7 +19,9 @@ public:
     Object* getFirstObject(Interface interface);
     Object* getNextObject(Interface interface);
 
-    Status write(Interface interface, DataFormat format, const char* path, void* data, size_t size);
+    Status write(Interface interface, const char* path, DataFormat format, void* data, size_t size);
+    Status read(Interface Interface, const char* path, DataFormat inFormat, void* inData, size_t inSize,
+                DataFormat reqFormat, void* outData, size_t* outSize, DataFormat* outFormat);
 
     Status addConverter(DataConverter* converter);
     bool isFormatSupported(DataFormat format);

@@ -21,7 +21,7 @@ public:
     virtual Status setString(const char* value)
     {
         ASSERT_MESSAGE(false, "Method not supported");
-        return STS_ERR_NOT_EXIST;
+        return STS_ERR_NOT_FOUND;
     }
 
     virtual int64_t getInt() const
@@ -33,7 +33,7 @@ public:
     virtual Status setInt(int64_t value)
     {
         ASSERT_MESSAGE(false, "Method not supported");
-        return STS_ERR_NOT_EXIST;
+        return STS_ERR_NOT_FOUND;
     }
 
     virtual uint64_t getUint() const
@@ -45,7 +45,7 @@ public:
     virtual Status setUint(uint64_t value)
     {
         ASSERT_MESSAGE(false, "Method not supported");
-        return STS_ERR_NOT_EXIST;
+        return STS_ERR_NOT_FOUND;
     }
 
     virtual uint8_t getBool() const
@@ -57,7 +57,7 @@ public:
     virtual Status setBool(uint8_t value)
     {
         ASSERT_MESSAGE(false, "Method not supported");
-        return STS_ERR_NOT_EXIST;
+        return STS_ERR_NOT_FOUND;
     }
 
     virtual double getFloat() const
@@ -69,7 +69,7 @@ public:
     virtual Status setFloat(double value)
     {
         ASSERT_MESSAGE(false, "Method not supported");
-        return STS_ERR_NOT_EXIST;
+        return STS_ERR_NOT_FOUND;
     }
 
 protected:

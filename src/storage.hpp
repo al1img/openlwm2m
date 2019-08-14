@@ -438,7 +438,7 @@ public:
             node = node->next();
         }
 
-        return STS_ERR_NOT_EXIST;
+        return STS_ERR_NOT_FOUND;
     }
 
     void clear()

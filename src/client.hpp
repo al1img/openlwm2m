@@ -79,12 +79,12 @@ public:
     void bootstrapDiscover();
     void bootstrapRead();
     Status bootstrapWriteJSON(const char* path, const char* dataJSON);
-    Status bootstrapWrite(DataFormat dataFormat, const char* path, void* data, size_t size);
+    Status bootstrapWrite(const char* path, DataFormat dataFormat, void* data, size_t size);
     void bootstrapDelete();
 
     // Device
 
-    void deviceRead();
+    Status deviceRead(const char* path, DataFormat reqFormat, void* data, size_t size, DataFormat* format);
     void deviceDiscover();
     void deviceWrite();
     void deviceWriteAttributes();
