@@ -37,6 +37,21 @@ Status TextConverter::nextDecoding(ResourceData* resourceData)
     return STS_OK;
 }
 
+Status TextConverter::startEncoding(void* data, size_t size)
+{
+    return STS_OK;
+}
+
+Status TextConverter::nextEncoding(ResourceData* resourceData)
+{
+    return STS_OK;
+}
+
+Status TextConverter::finishEncoding(size_t* size)
+{
+    return STS_OK;
+}
+
 /*******************************************************************************
  * Private
  ******************************************************************************/

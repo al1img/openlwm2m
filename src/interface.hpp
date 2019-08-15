@@ -74,7 +74,7 @@ public:
     virtual void bootstrapDelete() = 0;
 
     // Device
-    virtual Status deviceRead(const char* path, DataFormat reqFormat, void* data, size_t size, DataFormat* format) = 0;
+    virtual Status deviceRead(const char* path, DataFormat reqFormat, void* data, size_t* size, DataFormat* format) = 0;
     virtual void deviceDiscover() = 0;
     virtual void deviceWrite() = 0;
     virtual void deviceWriteAttributes() = 0;

@@ -19,7 +19,7 @@
 
 #define TOKEN_SET                                                                                                    \
     JSON_TOKEN_BEGIN_ARRAY, JSON_TOKEN_END_ARRAY, JSON_TOKEN_BEGIN_ITEM, JSON_TOKEN_END_ITEM, JSON_TOKEN_SPLIT_ITEM, \
-        JSON_TOKEN_SPLIT_VALUE, JSON_TOKEN_STRING
+        JSON_TOKEN_SPLIT_VALUE, JSON_TOKEN_STRING, '\0'
 
 #define JSON_ITEM_BASE_NAME "bn"
 #define JSON_ITEM_BASE_TIME "bt"
@@ -41,16 +41,29 @@ public:
     Status startDecoding(const char* path, void* data, size_t size);
     Status nextDecoding(ResourceData* resourceData);
 
+    Status startEncoding(void* data, size_t size);
+    Status nextEncoding(ResourceData* resourceData);
+    Status finishEncoding(size_t* size);
+
 private:
     static const int sStringSize = 64;
-    static const int sBufferSize = CONFIG_DEFAULT_STRING_LEN + 1;
+    static const int sBufferSize = CONFIG_DEFAULT_STRING_LEN;
 
-    char* mCurPos;
-    char* mEndPos;
-    char mBaseName[sStringSize];
-    uint64_t mBaseTime;
-    uint8_t mBuffer[sBufferSize];
-    bool mNameFound;
+    char* mDecodingPos;
+    char* mDecodingEndPos;
+    char mDecodingBaseName[sStringSize + 1];
+    int64_t mDecodingBaseTime;
+    uint8_t mDecodingBuffer[sBufferSize + 1];
+    bool mDecodingNameFound;
+
+    char* mEncodingBeginPos;
+    char* mEncodingPos;
+    char* mEncodingEndPos;
+
+    char mEncodingBaseName[sStringSize + 1];
+    int64_t mEncodingBaseTime;
+    ResourceData mPrevResourceData;
+    bool mHasPrevData;
 
     Status skipWhiteSpaces();
     Status skipSymbolsTill(char expectedChar);
@@ -58,19 +71,27 @@ private:
     Status skipTillEndValue();
     Status isLastElement(char endChar, bool* lastElement);
 
-    Status processItem(ResourceData* resourceData, char* field, size_t size);
+    Status decodeItem(ResourceData* resourceData, char* field, size_t size);
     Status getString(char* src, size_t size);
     Status getFloat(double* value);
 
-    Status processBaseName(ResourceData* resourceData);
-    Status processBaseTime(ResourceData* resourceData);
-    Status processName(ResourceData* resourceData);
-    Status processTime(ResourceData* resourceData);
-    Status processFloatValue(ResourceData* resourceData);
-    Status processBooleanValue(ResourceData* resourceData);
-    Status processObjectLinkValue(ResourceData* resourceData);
-    Status processOpaqueValue(ResourceData* resourceData);
-    Status processStringValue(ResourceData* resourceData);
+    Status decodeBaseName(ResourceData* resourceData);
+    Status decodeBaseTime(ResourceData* resourceData);
+    Status decodeName(ResourceData* resourceData);
+    Status decodeTime(ResourceData* resourceData);
+    Status decodeFloatValue(ResourceData* resourceData);
+    Status decodeBooleanValue(ResourceData* resourceData);
+    Status decodeObjectLinkValue(ResourceData* resourceData);
+    Status decodeOpaqueValue(ResourceData* resourceData);
+    Status decodeStringValue(ResourceData* resourceData);
+
+    Status checkFirstItem();
+    Status writeBool(const char* item, uint8_t value);
+    Status writeObjlink(const char* item, Objlnk value);
+    Status writeFloat(const char* item, double value);
+    Status writeString(const char* item, char* value);
+    Status encodeValue(ResourceData* resourceData);
+    Status encodeItem(char* baseName, char* name, ResourceData* resourceData);
 };
 
 }  // namespace openlwm2m

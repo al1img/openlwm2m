@@ -84,7 +84,7 @@ public:
 
     // Device
 
-    Status deviceRead(const char* path, DataFormat reqFormat, void* data, size_t size, DataFormat* format);
+    Status deviceRead(const char* path, DataFormat reqFormat, void* data, size_t* size, DataFormat* format);
     void deviceDiscover();
     void deviceWrite();
     void deviceWriteAttributes();

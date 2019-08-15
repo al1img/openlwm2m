@@ -57,7 +57,7 @@ public:
         uint16_t resourceId;
         uint16_t resourceInstanceId;
         DataType dataType;
-        uint64_t timestamp;
+        int64_t timestamp;
         union {
             uint64_t uintValue;
             int64_t intValue;
@@ -74,6 +74,10 @@ public:
 
     virtual Status startDecoding(const char* path, void* data, size_t size) = 0;
     virtual Status nextDecoding(ResourceData* resourceData) = 0;
+
+    virtual Status startEncoding(void* data, size_t size) = 0;
+    virtual Status nextEncoding(ResourceData* resourceData) = 0;
+    virtual Status finishEncoding(size_t* size) = 0;
 };
 
 }  // namespace openlwm2m

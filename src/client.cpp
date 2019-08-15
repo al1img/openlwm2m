@@ -167,7 +167,7 @@ void Client::bootstrapDelete()
 {
 }
 
-Status Client::deviceRead(const char* path, DataFormat reqFormat, void* data, size_t size, DataFormat* format)
+Status Client::deviceRead(const char* path, DataFormat reqFormat, void* data, size_t* size, DataFormat* format)
 {
     LOG_DEBUG("Read, path: %s", path);
 

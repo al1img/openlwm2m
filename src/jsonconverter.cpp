@@ -1,5 +1,6 @@
 #include "jsonconverter.hpp"
 
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
@@ -14,7 +15,7 @@ namespace openlwm2m {
  * Public
  ******************************************************************************/
 
-JsonConverter::JsonConverter() : DataConverter(DATA_FMT_SENML_JSON), mCurPos(NULL), mEndPos(NULL)
+JsonConverter::JsonConverter() : DataConverter(DATA_FMT_SENML_JSON), mDecodingPos(NULL), mDecodingEndPos(NULL)
 {
 }
 
@@ -28,12 +29,12 @@ Status JsonConverter::startDecoding(const char* path, void* data, size_t size)
 
     LOG_DEBUG("Start decoding, path: %s, size: %zu", path, size);
 
-    mCurPos = static_cast<char*>(data);
-    mEndPos = mCurPos + size;
+    mDecodingPos = static_cast<char*>(data);
+    mDecodingEndPos = mDecodingPos + size;
 
-    mBaseTime = 0;
+    mDecodingBaseTime = 0;
 
-    if (Utils::strCopy(mBaseName, path, sStringSize) < 0) {
+    if (Utils::strCopy(mDecodingBaseName, path, sStringSize) < 0) {
         return STS_ERR_NO_MEM;
     }
 
@@ -41,11 +42,11 @@ Status JsonConverter::startDecoding(const char* path, void* data, size_t size)
         return status;
     }
 
-    if (*mCurPos != JSON_TOKEN_BEGIN_ARRAY) {
+    if (*mDecodingPos != JSON_TOKEN_BEGIN_ARRAY) {
         return STS_ERR_INVALID_VALUE;
     }
 
-    mCurPos++;
+    mDecodingPos++;
 
     return STS_OK;
 }
@@ -57,13 +58,13 @@ Status JsonConverter::nextDecoding(ResourceData* resourceData)
     LOG_DEBUG("Next decoding");
 
     *resourceData = (ResourceData){INVALID_ID, INVALID_ID, INVALID_ID, INVALID_ID, DATA_TYPE_NONE};
-    mNameFound = false;
+    mDecodingNameFound = false;
 
-    if (mCurPos == NULL) {
+    if (mDecodingPos == NULL) {
         return STS_ERR_INVALID_STATE;
     }
 
-    if (mCurPos == mEndPos) {
+    if (mDecodingPos == mDecodingEndPos) {
         return STS_ERR_NOT_FOUND;
     }
 
@@ -71,11 +72,11 @@ Status JsonConverter::nextDecoding(ResourceData* resourceData)
         return status;
     }
 
-    if (*mCurPos != JSON_TOKEN_BEGIN_ITEM) {
+    if (*mDecodingPos != JSON_TOKEN_BEGIN_ITEM) {
         return STS_ERR_INVALID_VALUE;
     }
 
-    mCurPos++;
+    mDecodingPos++;
 
     bool lastElement = false;
 
@@ -84,16 +85,16 @@ Status JsonConverter::nextDecoding(ResourceData* resourceData)
             return status;
         }
 
-        if (*mCurPos == JSON_TOKEN_STRING) {
-            mCurPos++;
+        if (*mDecodingPos == JSON_TOKEN_STRING) {
+            mDecodingPos++;
 
-            char* field = mCurPos;
+            char* field = mDecodingPos;
 
             if ((status = skipSymbolsTill(JSON_TOKEN_STRING)) != STS_OK) {
                 return status;
             }
 
-            if ((status = processItem(resourceData, field, mCurPos - field)) != STS_OK) {
+            if ((status = decodeItem(resourceData, field, mDecodingPos - field)) != STS_OK) {
                 return status;
             }
         }
@@ -102,21 +103,21 @@ Status JsonConverter::nextDecoding(ResourceData* resourceData)
             return status;
         }
 
-        mCurPos++;
+        mDecodingPos++;
     }
 
     if ((status = isLastElement(JSON_TOKEN_END_ARRAY, &lastElement)) != STS_OK) {
         return status;
     }
 
-    mCurPos++;
+    mDecodingPos++;
 
     if (lastElement) {
-        mCurPos = mEndPos;
+        mDecodingPos = mDecodingEndPos;
     }
 
-    if (!mNameFound) {
-        if (Utils::convertPath(mBaseName, &resourceData->objectId, &resourceData->objectInstanceId,
+    if (!mDecodingNameFound) {
+        if (Utils::convertPath(mDecodingBaseName, &resourceData->objectId, &resourceData->objectInstanceId,
                                &resourceData->resourceId, &resourceData->resourceInstanceId) < 0) {
             return STS_ERR_INVALID_VALUE;
         }
@@ -129,17 +130,123 @@ Status JsonConverter::nextDecoding(ResourceData* resourceData)
     return STS_OK;
 }
 
+Status JsonConverter::startEncoding(void* data, size_t size)
+{
+    LOG_DEBUG("Start encoding");
+
+    mEncodingBeginPos = static_cast<char*>(data);
+    mEncodingPos = mEncodingBeginPos;
+    mEncodingEndPos = mEncodingBeginPos + size;
+
+    mEncodingBaseTime = 0;
+    mEncodingBaseName[0] = '\0';
+    mHasPrevData = false;
+
+    if (size == 0) {
+        return STS_ERR_NO_MEM;
+    }
+
+    *mEncodingPos++ = JSON_TOKEN_BEGIN_ARRAY;
+
+    return STS_OK;
+}
+
+Status JsonConverter::nextEncoding(ResourceData* resourceData)
+{
+    Status status = STS_OK;
+    char name[sStringSize + 1];
+
+    LOG_DEBUG("Next encoding");
+
+    if (Utils::makePath(resourceData->objectId, resourceData->objectInstanceId, resourceData->resourceId,
+                        resourceData->resourceInstanceId, name, sStringSize) < 0) {
+        return STS_ERR_NO_MEM;
+    }
+
+    LOG_DEBUG("1. %s %s %d", mEncodingBaseName, name, mHasPrevData);
+
+    if (mHasPrevData) {
+        // Determine base name
+        char prevName[sStringSize + 1];
+        char* baseNamePos = mEncodingBaseName;
+        char* namePos = name;
+
+        while (*baseNamePos != '\0' && *namePos != '\0' && *baseNamePos == *namePos) {
+            baseNamePos++;
+            namePos++;
+        }
+
+        if (Utils::strCopy(prevName, baseNamePos, sStringSize) < 0) {
+            return STS_ERR_NO_MEM;
+        }
+
+        LOG_DEBUG("2. %s", prevName);
+
+        *baseNamePos = '\0';
+
+        if ((status = encodeItem(mEncodingBaseName, prevName, &mPrevResourceData)) != STS_OK) {
+            return status;
+        }
+
+        mHasPrevData = false;
+    }
+    else if (mEncodingBaseName[0] == '\0' || strncmp(mEncodingBaseName, name, strlen(mEncodingBaseName)) != 0) {
+        // Store resource data to determine basename
+        if (Utils::strCopy(mEncodingBaseName, name, sStringSize) < 0) {
+            return STS_ERR_NO_MEM;
+        }
+
+        LOG_DEBUG("3. %s", mEncodingBaseName);
+
+        mPrevResourceData = *resourceData;
+        mHasPrevData = true;
+
+        return STS_OK;
+    }
+
+    if ((status = encodeItem(NULL, &name[strlen(mEncodingBaseName)], resourceData)) != STS_OK) {
+        return status;
+    }
+
+    return STS_OK;
+}
+
+Status JsonConverter::finishEncoding(size_t* size)
+{
+    Status status = STS_OK;
+
+    if (mHasPrevData) {
+        if ((status = encodeItem(mEncodingBaseName, NULL, &mPrevResourceData)) != STS_OK) {
+            return status;
+        }
+
+        mHasPrevData = false;
+    }
+
+    if (mEncodingEndPos - mEncodingPos <= 0) {
+        return STS_ERR_NO_MEM;
+    }
+
+    *mEncodingPos++ = JSON_TOKEN_END_ARRAY;
+
+    *size = mEncodingPos - mEncodingBeginPos;
+
+    LOG_DEBUG("Finish encoding, size: %d", *size);
+
+    return STS_OK;
+}
+
 /*******************************************************************************
  * Private
  ******************************************************************************/
 
 Status JsonConverter::skipWhiteSpaces()
 {
-    while (isspace(*mCurPos) && mCurPos != mEndPos) {
-        mCurPos++;
+    while (isspace(*mDecodingPos) && mDecodingPos != mDecodingEndPos) {
+        mDecodingPos++;
     }
 
-    if (mCurPos == mEndPos) {
+    if (mDecodingPos == mDecodingEndPos) {
         return STS_ERR_INVALID_VALUE;
     }
 
@@ -148,11 +255,11 @@ Status JsonConverter::skipWhiteSpaces()
 
 Status JsonConverter::skipSymbolsTill(char expectedChar)
 {
-    while (*mCurPos != expectedChar && mCurPos != mEndPos) {
-        mCurPos++;
+    while (*mDecodingPos != expectedChar && mDecodingPos != mDecodingEndPos) {
+        mDecodingPos++;
     }
 
-    if (mCurPos == mEndPos) {
+    if (mDecodingPos == mDecodingEndPos) {
         return STS_ERR_INVALID_VALUE;
     }
 
@@ -174,11 +281,12 @@ bool JsonConverter::isSymbolInStr(char c, const char* str)
 
 Status JsonConverter::skipTillEndValue()
 {
-    while (!isspace(*mCurPos) && !isSymbolInStr(*mCurPos, (const char[]){TOKEN_SET}) && mCurPos != mEndPos) {
-        mCurPos++;
+    while (!isspace(*mDecodingPos) && !isSymbolInStr(*mDecodingPos, (const char[]){TOKEN_SET}) &&
+           mDecodingPos != mDecodingEndPos) {
+        mDecodingPos++;
     }
 
-    if (mCurPos == mEndPos) {
+    if (mDecodingPos == mDecodingEndPos) {
         return STS_ERR_INVALID_VALUE;
     }
 
@@ -187,21 +295,21 @@ Status JsonConverter::skipTillEndValue()
 
 Status JsonConverter::isLastElement(char endChar, bool* lastElement)
 {
-    while (isspace(*mCurPos) && mCurPos != mEndPos) {
-        mCurPos++;
+    while (isspace(*mDecodingPos) && mDecodingPos != mDecodingEndPos) {
+        mDecodingPos++;
     }
 
-    if (mCurPos == mEndPos) {
+    if (mDecodingPos == mDecodingEndPos) {
         return STS_ERR_INVALID_VALUE;
     }
 
-    if (*mCurPos == JSON_TOKEN_SPLIT_ITEM) {
+    if (*mDecodingPos == JSON_TOKEN_SPLIT_ITEM) {
         *lastElement = false;
 
         return STS_OK;
     }
 
-    if (*mCurPos == endChar) {
+    if (*mDecodingPos == endChar) {
         *lastElement = true;
 
         return STS_OK;
@@ -210,52 +318,52 @@ Status JsonConverter::isLastElement(char endChar, bool* lastElement)
     return STS_ERR_INVALID_VALUE;
 }
 
-Status JsonConverter::processItem(ResourceData* resourceData, char* field, size_t size)
+Status JsonConverter::decodeItem(ResourceData* resourceData, char* field, size_t size)
 {
     Status status = STS_OK;
 
-    mCurPos++;
+    mDecodingPos++;
 
     if ((status = skipWhiteSpaces()) != STS_OK) {
         return status;
     }
 
-    if (*mCurPos != JSON_TOKEN_SPLIT_VALUE) {
+    if (*mDecodingPos != JSON_TOKEN_SPLIT_VALUE) {
         return STS_ERR_INVALID_VALUE;
     }
 
-    mCurPos++;
+    mDecodingPos++;
 
     if ((status = skipWhiteSpaces()) != STS_OK) {
         return status;
     }
 
     if (strncmp(JSON_ITEM_BASE_NAME, field, size) == 0) {
-        status = processBaseName(resourceData);
+        status = decodeBaseName(resourceData);
     }
     else if (strncmp(JSON_ITEM_BASE_TIME, field, size) == 0) {
-        status = processBaseTime(resourceData);
+        status = decodeBaseTime(resourceData);
     }
     else if (strncmp(JSON_ITEM_NAME, field, size) == 0) {
-        status = processName(resourceData);
+        status = decodeName(resourceData);
     }
     else if (strncmp(JSON_ITEM_TIME, field, size) == 0) {
-        status = processTime(resourceData);
+        status = decodeTime(resourceData);
     }
     else if (strncmp(JSON_ITEM_FLOAT_VALUE, field, size) == 0) {
-        status = processFloatValue(resourceData);
+        status = decodeFloatValue(resourceData);
     }
     else if (strncmp(JSON_ITEM_BOOLEAN_VALUE, field, size) == 0) {
-        status = processBooleanValue(resourceData);
+        status = decodeBooleanValue(resourceData);
     }
     else if (strncmp(JSON_ITEM_OBJECT_LINK_VALUE, field, size) == 0) {
-        status = processObjectLinkValue(resourceData);
+        status = decodeObjectLinkValue(resourceData);
     }
     else if (strncmp(JSON_ITEM_OPAQUE_VALUE, field, size) == 0) {
-        status = processOpaqueValue(resourceData);
+        status = decodeOpaqueValue(resourceData);
     }
     else if (strncmp(JSON_ITEM_STRING_VALUE, field, size) == 0) {
-        status = processStringValue(resourceData);
+        status = decodeStringValue(resourceData);
     }
     else {
         status = STS_ERR_INVALID_VALUE;
@@ -268,31 +376,31 @@ Status JsonConverter::getString(char* src, size_t size)
 {
     Status status = STS_OK;
 
-    if (*mCurPos != JSON_TOKEN_STRING) {
+    if (*mDecodingPos != JSON_TOKEN_STRING) {
         return STS_ERR_INVALID_VALUE;
     }
 
-    mCurPos++;
+    mDecodingPos++;
 
-    char* beginStr = mCurPos;
+    char* beginStr = mDecodingPos;
 
     if ((status = skipSymbolsTill(JSON_TOKEN_STRING)) != STS_OK) {
         return status;
     }
 
-    if (static_cast<size_t>(mCurPos - beginStr + 1) > size) {
+    if (static_cast<size_t>(mDecodingPos - beginStr + 1) > size) {
         return STS_ERR_NO_MEM;
     }
 
     int i = 0;
 
-    while (beginStr != mCurPos) {
+    while (beginStr != mDecodingPos) {
         src[i++] = *beginStr++;
     }
 
     src[i] = '\0';
 
-    mCurPos++;
+    mDecodingPos++;
 
     return STS_OK;
 }
@@ -301,7 +409,7 @@ Status JsonConverter::getFloat(double* value)
 {
     Status status = STS_OK;
 
-    char* beginStr = mCurPos;
+    char* beginStr = mDecodingPos;
 
     if ((status = skipTillEndValue()) != STS_OK) {
         return status;
@@ -311,27 +419,27 @@ Status JsonConverter::getFloat(double* value)
 
     *value = strtod(beginStr, &endStr);
 
-    if (mCurPos != endStr) {
+    if (mDecodingPos != endStr) {
         return STS_ERR_INVALID_VALUE;
     }
 
     return STS_OK;
 }
 
-Status JsonConverter::processBaseName(ResourceData* resourceData)
+Status JsonConverter::decodeBaseName(ResourceData* resourceData)
 {
     Status status = STS_OK;
 
-    if ((status = getString(mBaseName, sStringSize)) != STS_OK) {
+    if ((status = getString(mDecodingBaseName, sStringSize)) != STS_OK) {
         return status;
     }
 
-    LOG_DEBUG("Base name: %s", mBaseName);
+    LOG_DEBUG("Base name: %s", mDecodingBaseName);
 
     return STS_OK;
 }
 
-Status JsonConverter::processBaseTime(ResourceData* resourceData)
+Status JsonConverter::decodeBaseTime(ResourceData* resourceData)
 {
     Status status = STS_OK;
     double value;
@@ -340,23 +448,23 @@ Status JsonConverter::processBaseTime(ResourceData* resourceData)
         return status;
     }
 
-    mBaseTime = value;
+    mDecodingBaseTime = value;
 
-    if (value != mBaseTime) {
+    if (value != mDecodingBaseTime) {
         return STS_ERR_INVALID_VALUE;
     }
 
-    LOG_DEBUG("Base time: %lu", mBaseTime);
+    LOG_DEBUG("Base time: %ld", mDecodingBaseTime);
 
     return STS_OK;
 }
 
-Status JsonConverter::processName(ResourceData* resourceData)
+Status JsonConverter::decodeName(ResourceData* resourceData)
 {
     Status status = STS_OK;
     char name[sStringSize];
 
-    int len = Utils::strCopy(name, mBaseName, sStringSize);
+    int len = Utils::strCopy(name, mDecodingBaseName, sStringSize);
     if (len < 0) {
         return STS_ERR_NO_MEM;
     }
@@ -370,12 +478,12 @@ Status JsonConverter::processName(ResourceData* resourceData)
         return STS_ERR_INVALID_VALUE;
     }
 
-    mNameFound = true;
+    mDecodingNameFound = true;
 
     return STS_OK;
 }
 
-Status JsonConverter::processTime(ResourceData* resourceData)
+Status JsonConverter::decodeTime(ResourceData* resourceData)
 {
     Status status = STS_OK;
     double value;
@@ -390,14 +498,14 @@ Status JsonConverter::processTime(ResourceData* resourceData)
         return STS_ERR_INVALID_VALUE;
     }
 
-    resourceData->timestamp = mBaseTime + time;
+    resourceData->timestamp = mDecodingBaseTime + time;
 
-    LOG_DEBUG("Timestamp: %lu", resourceData->timestamp);
+    LOG_DEBUG("Timestamp: %ld", resourceData->timestamp);
 
     return STS_OK;
 }
 
-Status JsonConverter::processFloatValue(ResourceData* resourceData)
+Status JsonConverter::decodeFloatValue(ResourceData* resourceData)
 {
     Status status = STS_OK;
 
@@ -407,25 +515,25 @@ Status JsonConverter::processFloatValue(ResourceData* resourceData)
 
     resourceData->dataType = DATA_TYPE_FLOAT;
 
-    LOG_DEBUG("Float value: %f", resourceData->floatValue);
+    LOG_DEBUG("Float value: %.16g", resourceData->floatValue);
 
     return STS_OK;
 }
 
-Status JsonConverter::processBooleanValue(ResourceData* resourceData)
+Status JsonConverter::decodeBooleanValue(ResourceData* resourceData)
 {
     Status status = STS_OK;
 
-    char* beginStr = mCurPos;
+    char* beginStr = mDecodingPos;
 
     if ((status = skipTillEndValue()) != STS_OK) {
         return status;
     }
 
-    if (strncmp("true", beginStr, mCurPos - beginStr) == 0) {
+    if (strncmp("true", beginStr, mDecodingPos - beginStr) == 0) {
         resourceData->boolValue = 1;
     }
-    else if (strncmp("false", beginStr, mCurPos - beginStr) == 0) {
+    else if (strncmp("false", beginStr, mDecodingPos - beginStr) == 0) {
         resourceData->boolValue = 0;
     }
     else {
@@ -439,7 +547,7 @@ Status JsonConverter::processBooleanValue(ResourceData* resourceData)
     return STS_OK;
 }
 
-Status JsonConverter::processObjectLinkValue(ResourceData* resourceData)
+Status JsonConverter::decodeObjectLinkValue(ResourceData* resourceData)
 {
     Status status = STS_OK;
 
@@ -485,7 +593,7 @@ Status JsonConverter::processObjectLinkValue(ResourceData* resourceData)
     return STS_OK;
 }
 
-Status JsonConverter::processOpaqueValue(ResourceData* resourceData)
+Status JsonConverter::decodeOpaqueValue(ResourceData* resourceData)
 {
     Status status = STS_OK;
 
@@ -499,18 +607,206 @@ Status JsonConverter::processOpaqueValue(ResourceData* resourceData)
     return STS_ERR;
 }
 
-Status JsonConverter::processStringValue(ResourceData* resourceData)
+Status JsonConverter::decodeStringValue(ResourceData* resourceData)
 {
     Status status = STS_OK;
 
-    if ((status = getString(reinterpret_cast<char*>(mBuffer), sBufferSize)) != STS_OK) {
+    if ((status = getString(reinterpret_cast<char*>(mDecodingBuffer), sBufferSize)) != STS_OK) {
         return status;
     }
 
-    resourceData->strValue = reinterpret_cast<char*>(mBuffer);
+    resourceData->strValue = reinterpret_cast<char*>(mDecodingBuffer);
     resourceData->dataType = DATA_TYPE_STRING;
 
-    LOG_DEBUG("String value: %s", reinterpret_cast<char*>(mBuffer));
+    LOG_DEBUG("String value: %s", reinterpret_cast<char*>(mDecodingBuffer));
+
+    return STS_OK;
+}
+
+Status JsonConverter::checkFirstItem()
+{
+    if (*(mEncodingPos - 1) != JSON_TOKEN_BEGIN_ITEM) {
+        if (mEncodingEndPos - mEncodingPos <= 0) {
+            return STS_ERR_NO_MEM;
+        }
+
+        *mEncodingPos++ = JSON_TOKEN_SPLIT_ITEM;
+    }
+
+    return STS_OK;
+}
+
+Status JsonConverter::writeBool(const char* item, uint8_t value)
+{
+    Status status = STS_OK;
+
+    if ((status = checkFirstItem()) != STS_OK) {
+        return status;
+    }
+
+    int ret = 0;
+
+    const char* strValue = "true";
+
+    if (!value) {
+        strValue = "false";
+    }
+
+    if ((ret = snprintf(mEncodingPos, mEncodingEndPos - mEncodingPos, "\"%s\":%s", item, strValue)) < 0) {
+        return STS_ERR_NO_MEM;
+    }
+
+    mEncodingPos += ret;
+
+    return STS_OK;
+}
+
+Status JsonConverter::writeObjlink(const char* item, Objlnk value)
+{
+    Status status = STS_OK;
+
+    if ((status = checkFirstItem()) != STS_OK) {
+        return status;
+    }
+
+    int ret = 0;
+
+    if ((ret = snprintf(mEncodingPos, mEncodingEndPos - mEncodingPos, "\"%s\":\"%d:%d\"", item, value.objectId,
+                        value.objectInstanceId)) < 0) {
+        return STS_ERR_NO_MEM;
+    }
+
+    mEncodingPos += ret;
+
+    return STS_OK;
+}
+
+Status JsonConverter::writeFloat(const char* item, double value)
+{
+    Status status = STS_OK;
+
+    if ((status = checkFirstItem()) != STS_OK) {
+        return status;
+    }
+
+    int ret = 0;
+
+    if ((ret = snprintf(mEncodingPos, mEncodingEndPos - mEncodingPos, "\"%s\":%.16g", item, value)) < 0) {
+        return STS_ERR_NO_MEM;
+    }
+
+    mEncodingPos += ret;
+
+    return STS_OK;
+}
+
+Status JsonConverter::writeString(const char* item, char* value)
+{
+    Status status = STS_OK;
+
+    if ((status = checkFirstItem()) != STS_OK) {
+        return status;
+    }
+
+    int ret = 0;
+
+    if ((ret = snprintf(mEncodingPos, mEncodingEndPos - mEncodingPos, "\"%s\":\"%s\"", item, value)) < 0) {
+        return STS_ERR_NO_MEM;
+    }
+
+    mEncodingPos += ret;
+
+    return STS_OK;
+}
+
+Status JsonConverter::encodeValue(ResourceData* resourceData)
+{
+    if (resourceData->dataType == DATA_TYPE_NONE) {
+        return STS_OK;
+    }
+
+    switch (resourceData->dataType) {
+        case DATA_TYPE_FLOAT:
+            return writeFloat(JSON_ITEM_FLOAT_VALUE, resourceData->floatValue);
+
+        case DATA_TYPE_STRING:
+            return writeString(JSON_ITEM_STRING_VALUE, resourceData->strValue);
+
+        case DATA_TYPE_BOOL:
+            return writeBool(JSON_ITEM_BOOLEAN_VALUE, resourceData->boolValue);
+
+        case DATA_TYPE_OBJLINK:
+            return writeObjlink(JSON_ITEM_OBJECT_LINK_VALUE, resourceData->objlnkValue);
+
+        default:
+            // return STS_ERR_INVALID_VALUE;
+            return STS_OK;
+    }
+}
+
+Status JsonConverter::encodeItem(char* baseName, char* name, ResourceData* resourceData)
+{
+    Status status = STS_OK;
+
+    if (*(mEncodingPos - 1) != JSON_TOKEN_BEGIN_ARRAY) {
+        if (mEncodingEndPos - mEncodingPos <= 0) {
+            return STS_ERR_NO_MEM;
+        }
+
+        *mEncodingPos++ = JSON_TOKEN_SPLIT_ITEM;
+    }
+
+    if (mEncodingEndPos - mEncodingPos <= 0) {
+        return STS_ERR_NO_MEM;
+    }
+
+    *mEncodingPos++ = JSON_TOKEN_BEGIN_ITEM;
+
+    if (baseName && baseName[0] != '\0') {
+        LOG_DEBUG("Base name: %s", baseName);
+
+        if ((status = writeString(JSON_ITEM_BASE_NAME, baseName)) != STS_OK) {
+            return status;
+        }
+    }
+
+    LOG_DEBUG("5. %lu %lu", mDecodingBaseTime, resourceData->timestamp);
+
+    if (mEncodingBaseTime == 0 && resourceData->timestamp != 0) {
+        mEncodingBaseTime = resourceData->timestamp;
+
+        LOG_DEBUG("Base time: %ld", mDecodingBaseTime);
+
+        if ((status = writeFloat(JSON_ITEM_BASE_TIME, mEncodingBaseTime)) != STS_OK) {
+            return status;
+        }
+    }
+
+    if (name && name[0] != '\0') {
+        LOG_DEBUG("Name: %s", name);
+
+        if ((status = writeString(JSON_ITEM_NAME, name)) != STS_OK) {
+            return status;
+        }
+    }
+
+    if ((status = encodeValue(resourceData)) != STS_OK) {
+        return status;
+    }
+
+    if (resourceData->timestamp != 0) {
+        LOG_DEBUG("Time: %ld", resourceData->timestamp - mEncodingBaseTime);
+
+        if ((status = writeFloat(JSON_ITEM_TIME, resourceData->timestamp - mEncodingBaseTime)) != STS_OK) {
+            return status;
+        }
+    }
+
+    if (mEncodingEndPos - mEncodingPos <= 0) {
+        return STS_ERR_NO_MEM;
+    }
+
+    *mEncodingPos++ = JSON_TOKEN_END_ITEM;
 
     return STS_OK;
 }

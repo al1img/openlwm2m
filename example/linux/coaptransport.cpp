@@ -413,7 +413,8 @@ void CoapTransport::onGetReceived(coap_resource_t* resource, coap_session_t* ses
 
     if (mClient && status == STS_OK) {
         if (reqFormat != DATA_FMT_CORE) {
-            if ((status = mClient->deviceRead(uri, reqFormat, data, sDataSize, &outFormat)) != STS_OK) {
+            size_t size = sDataSize;
+            if ((status = mClient->deviceRead(uri, reqFormat, data, &size, &outFormat)) != STS_OK) {
                 response->code = status2Code(status);
             }
         }
