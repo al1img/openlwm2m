@@ -64,6 +64,7 @@ private:
     int64_t mEncodingBaseTime;
     ResourceData mPrevResourceData;
     bool mHasPrevData;
+    bool mHasItems;
 
     Status skipWhiteSpaces();
     Status skipSymbolsTill(char expectedChar);

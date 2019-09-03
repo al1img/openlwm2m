@@ -17,7 +17,7 @@ enum Status {
     STS_ERR_NO_ACCESS,      ///< Access error.
     STS_ERR_NOT_FOUND,      ///< Item doesn't exist or unavailable.
     STS_ERR_EXIST,          ///< Item already exists.
-    STS_ERR_INVALID_STATE,  ///< Invalid state.
+    STS_ERR_NOT_ALLOWED,    ///< Not allowed.
     STS_ERR_INVALID_VALUE,  ///< Invalid value.
     STS_ERR_TIMEOUT,        ///< Timeout occurs.
     STS_ERR_FORMAT          ///< Unsupported content format.

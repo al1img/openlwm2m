@@ -99,7 +99,7 @@ ObjectInstance* Object::getInstanceById(uint16_t id)
 ObjectInstance* Object::createInstance(uint16_t id, Status* status)
 {
     if (!mInstanceStorage) {
-        if (status) *status = STS_ERR_INVALID_STATE;
+        if (status) *status = STS_ERR_NOT_ALLOWED;
         return NULL;
     }
 
@@ -202,7 +202,7 @@ void Object::release()
 Status Object::createResource(uint16_t id, ResourceDesc::Params& params)
 {
     if (mInstanceStorage) {
-        return STS_ERR_INVALID_STATE;
+        return STS_ERR_NOT_ALLOWED;
     }
 
     // Appendix D.1

@@ -411,11 +411,13 @@ void CoapTransport::onGetReceived(coap_resource_t* resource, coap_session_t* ses
 
     LOG_DEBUG("GET received, uri: %s, format: %d", uri, reqFormat);
 
+    size_t size = sDataSize;
+
     if (mClient && status == STS_OK) {
         if (reqFormat != DATA_FMT_CORE) {
-            size_t size = sDataSize;
             if ((status = mClient->deviceRead(uri, reqFormat, data, &size, &outFormat)) != STS_OK) {
                 response->code = status2Code(status);
+                size = 0;
             }
         }
         else {
@@ -423,7 +425,13 @@ void CoapTransport::onGetReceived(coap_resource_t* resource, coap_session_t* ses
         }
     }
 
-    coap_add_data_blocked_response(resource, session, request, response, token, outFormat, -1, 0, NULL);
+    coap_add_option(response, COAP_OPTION_CONTENT_TYPE,
+                    coap_encode_var_safe(reinterpret_cast<uint8_t*>(uri), sizeof(uri), outFormat),
+                    reinterpret_cast<uint8_t*>(uri));
+
+    coap_add_data(response, size, data);
+
+    //    coap_add_data_blocked_response(resource, session, request, response, token, outFormat, -1, 0, NULL);
 }
 
 void CoapTransport::putReceived(coap_context_t* context, coap_resource_t* resource, coap_session_t* session,
@@ -457,7 +465,7 @@ Status CoapTransport::code2Status(uint8_t code)
             return STS_ERR_NOT_FOUND;
 
         case COAP_RESPONSE_CODE(412):
-            return STS_ERR_INVALID_STATE;
+            return STS_ERR_NOT_ALLOWED;
 
         default:
             return STS_ERR;
@@ -473,7 +481,7 @@ uint8_t CoapTransport::status2Code(Status status)
         case STS_ERR_NOT_FOUND:
             return COAP_RESPONSE_CODE(404);
 
-        case STS_ERR_INVALID_STATE:
+        case STS_ERR_NOT_ALLOWED:
             return COAP_RESPONSE_CODE(405);
 
         case STS_ERR_INVALID_VALUE:

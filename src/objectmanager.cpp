@@ -114,29 +114,108 @@ Status ObjectManager::write(Interface interface, const char* path, DataFormat fo
     }
 }
 
-Status ObjectManager::read(Interface Interface, const char* path, DataFormat inFormat, void* inData, size_t inSize,
+Status ObjectManager::read(Interface interface, const char* path, DataFormat inFormat, void* inData, size_t inSize,
                            DataFormat reqFormat, void* outData, size_t* outSize, DataFormat* outFormat)
 {
     Status status = STS_OK;
-    DataConverter* converter = mConverterStorage.getItemById(inFormat);
+    DataConverter::ResourceData resourceData;
+    DataConverter* inConverter = mConverterStorage.getItemById(inFormat);
+    DataConverter* outConverter = mConverterStorage.getItemById(DATA_FMT_SENML_JSON);
 
-    if (converter == NULL) {
+    if (reqFormat != DATA_FMT_ANY) {
+        outConverter = mConverterStorage.getItemById(reqFormat);
+    }
+
+    if (inConverter == NULL || outConverter == NULL) {
         return STS_ERR_FORMAT;
     }
 
-    if ((status = converter->startDecoding(path, inData, inSize)) != STS_OK) {
+    if ((status = inConverter->startDecoding(path, inData, inSize)) != STS_OK) {
         return status;
     }
-    /*
-        while ((status = converter->nextDecoding(&resourceData)) == STS_OK) {
+
+    if ((status = outConverter->startEncoding(outData, *outSize)) != STS_OK) {
+        return status;
+    }
+
+    while ((status = inConverter->nextDecoding(&resourceData)) == STS_OK) {
+        Object* object = NULL;
+        ObjectInstance* objectInstance = NULL;
+        Resource* resource = NULL;
+        ResourceInstance* resourceInstance = NULL;
+
+        object = getObject(interface, resourceData.objectId);
+
+        if (object) {
+            objectInstance = object->getInstanceById(resourceData.objectInstanceId);
         }
-    */
+
+        if (objectInstance) {
+            resource = objectInstance->getResourceById(resourceData.resourceId);
+        }
+
+        if (resource) {
+            if (resource->getDesc().isSingle()) {
+                resourceInstance = resource->getFirstInstance();
+            }
+            else {
+                resourceInstance = resource->getInstanceById(resourceData.resourceInstanceId);
+            }
+        }
+
+        if (object && objectInstance && resource && resourceInstance) {
+            if (!resource->getDesc().checkOperation(ResourceDesc::OP_READ)) {
+                return STS_ERR_NOT_ALLOWED;
+            }
+
+            if (inFormat == DATA_FMT_TEXT && reqFormat == DATA_FMT_ANY && outConverter->getId() != DATA_FMT_TEXT) {
+                outConverter = mConverterStorage.getItemById(DATA_FMT_TEXT);
+
+                if (outConverter == NULL) {
+                    return STS_ERR_FORMAT;
+                }
+
+                if ((status = outConverter->startEncoding(outData, *outSize)) != STS_OK) {
+                    return status;
+                }
+            }
+
+            if ((status = readResourceInstance(outConverter, resourceInstance)) != STS_OK) {
+                return status;
+            }
+        }
+        else if (object && objectInstance && resource) {
+            if (!resource->getDesc().checkOperation(ResourceDesc::OP_READ)) {
+                return STS_ERR_NOT_ALLOWED;
+            }
+
+            if ((status = readResource(outConverter, resource)) != STS_OK) {
+                return status;
+            }
+        }
+        else if (object && objectInstance) {
+            if ((status = readObjectInstance(outConverter, objectInstance)) != STS_OK) {
+                return status;
+            }
+        }
+        else if (object) {
+            if ((status = readObject(outConverter, object)) != STS_OK) {
+                return status;
+            }
+        }
+        else {
+            return STS_ERR_NOT_FOUND;
+        }
+    }
+
     if (status != STS_ERR_NOT_FOUND) {
         return status;
     }
 
-    return STS_OK;
-}
+    *outFormat = static_cast<DataFormat>(outConverter->getId());
+
+    return outConverter->finishEncoding(outSize);
+}  // namespace openlwm2m
 
 /*******************************************************************************
  * Private
@@ -375,6 +454,10 @@ Status ObjectManager::bootstrapWrite(DataConverter* converter, const char* path,
         }
     }
 
+    if (status != STS_ERR_NOT_FOUND) {
+        return status;
+    }
+
     return STS_OK;
 }
 
@@ -429,6 +512,98 @@ ObjectInstance* ObjectManager::getServerInstance(uint16_t shortServerId)
 bool ObjectManager::isFormatSupported(DataFormat format)
 {
     return mConverterStorage.getItemById(format);
+}
+
+Status ObjectManager::readResourceInstance(DataConverter* converter, ResourceInstance* resourceInstance)
+{
+    DataConverter::ResourceData resourceData = {resourceInstance->getParent()->getParent()->getParent()->getId(),
+                                                resourceInstance->getParent()->getParent()->getId(),
+                                                resourceInstance->getParent()->getId(), resourceInstance->getId()};
+
+    if (resourceInstance->getDesc().isSingle()) {
+        resourceData.resourceInstanceId = INVALID_ID;
+    }
+
+    resourceData.dataType = resourceInstance->getDesc().getDataType();
+
+    switch (resourceData.dataType) {
+        case DATA_TYPE_STRING:
+            resourceData.strValue = const_cast<char*>(resourceInstance->getString());
+            break;
+
+        case DATA_TYPE_INT:
+            resourceData.intValue = resourceInstance->getInt();
+            break;
+
+        case DATA_TYPE_UINT:
+            resourceData.uintValue = resourceInstance->getUint();
+            break;
+
+        case DATA_TYPE_FLOAT:
+            resourceData.floatValue = resourceInstance->getFloat();
+            break;
+
+        case DATA_TYPE_BOOL:
+            resourceData.boolValue = resourceInstance->getBool();
+            break;
+        default:
+            return STS_ERR;
+    }
+
+    return converter->nextEncoding(&resourceData);
+}
+
+Status ObjectManager::readResource(DataConverter* converter, Resource* resource)
+{
+    ResourceInstance* resourceInstance = resource->getFirstInstance();
+
+    while (resourceInstance) {
+        Status status = readResourceInstance(converter, resourceInstance);
+
+        if (status != STS_OK) {
+            return status;
+        }
+
+        resourceInstance = resource->getNextInstance();
+    }
+
+    return STS_OK;
+}
+
+Status ObjectManager::readObjectInstance(DataConverter* converter, ObjectInstance* objectInstance)
+{
+    Resource* resource = objectInstance->getFirstResource();
+
+    while (resource) {
+        if (resource->getDesc().checkOperation(ResourceDesc::OP_READ)) {
+            Status status = readResource(converter, resource);
+
+            if (status != STS_OK) {
+                return status;
+            }
+        }
+
+        resource = objectInstance->getNextResource();
+    }
+
+    return STS_OK;
+}
+
+Status ObjectManager::readObject(DataConverter* converter, Object* object)
+{
+    ObjectInstance* objectInstance = object->getFirstInstance();
+
+    while (objectInstance) {
+        Status status = readObjectInstance(converter, objectInstance);
+
+        if (status != STS_OK) {
+            return status;
+        }
+
+        objectInstance = object->getNextInstance();
+    }
+
+    return STS_OK;
 }
 
 }  // namespace openlwm2m

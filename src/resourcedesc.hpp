@@ -62,6 +62,10 @@ public:
         mParams.context = context;
     }
 
+    bool isSingle() const { return mParams.instance == SINGLE; }
+    DataType getDataType() const { return mParams.type; }
+    bool checkOperation(Operation operation) const { return (mParams.operations & operation) != 0; }
+
 private:
     struct Params {
         uint16_t operations;

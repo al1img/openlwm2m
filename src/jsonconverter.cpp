@@ -33,10 +33,7 @@ Status JsonConverter::startDecoding(const char* path, void* data, size_t size)
     mDecodingEndPos = mDecodingPos + size;
 
     mDecodingBaseTime = 0;
-
-    if (Utils::strCopy(mDecodingBaseName, path, sStringSize) < 0) {
-        return STS_ERR_NO_MEM;
-    }
+    mDecodingBaseName[0] = '\0';
 
     if ((status = skipWhiteSpaces()) != STS_OK) {
         return status;
@@ -61,7 +58,7 @@ Status JsonConverter::nextDecoding(ResourceData* resourceData)
     mDecodingNameFound = false;
 
     if (mDecodingPos == NULL) {
-        return STS_ERR_INVALID_STATE;
+        return STS_ERR_NOT_ALLOWED;
     }
 
     if (mDecodingPos == mDecodingEndPos) {
@@ -146,7 +143,7 @@ Status JsonConverter::startEncoding(void* data, size_t size)
         return STS_ERR_NO_MEM;
     }
 
-    *mEncodingPos++ = JSON_TOKEN_BEGIN_ARRAY;
+    mHasItems = false;
 
     return STS_OK;
 }
@@ -158,12 +155,15 @@ Status JsonConverter::nextEncoding(ResourceData* resourceData)
 
     LOG_DEBUG("Next encoding");
 
+    if (!mHasItems) {
+        *mEncodingPos++ = JSON_TOKEN_BEGIN_ARRAY;
+        mHasItems = true;
+    }
+
     if (Utils::makePath(resourceData->objectId, resourceData->objectInstanceId, resourceData->resourceId,
                         resourceData->resourceInstanceId, name, sStringSize) < 0) {
         return STS_ERR_NO_MEM;
     }
-
-    LOG_DEBUG("1. %s %s %d", mEncodingBaseName, name, mHasPrevData);
 
     if (mHasPrevData) {
         // Determine base name
@@ -180,8 +180,6 @@ Status JsonConverter::nextEncoding(ResourceData* resourceData)
             return STS_ERR_NO_MEM;
         }
 
-        LOG_DEBUG("2. %s", prevName);
-
         *baseNamePos = '\0';
 
         if ((status = encodeItem(mEncodingBaseName, prevName, &mPrevResourceData)) != STS_OK) {
@@ -195,8 +193,6 @@ Status JsonConverter::nextEncoding(ResourceData* resourceData)
         if (Utils::strCopy(mEncodingBaseName, name, sStringSize) < 0) {
             return STS_ERR_NO_MEM;
         }
-
-        LOG_DEBUG("3. %s", mEncodingBaseName);
 
         mPrevResourceData = *resourceData;
         mHasPrevData = true;
@@ -215,21 +211,26 @@ Status JsonConverter::finishEncoding(size_t* size)
 {
     Status status = STS_OK;
 
-    if (mHasPrevData) {
-        if ((status = encodeItem(mEncodingBaseName, NULL, &mPrevResourceData)) != STS_OK) {
-            return status;
+    if (mHasItems) {
+        if (mHasPrevData) {
+            if ((status = encodeItem(mEncodingBaseName, NULL, &mPrevResourceData)) != STS_OK) {
+                return status;
+            }
+
+            mHasPrevData = false;
         }
 
-        mHasPrevData = false;
+        if (mEncodingEndPos - mEncodingPos <= 0) {
+            return STS_ERR_NO_MEM;
+        }
+
+        *mEncodingPos++ = JSON_TOKEN_END_ARRAY;
+
+        *size = mEncodingPos - mEncodingBeginPos;
     }
-
-    if (mEncodingEndPos - mEncodingPos <= 0) {
-        return STS_ERR_NO_MEM;
+    else {
+        *size = 0;
     }
-
-    *mEncodingPos++ = JSON_TOKEN_END_ARRAY;
-
-    *size = mEncodingPos - mEncodingBeginPos;
 
     LOG_DEBUG("Finish encoding, size: %d", *size);
 
@@ -726,6 +727,12 @@ Status JsonConverter::encodeValue(ResourceData* resourceData)
     }
 
     switch (resourceData->dataType) {
+        case DATA_TYPE_INT:
+            return writeFloat(JSON_ITEM_FLOAT_VALUE, resourceData->intValue);
+
+        case DATA_TYPE_UINT:
+            return writeFloat(JSON_ITEM_FLOAT_VALUE, resourceData->uintValue);
+
         case DATA_TYPE_FLOAT:
             return writeFloat(JSON_ITEM_FLOAT_VALUE, resourceData->floatValue);
 
@@ -739,8 +746,7 @@ Status JsonConverter::encodeValue(ResourceData* resourceData)
             return writeObjlink(JSON_ITEM_OBJECT_LINK_VALUE, resourceData->objlnkValue);
 
         default:
-            // return STS_ERR_INVALID_VALUE;
-            return STS_OK;
+            return STS_ERR_INVALID_VALUE;
     }
 }
 
@@ -769,8 +775,6 @@ Status JsonConverter::encodeItem(char* baseName, char* name, ResourceData* resou
             return status;
         }
     }
-
-    LOG_DEBUG("5. %lu %lu", mDecodingBaseTime, resourceData->timestamp);
 
     if (mEncodingBaseTime == 0 && resourceData->timestamp != 0) {
         mEncodingBaseTime = resourceData->timestamp;

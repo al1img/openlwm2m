@@ -72,6 +72,8 @@ public:
         return STS_ERR_NOT_FOUND;
     }
 
+    ResourceDesc& getDesc() const { return mDesc; }
+
 protected:
     ResourceDesc& mDesc;
 

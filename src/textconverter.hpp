@@ -22,9 +22,17 @@ public:
     Status finishEncoding(size_t* size);
 
 private:
-    static const int sStringSize = 64;
+    static const int sBufferSize = CONFIG_DEFAULT_STRING_LEN;
 
-    char mPath[sStringSize];
+    uint8_t mBuffer[sBufferSize + 1];
+
+    bool mFinish;
+    void* mData;
+    size_t mSize;
+    uint16_t mObjectId;
+    uint16_t mObjectInstanceId;
+    uint16_t mResourceId;
+    uint16_t mResourceInstanceId;
 };
 
 }  // namespace openlwm2m

@@ -92,7 +92,7 @@ Status RegHandler::bind(TransportItf* transport)
 Status RegHandler::registration(bool ordered, RegistrationHandler handler, void* context)
 {
     if (mState != STATE_INIT && mState != STATE_DEREGISTERED) {
-        return STS_ERR_INVALID_STATE;
+        return STS_ERR_NOT_ALLOWED;
     }
 
     mRegistrationContext = (ContextHandler){handler, context};
@@ -122,7 +122,7 @@ Status RegHandler::deregistration(RegistrationHandler handler, void* context)
     Status status = STS_OK;
 
     if (mState != STATE_REGISTERED) {
-        return STS_ERR_INVALID_STATE;
+        return STS_ERR_NOT_ALLOWED;
     }
 
     mDeregistrationContext = (ContextHandler){handler, context};
@@ -144,7 +144,7 @@ Status RegHandler::deregistration(RegistrationHandler handler, void* context)
 Status RegHandler::updateRegistration()
 {
     if (mState != STATE_REGISTERED) {
-        return STS_ERR_INVALID_STATE;
+        return STS_ERR_NOT_ALLOWED;
     }
 
     mTimer.start(sUpdateRegistrationTimeout, &RegHandler::timerCallback, this, true);

@@ -13,6 +13,9 @@ namespace openlwm2m {
 class ObjectInstance : public ItemBase {
 public:
     Resource* getResourceById(uint16_t id);
+    Resource* getFirstResource();
+    Resource* getNextResource();
+
     ResourceInstance* getResourceInstance(uint16_t resId, uint16_t resInstanceId = 0);
 
 private:

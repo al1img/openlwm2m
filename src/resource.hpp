@@ -19,6 +19,8 @@ public:
     ResourceInstance* getFirstInstance();
     ResourceInstance* getNextInstance();
 
+    ResourceDesc& getDesc() const { return mDesc; }
+
 private:
     friend class ObjectInstance;
     friend class Lwm2mStorage<Resource, ResourceDesc&>;

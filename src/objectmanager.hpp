@@ -20,7 +20,7 @@ public:
     Object* getNextObject(Interface interface);
 
     Status write(Interface interface, const char* path, DataFormat format, void* data, size_t size);
-    Status read(Interface Interface, const char* path, DataFormat inFormat, void* inData, size_t inSize,
+    Status read(Interface interface, const char* path, DataFormat inFormat, void* inData, size_t inSize,
                 DataFormat reqFormat, void* outData, size_t* outSize, DataFormat* outFormat);
 
     Status addConverter(DataConverter* converter);
@@ -42,6 +42,11 @@ private:
 
     Status bootstrapWrite(DataConverter* converter, const char* path, void* data, size_t size);
     Status writeResource(ResourceInstance* instance, DataConverter::ResourceData* resourceData);
+
+    Status readResourceInstance(DataConverter* converter, ResourceInstance* resourceInstance);
+    Status readResource(DataConverter* converter, Resource* resource);
+    Status readObjectInstance(DataConverter* converter, ObjectInstance* objectInstance);
+    Status readObject(DataConverter* converter, Object* object);
 };
 
 }  // namespace openlwm2m

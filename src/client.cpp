@@ -63,7 +63,7 @@ Object* Client::createObject(uint16_t id, Object::Instance instance, size_t maxI
                              uint16_t interfaces, Status* status)
 {
     if (mState != STATE_INIT) {
-        if (status) *status = STS_ERR_INVALID_STATE;
+        if (status) *status = STS_ERR_NOT_ALLOWED;
         return NULL;
     }
 
@@ -104,7 +104,7 @@ Status Client::init(TransportItf* transport)
     LOG_DEBUG("Init client");
 
     if (mState != STATE_INIT) {
-        return STS_ERR_INVALID_STATE;
+        return STS_ERR_NOT_ALLOWED;
     }
 
     mTransport = transport;
@@ -125,7 +125,7 @@ Status Client::registration()
     LOG_DEBUG("Register client");
 
     if (mState != STATE_INITIALIZED || mRegHandlerStorage.size()) {
-        return STS_ERR_INVALID_STATE;
+        return STS_ERR_NOT_ALLOWED;
     }
 
     Status status = STS_OK;

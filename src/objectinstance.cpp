@@ -15,6 +15,16 @@ Resource* ObjectInstance::getResourceById(uint16_t id)
     return mResourceStorage.getItemById(id);
 }
 
+Resource* ObjectInstance::getFirstResource()
+{
+    return mResourceStorage.getFirstItem();
+}
+
+Resource* ObjectInstance::getNextResource()
+{
+    return mResourceStorage.getNextItem();
+}
+
 ResourceInstance* ObjectInstance::getResourceInstance(uint16_t resId, uint16_t resInstanceId)
 {
     Resource* resource = getResourceById(resId);
