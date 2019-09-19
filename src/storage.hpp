@@ -146,6 +146,8 @@ public:
 
             node = node->next();
 
+            tmp->get()->release();
+
             delete tmp->get();
             delete tmp;
         }
@@ -172,6 +174,8 @@ public:
         else {
             this->insertBegin(newNode);
         }
+
+        item->init();
 
         return STS_OK;
     }
@@ -214,26 +218,6 @@ public:
         return NULL;
     }
 
-    void init()
-    {
-        Node<T>* node = this->begin();
-
-        while (node) {
-            node->get()->init();
-            node = node->next();
-        }
-    }
-
-    void release()
-    {
-        Node<T>* node = this->begin();
-
-        while (node) {
-            node->get()->release();
-            node = node->next();
-        }
-    }
-
 protected:
     Status findNodeAndId(uint16_t* id, Node<T>** node)
     {
@@ -272,28 +256,10 @@ private:
     Node<T>* mCurrentNode;
 };
 
-template <class T, class P>
+template <class T>
 class Lwm2mDynamicStorage : public Lwm2mStorage<T> {
 public:
-    Lwm2mDynamicStorage(ItemBase* parent, P param, size_t maxItems, T*(newFunc)(ItemBase*, P) = NULL)
-        : mMaxItems(maxItems)
-    {
-        for (size_t i = 0; i < this->mMaxItems; i++) {
-            T* item;
-
-            if (newFunc) {
-                item = newFunc(parent, param);
-            }
-            else {
-                item = new T(parent, param);
-            }
-
-            Node<T>* newNode = new Node<T>(item);
-
-            mFreeList.insertEnd(newNode);
-        }
-    }
-
+    Lwm2mDynamicStorage() {}
     ~Lwm2mDynamicStorage()
     {
         Node<T>* node = mFreeList.begin();
@@ -308,9 +274,18 @@ public:
         }
     }
 
+    Status addItem(T* item)
+    {
+        Node<T>* newNode = new Node<T>(item);
+
+        mFreeList.insertEnd(newNode);
+
+        return STS_OK;
+    }
+
     T* newItem(uint16_t id, Status* status = NULL)
     {
-        if (this->mMaxItems != 0 && this->size() == this->mMaxItems) {
+        if (mFreeList.size() == 0) {
             if (status) *status = STS_ERR_NO_MEM;
             return NULL;
         }
@@ -352,6 +327,7 @@ public:
         while (node) {
             if (node->get() == item) {
                 node->get()->release();
+
                 this->remove(node);
 
                 mFreeList.insertEnd(node);
@@ -381,10 +357,9 @@ public:
         }
     }
 
-    bool hasFreeItem() const { return mMaxItems == 0 || this->mSize < mMaxItems; }
+    bool hasFreeItem() const { return mFreeList.size > 0; }
 
 private:
-    size_t mMaxItems;
     List<T> mFreeList;
 };
 
