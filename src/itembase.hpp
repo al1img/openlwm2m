@@ -2,10 +2,15 @@
 #define OPENLWM2M_ITEMBASE_HPP_
 
 #include <stdint.h>
+#include <cstddef>
 
 namespace openlwm2m {
 
 #define INVALID_ID 0xFFFF
+
+enum ItemMandatory { MANDATORY, OPTIONAL };
+
+enum ItemInstance { SINGLE, MULTIPLE };
 
 class ItemBase {
 public:
@@ -14,11 +19,12 @@ public:
     void setId(uint16_t id) { mId = id; }
 
 protected:
-    ItemBase(ItemBase* parent) : mParent(parent), mId(INVALID_ID) {}
+    ItemBase(ItemBase* parent = NULL, uint16_t id = INVALID_ID) : mParent(parent), mId(id), mCreated(false) {}
 
 private:
     ItemBase* mParent;
     uint16_t mId;
+    bool mCreated;
 };
 
 #if 0

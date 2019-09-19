@@ -8,6 +8,7 @@
 #include <cstddef>
 
 #include "itembase.hpp"
+#include "resource.hpp"
 #include "status.hpp"
 #include "storage.hpp"
 
@@ -22,19 +23,6 @@ enum DataFormat {
     DATA_FMT_SENML_JSON = 110,
     DATA_FMT_SENML_CBOR = 112,
     DATA_FMT_ANY = 0xFFFF
-};
-
-enum DataType {
-    DATA_TYPE_NONE,
-    DATA_TYPE_STRING,
-    DATA_TYPE_INT,
-    DATA_TYPE_UINT,
-    DATA_TYPE_FLOAT,
-    DATA_TYPE_BOOL,
-    DATA_TYPE_OPAQUE,
-    DATA_TYPE_TIME,
-    DATA_TYPE_OBJLINK,
-    DATA_TYPE_CORELINK
 };
 
 struct Objlnk {
@@ -56,7 +44,7 @@ public:
         uint16_t objectInstanceId;
         uint16_t resourceId;
         uint16_t resourceInstanceId;
-        DataType dataType;
+        ResourceInfo::DataType dataType;
         int64_t timestamp;
         union {
             uint64_t uintValue;
@@ -78,6 +66,9 @@ public:
     virtual Status startEncoding(void* data, size_t size) = 0;
     virtual Status nextEncoding(ResourceData* resourceData) = 0;
     virtual Status finishEncoding(size_t* size) = 0;
+
+    void init() {}
+    void release() {}
 };
 
 }  // namespace openlwm2m

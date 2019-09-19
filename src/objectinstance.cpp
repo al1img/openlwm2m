@@ -1,5 +1,6 @@
 #include "objectinstance.hpp"
 #include "log.hpp"
+#include "object.hpp"
 #include "resource.hpp"
 
 #define LOG_MODULE "ObjectInstance"
@@ -9,6 +10,33 @@ namespace openlwm2m {
 /*******************************************************************************
  * Public
  ******************************************************************************/
+
+ObjectInstance::ObjectInstance(Object* parent) : ItemBase(parent)
+{
+}
+
+ObjectInstance::~ObjectInstance()
+{
+}
+
+void ObjectInstance::init()
+{
+    LOG_DEBUG("Create /%d/%d", getParent()->getId(), getId());
+
+    mResourceStorage.init();
+}
+
+void ObjectInstance::release()
+{
+    LOG_DEBUG("Delete /%d/%d", getParent()->getId(), getId());
+
+    mResourceStorage.release();
+}
+
+Status ObjectInstance::addResource(ResourceInfo& info)
+{
+    return mResourceStorage.addItem(new Resource(this, info));
+}
 
 Resource* ObjectInstance::getResourceById(uint16_t id)
 {
@@ -39,41 +67,5 @@ ResourceInstance* ObjectInstance::getResourceInstance(uint16_t resId, uint16_t r
 /*******************************************************************************
  * Private
  ******************************************************************************/
-
-ObjectInstance::ObjectInstance(ItemBase* parent, ResourceDesc::Storage& resourceDescStorage)
-    : ItemBase(parent), mResourceStorage()
-{
-    Node<ResourceDesc>* node = resourceDescStorage.begin();
-
-    while (node) {
-        Resource* resource = new Resource(this, *node->get());
-
-        ASSERT(resource);
-
-        resource->setId(node->get()->getId());
-
-        mResourceStorage.addItem(resource);
-
-        node = node->next();
-    }
-}
-
-ObjectInstance::~ObjectInstance()
-{
-}
-
-void ObjectInstance::init()
-{
-    LOG_DEBUG("Create /%d/%d", getParent()->getId(), getId());
-
-    mResourceStorage.init();
-}
-
-void ObjectInstance::release()
-{
-    LOG_DEBUG("Delete /%d/%d", getParent()->getId(), getId());
-
-    mResourceStorage.release();
-}
 
 }  // namespace openlwm2m

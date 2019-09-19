@@ -1,5 +1,6 @@
 #include "resource.hpp"
 #include "log.hpp"
+#include "objectinstance.hpp"
 
 #define LOG_MODULE "Resource"
 
@@ -8,6 +9,85 @@ namespace openlwm2m {
 /*******************************************************************************
  * Public
  ******************************************************************************/
+
+ResourceInfo::ResourceInfo(uint16_t id, uint16_t operations, ItemInstance instance, size_t maxInstances,
+                           ItemMandatory mandatory, DataType type, Min min, Max max)
+    : ItemBase(NULL, id),
+      mOperations(operations),
+      mInstance(instance),
+      mMaxInstances(maxInstances),
+      mMandatory(mandatory),
+      mType(type),
+      mMin(min),
+      mMax(max),
+      mCallback(NULL),
+      mContext(NULL)
+{
+}
+
+ResourceInfo::~ResourceInfo()
+{
+}
+
+void ResourceInfo::init()
+{
+}
+
+void ResourceInfo::release()
+{
+}
+
+void ResourceInfo::setValueChangedCbk(ValueChangeCbk callback, void* context)
+{
+    mCallback = callback;
+    mContext = context;
+}
+
+void ResourceInfo::valueChanged(ResourceInstance* instance)
+{
+    if (mCallback) {
+        mCallback(mContext, instance);
+    }
+}
+
+/*******************************************************************************
+ * Public
+ ******************************************************************************/
+
+Resource::Resource(ObjectInstance* parent, ResourceInfo& info) : ItemBase(parent), mInfo(info)
+{
+    for (size_t i = 0; i < info.getMaxInstances(); i++) {
+        mInstanceStorage.addItem(newInstance(this));
+    }
+}
+
+Resource::~Resource()
+{
+}
+
+void Resource::init()
+{
+    LOG_DEBUG("Create /%d/%d/%d", getParent()->getParent()->getId(), getParent()->getId(), getId());
+
+    // Appendix D.1
+    // If the Resource field “Mandatory” is “Mandatory” and the field “Instances” of theResource is “Single” then, the
+    // number of Resource Instance MUST be 1
+    if (mInfo.isMandatory() && mInfo.isSingle()) {
+        createInstance(0);
+    }
+}
+
+void Resource::release()
+{
+    LOG_DEBUG("Delete /%d/%d/%d", getParent()->getParent()->getId(), getParent()->getId(), getId());
+
+    mInstanceStorage.clear();
+}
+
+ObjectInstance* Resource::getObjectInstance() const
+{
+    return static_cast<ObjectInstance*>(getParent());
+}
 
 ResourceInstance* Resource::createInstance(uint16_t id, Status* status)
 {
@@ -42,54 +122,24 @@ ResourceInstance* Resource::getNextInstance()
  * Private
  ******************************************************************************/
 
-ResourceInstance* Resource::newInstance(ItemBase* parent, ResourceDesc& desc)
+ResourceInstance* Resource::newInstance(Resource* parent)
 {
-    switch (desc.mParams.type) {
-        case DATA_TYPE_STRING:
-            return new ResourceString(parent, desc);
+    switch (parent->getInfo().getType()) {
+        case ResourceInfo::TYPE_STRING:
+            return new ResourceString(parent);
 
-        case DATA_TYPE_INT:
-            return new ResourceInt(parent, desc);
+        case ResourceInfo::TYPE_INT:
+            return new ResourceInt(parent);
 
-        case DATA_TYPE_UINT:
-            return new ResourceUint(parent, desc);
+        case ResourceInfo::TYPE_UINT:
+            return new ResourceUint(parent);
 
-        case DATA_TYPE_BOOL:
-            return new ResourceBool(parent, desc);
+        case ResourceInfo::TYPE_BOOL:
+            return new ResourceBool(parent);
 
         default:
-            return new ResourceInstance(parent, desc);
+            return new ResourceInstance(parent);
     }
-}
-
-Resource::Resource(ItemBase* parent, ResourceDesc& desc)
-    : ItemBase(parent), mDesc(desc), mInstanceStorage(this, mDesc, mDesc.mParams.maxInstances, newInstance)
-{
-}
-
-Resource::~Resource()
-{
-}
-
-void Resource::init()
-{
-    LOG_DEBUG("Create /%d/%d/%d", getParent()->getParent()->getId(), getParent()->getId(), getId());
-
-    // Appendix D.1
-    // If the Resource field “Mandatory” is “Mandatory” and the field “Instances” of theResource is “Single” then, the
-    // number of Resource Instance MUST be 1
-    if (mDesc.mParams.mandatory == ResourceDesc::MANDATORY && mDesc.mParams.instance == ResourceDesc::SINGLE &&
-        mInstanceStorage.size() == 0) {
-        ResourceInstance* instance = createInstance(0);
-        ASSERT(instance);
-    }
-}
-
-void Resource::release()
-{
-    LOG_DEBUG("Delete /%d/%d/%d", getParent()->getParent()->getId(), getParent()->getId(), getId());
-
-    mInstanceStorage.clear();
 }
 
 }  // namespace openlwm2m

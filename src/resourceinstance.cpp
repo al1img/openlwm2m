@@ -1,4 +1,5 @@
 #include "resourceinstance.hpp"
+#include "resource.hpp"
 
 #include <cstring>
 
@@ -13,12 +14,48 @@ namespace openlwm2m {
  ******************************************************************************/
 
 /*******************************************************************************
+ * ResourceInstance
+ ******************************************************************************/
+
+ResourceInstance::ResourceInstance(Resource* parent) : ItemBase(parent)
+{
+}
+
+ResourceInstance::~ResourceInstance()
+{
+}
+
+void ResourceInstance::init()
+{
+    LOG_DEBUG("Create /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(), getParent()->getParent()->getId(),
+              getParent()->getId(), getId());
+
+    valueChanged();
+}
+
+void ResourceInstance::release()
+{
+    LOG_DEBUG("Delete /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(), getParent()->getParent()->getId(),
+              getParent()->getId(), getId());
+}
+
+Resource* ResourceInstance::getResource() const
+{
+    return static_cast<Resource*>(getParent());
+}
+
+void ResourceInstance::valueChanged()
+{
+    getResource()->getInfo().valueChanged(this);
+}
+
+/*******************************************************************************
  * ResourceString
  ******************************************************************************/
 
-ResourceString::ResourceString(ItemBase* parent, ResourceDesc& desc) : ResourceInstance(parent, desc)
+ResourceString::ResourceString(Resource* parent) : ResourceInstance(parent)
 {
-    mSize = mDesc.mParams.maxUint ? mDesc.mParams.maxUint : CONFIG_DEFAULT_STRING_LEN;
+    mSize = getResource()->getInfo().max().maxUint;
     mValue = new char[mSize + 1];
     mValue[0] = '\0';
 }
@@ -28,10 +65,25 @@ ResourceString::~ResourceString()
     delete[] mValue;
 }
 
+Status ResourceString::checkString(const char* value)
+{
+    if (strlen(value) > mSize) {
+        return STS_ERR_INVALID_VALUE;
+    }
+
+    return STS_OK;
+}
+
 Status ResourceString::setString(const char* value)
 {
+    Status status = STS_OK;
+
     LOG_INFO("Set string /%d/%d/%d/%d, value: %s", getParent()->getParent()->getParent()->getId(),
              getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
+
+    if ((status = checkString(value)) != STS_OK) {
+        return status;
+    }
 
     if (strcmp(value, mValue) == 0) {
         return STS_OK;
@@ -49,23 +101,12 @@ Status ResourceString::setString(const char* value)
  * ResourceInt
  ******************************************************************************/
 
-ResourceInt::ResourceInt(ItemBase* parent, ResourceDesc& desc) : ResourceInstance(parent, desc), mValue(0)
+ResourceInt::ResourceInt(Resource* parent) : ResourceInstance(parent), mValue(0)
 {
 }
 
 ResourceInt::~ResourceInt()
 {
-}
-
-Status ResourceInt::setFloat(double value)
-{
-    int64_t nativeValue = value;
-
-    if (value != nativeValue) {
-        return STS_ERR_INVALID_VALUE;
-    }
-
-    return setInt(nativeValue);
 }
 
 Status ResourceInt::setInt(int64_t value)
@@ -77,7 +118,7 @@ Status ResourceInt::setInt(int64_t value)
         return STS_OK;
     }
 
-    if (value < mDesc.mParams.minInt || value > mDesc.mParams.maxInt) {
+    if (value < getResource()->getInfo().min().minInt || value > getResource()->getInfo().max().maxInt) {
         return STS_ERR_INVALID_VALUE;
     }
 
@@ -92,23 +133,12 @@ Status ResourceInt::setInt(int64_t value)
  * ResourceUint
  ******************************************************************************/
 
-ResourceUint::ResourceUint(ItemBase* parent, ResourceDesc& desc) : ResourceInstance(parent, desc), mValue(0)
+ResourceUint::ResourceUint(Resource* parent) : ResourceInstance(parent), mValue(0)
 {
 }
 
 ResourceUint::~ResourceUint()
 {
-}
-
-Status ResourceUint::setFloat(double value)
-{
-    uint64_t nativeValue = value;
-
-    if (value != nativeValue) {
-        return STS_ERR_INVALID_VALUE;
-    }
-
-    return setUint(nativeValue);
 }
 
 Status ResourceUint::setUint(uint64_t value)
@@ -120,7 +150,7 @@ Status ResourceUint::setUint(uint64_t value)
         return STS_OK;
     }
 
-    if (value < mDesc.mParams.minUint || value > mDesc.mParams.maxUint) {
+    if (value < getResource()->getInfo().min().minUint || value > getResource()->getInfo().max().maxUint) {
         return STS_ERR_INVALID_VALUE;
     }
 
@@ -135,7 +165,7 @@ Status ResourceUint::setUint(uint64_t value)
  * ResourceBool
  ******************************************************************************/
 
-ResourceBool::ResourceBool(ItemBase* parent, ResourceDesc& desc) : ResourceInstance(parent, desc), mValue(0)
+ResourceBool::ResourceBool(Resource* parent) : ResourceInstance(parent), mValue(0)
 {
 }
 
@@ -157,38 +187,6 @@ Status ResourceBool::setBool(uint8_t value)
     valueChanged();
 
     return STS_OK;
-}
-
-/*******************************************************************************
- * ResourceInstance
- ******************************************************************************/
-
-ResourceInstance::ResourceInstance(ItemBase* parent, ResourceDesc& desc) : ItemBase(parent), mDesc(desc)
-{
-}
-
-ResourceInstance::~ResourceInstance()
-{
-}
-
-void ResourceInstance::init()
-{
-    LOG_DEBUG("Create /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(), getParent()->getParent()->getId(),
-              getParent()->getId(), getId());
-
-    valueChanged();
-}
-void ResourceInstance::release()
-{
-    LOG_DEBUG("Delete /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(), getParent()->getParent()->getId(),
-              getParent()->getId(), getId());
-}
-
-void ResourceInstance::valueChanged()
-{
-    if (mDesc.mParams.cbk) {
-        mDesc.mParams.cbk(mDesc.mParams.context, this);
-    }
 }
 
 }  // namespace openlwm2m

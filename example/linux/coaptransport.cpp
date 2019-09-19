@@ -16,7 +16,7 @@ using namespace openlwm2m;
  * CoapTransport
  ******************************************************************************/
 
-CoapTransport::CoapTransport() : mClient(NULL), mReqStorage(NULL, Request::Param(), REQ_STORAGE_SIZE)
+CoapTransport::CoapTransport() : mClient(NULL)
 {
     coap_startup();
 

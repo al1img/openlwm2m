@@ -15,18 +15,46 @@ bool Object::sInstanceChanged = false;
  * Public
  ******************************************************************************/
 
-Status Object::createResourceString(uint16_t id, uint16_t operations, ResourceDesc::Instance instance,
-                                    size_t maxInstances, ResourceDesc::Mandatory mandatory, size_t maxLen,
-                                    ResourceDesc::ValueChangeCbk cbk, void* context)
+Object::Object(uint16_t id, uint16_t interfaces, ItemInstance instance, size_t maxInstances, ItemMandatory mandatory)
+    : ItemBase(NULL, id), mInterfaces(interfaces), mInstance(instance), mMandatory(mandatory)
 {
-    ResourceDesc::Params params = {operations, instance, maxInstances, mandatory, DATA_TYPE_STRING, cbk, context};
-
-    params.minUint = 0;
-    params.maxUint = maxLen;
-
-    return createResource(id, params);
+    for (size_t i = 0; i < maxInstances; i++) {
+        mInstanceStorage.addItem(new ObjectInstance(this));
+    }
 }
 
+Object::~Object()
+{
+}
+
+void Object::init()
+{
+    LOG_DEBUG("Create /%d", getId());
+
+    // Appendix D.1
+    // If the Object field “Mandatory” is “Mandatory” and the Object field “Instances” is “Single”then, the number
+    // of Object Instance MUST be 1.
+    if (mInstance == SINGLE && mMandatory == MANDATORY) {
+        createInstance(0);
+    }
+}
+
+void Object::release()
+{
+    LOG_DEBUG("Delete /%d", getId());
+
+    mInstanceStorage.clear();
+}
+
+Status Object::createResourceString(uint16_t id, uint16_t operations, ItemInstance instance, size_t maxInstances,
+                                    ItemMandatory mandatory, size_t maxLen, ResourceInfo::ValueChangeCbk callback,
+                                    void* context)
+{
+    return createResource(id, operations, instance, maxInstances, mandatory, ResourceInfo::TYPE_STRING,
+                          (ResourceInfo::Min){.minUint = 0}, (ResourceInfo::Max){.maxUint = maxLen}, callback, context);
+}
+
+#if 0
 Status Object::createResourceInt(uint16_t id, uint16_t operations, ResourceDesc::Instance instance, size_t maxInstances,
                                  ResourceDesc::Mandatory mandatory, int64_t min, int64_t max,
                                  ResourceDesc::ValueChangeCbk cbk, void* context)
@@ -86,24 +114,16 @@ Status Object::createResourceNone(uint16_t id, uint16_t operations, ResourceDesc
 
     return createResource(id, params);
 }
+#endif
 
 ObjectInstance* Object::getInstanceById(uint16_t id)
 {
-    if (!mInstanceStorage) {
-        return NULL;
-    }
-
-    return mInstanceStorage->getItemById(id);
+    return mInstanceStorage.getItemById(id);
 }
 
 ObjectInstance* Object::createInstance(uint16_t id, Status* status)
 {
-    if (!mInstanceStorage) {
-        if (status) *status = STS_ERR_NOT_ALLOWED;
-        return NULL;
-    }
-
-    ObjectInstance* instance = mInstanceStorage->newItem(id, status);
+    ObjectInstance* instance = mInstanceStorage.newItem(id, status);
 
     if (instance) {
         sInstanceChanged = true;
@@ -114,20 +134,12 @@ ObjectInstance* Object::createInstance(uint16_t id, Status* status)
 
 ObjectInstance* Object::getFirstInstance()
 {
-    if (mInstanceStorage) {
-        return mInstanceStorage->getFirstItem();
-    }
-
-    return NULL;
+    return mInstanceStorage.getFirstItem();
 }
 
 ObjectInstance* Object::getNextInstance()
 {
-    if (mInstanceStorage) {
-        return mInstanceStorage->getNextItem();
-    }
-
-    return NULL;
+    return mInstanceStorage.getNextItem();
 }
 
 ResourceInstance* Object::getResourceInstance(uint16_t objInstanceId, uint16_t resId, uint16_t resInstanceId)
@@ -141,15 +153,15 @@ ResourceInstance* Object::getResourceInstance(uint16_t objInstanceId, uint16_t r
     return objInstance->getResourceInstance(resId, resInstanceId);
 }
 
-Status Object::setResourceChangedCbk(uint16_t resourceId, ResourceDesc::ValueChangeCbk cbk, void* context)
+Status Object::setResourceChangedCbk(uint16_t resourceId, ResourceInfo::ValueChangeCbk callback, void* context)
 {
-    ResourceDesc* resourceDesc = mResourceDescStorage.getItemById(resourceId);
+    ResourceInfo* info = mResourceInfoStorage.getItemById(resourceId);
 
-    if (!resourceDesc) {
-        return STS_ERR_NO_MEM;
+    if (!info) {
+        return STS_ERR_NOT_FOUND;
     }
 
-    resourceDesc->setValueChangedCbk(cbk, context);
+    info->setValueChangedCbk(callback, context);
 
     return STS_OK;
 }
@@ -158,70 +170,27 @@ Status Object::setResourceChangedCbk(uint16_t resourceId, ResourceDesc::ValueCha
  * Private
  ******************************************************************************/
 
-Object::Object(ItemBase* parent, Params params) : ItemBase(parent), mParams(params), mInstanceStorage(NULL)
+Status Object::createResource(uint16_t id, uint16_t operations, ItemInstance instance, size_t maxInstances,
+                              ItemMandatory mandatory, ResourceInfo::DataType type, ResourceInfo::Min min,
+                              ResourceInfo::Max max, ResourceInfo::ValueChangeCbk callback, void* context)
 {
-}
-
-Object::~Object()
-{
-    delete mInstanceStorage;
-}
-
-void Object::init()
-{
-    LOG_DEBUG("Create /%d", getId());
-
-    if (!mInstanceStorage) {
-        mResourceDescStorage.init();
-
-        mInstanceStorage = new ObjectInstance::Storage(this, mResourceDescStorage, mParams.maxInstances);
-
-        // Appendix D.1
-        // If the Object field “Mandatory” is “Mandatory” and the Object field “Instances” is “Single”then, the number
-        // of Object Instance MUST be 1.
-        if (mParams.instance == SINGLE && mParams.mandatory == MANDATORY) {
-            if (mInstanceStorage->size() == 0) {
-                ObjectInstance* instance = createInstance();
-                ASSERT(instance);
-            }
-        }
-    }
-}
-
-void Object::release()
-{
-    LOG_DEBUG("Delete /%d", getId());
-
-    if (mInstanceStorage) {
-        mInstanceStorage->clear();
-    }
-
-    mResourceDescStorage.release();
-}
-
-Status Object::createResource(uint16_t id, ResourceDesc::Params& params)
-{
-    if (mInstanceStorage) {
-        return STS_ERR_NOT_ALLOWED;
-    }
-
     // Appendix D.1
     // Resource which supports “Execute” operation MUST have “Single” as value of the “Instances” field.
-    if (params.operations & ResourceDesc::OP_EXECUTE && params.instance != ResourceDesc::SINGLE) {
+    if (operations & ResourceInfo::OP_EXECUTE && instance != SINGLE) {
         return STS_ERR_INVALID_VALUE;
     }
 
-    if (params.instance == ResourceDesc::SINGLE) {
-        params.maxInstances = 1;
+    if (instance == SINGLE) {
+        maxInstances = 1;
     }
 
     LOG_DEBUG("Create resource /%d/%d", getId(), id);
 
-    ResourceDesc* resourceDesc = new ResourceDesc(this, params);
+    ResourceInfo* info = new ResourceInfo(id, operations, instance, maxInstances, mandatory, type, min, max);
 
-    resourceDesc->setId(id);
+    info->setValueChangedCbk(callback, context);
 
-    return mResourceDescStorage.addItem(resourceDesc);
+    return mResourceInfoStorage.addItem(info);
 }
 
 }  // namespace openlwm2m

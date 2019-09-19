@@ -146,8 +146,6 @@ public:
 
             node = node->next();
 
-            tmp->get()->release();
-
             delete tmp->get();
             delete tmp;
         }
@@ -174,8 +172,6 @@ public:
         else {
             this->insertBegin(newNode);
         }
-
-        item->init();
 
         return STS_OK;
     }
@@ -216,6 +212,28 @@ public:
         }
 
         return NULL;
+    }
+
+    void init()
+    {
+        Node<T>* node = this->begin();
+
+        while (node) {
+            node->get()->init();
+
+            node = node->next();
+        }
+    }
+
+    void release()
+    {
+        Node<T>* node = this->begin();
+
+        while (node) {
+            node->get()->release();
+
+            node = node->next();
+        }
     }
 
 protected:
@@ -283,7 +301,7 @@ public:
         return STS_OK;
     }
 
-    T* newItem(uint16_t id, Status* status = NULL)
+    T* newItem(uint16_t id = INVALID_ID, Status* status = NULL)
     {
         if (mFreeList.size() == 0) {
             if (status) *status = STS_ERR_NO_MEM;

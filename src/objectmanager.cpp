@@ -25,12 +25,10 @@ ObjectManager::ObjectManager()
 
 ObjectManager::~ObjectManager()
 {
-    mObjectStorage.release();
 }
 
 void ObjectManager::init()
 {
-    mObjectStorage.init();
 }
 
 Object* ObjectManager::createObject(uint16_t id, Object::Instance instance, size_t maxInstances,
@@ -239,12 +237,11 @@ void ObjectManager::createSecurityObject()
 {
     Status status = STS_OK;
 
-    Object* object = createObject(OBJ_LWM2M_SECURITY, Object::MULTIPLE,
-                                  CONFIG_NUM_SERVERS == 0 ? 0 : CONFIG_NUM_SERVERS + CONFIG_BOOTSTRAP_SERVER,
+    Object* object = createObject(OBJ_LWM2M_SECURITY, Object::MULTIPLE, CONFIG_NUM_SERVERS + CONFIG_BOOTSTRAP_SERVER,
                                   Object::MANDATORY, ITF_BOOTSTRAP);
     ASSERT(object);
     // LWM2M Server URI
-    status = object->createResourceString(RES_LWM2M_SERVER_URI, ResourceDesc::OP_NONE, ResourceDesc::SINGLE, 0,
+    status = object->createResourceString(RES_LWM2M_SERVER_URI, ResourceInfo::OP_NONE, ResourceDesc::SINGLE, 0,
                                           ResourceDesc::MANDATORY, 255);
     ASSERT(status == STS_OK);
     // Bootstrap-Server

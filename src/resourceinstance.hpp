@@ -4,155 +4,78 @@
 #include <stdint.h>
 
 #include "itembase.hpp"
-#include "resourcedesc.hpp"
+#include "storage.hpp"
 
 namespace openlwm2m {
 
-class Object;
+class Resource;
 
 class ResourceInstance : public ItemBase {
 public:
-    virtual const char* getString() const
-    {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return "";
-    }
+    typedef Lwm2mDynamicStorage<ResourceInstance> Storage;
 
-    virtual Status setString(const char* value)
-    {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return STS_ERR_NOT_FOUND;
-    }
-
-    virtual int64_t getInt() const
-    {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return 0;
-    }
-
-    virtual Status setInt(int64_t value)
-    {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return STS_ERR_NOT_FOUND;
-    }
-
-    virtual uint64_t getUint() const
-    {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return 0;
-    }
-
-    virtual Status setUint(uint64_t value)
-    {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return STS_ERR_NOT_FOUND;
-    }
-
-    virtual uint8_t getBool() const
-    {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return 0;
-    };
-
-    virtual Status setBool(uint8_t value)
-    {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return STS_ERR_NOT_FOUND;
-    }
-
-    virtual double getFloat() const
-    {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return 0;
-    };
-
-    virtual Status setFloat(double value)
-    {
-        ASSERT_MESSAGE(false, "Method not supported");
-        return STS_ERR_NOT_FOUND;
-    }
-
-    ResourceDesc& getDesc() const { return mDesc; }
-
-protected:
-    ResourceDesc& mDesc;
-
-    ResourceInstance(ItemBase* parent, ResourceDesc& desc);
-    virtual ~ResourceInstance();
-    void valueChanged();
-
-private:
-    friend class Resource;
-    friend class Lwm2mStorage<ResourceInstance>;
-    friend class Lwm2mDynamicStorage<ResourceInstance, ResourceDesc&>;
-
-    typedef Lwm2mDynamicStorage<ResourceInstance, ResourceDesc&> Storage;
+    ResourceInstance(Resource* parent);
+    ~ResourceInstance();
 
     void init();
     void release();
+
+    Resource* getResource() const;
+
+protected:
+    void valueChanged();
 };
 
 class ResourceString : public ResourceInstance {
 public:
+    ResourceString(Resource* parent);
+    ~ResourceString();
+
     const char* getString() const { return mValue; }
+    Status checkString(const char* value);
     Status setString(const char* value);
 
 private:
-    friend class Resource;
-
     char* mValue;
     size_t mSize;
-
-    ResourceString(ItemBase* parent, ResourceDesc& desc);
-    virtual ~ResourceString();
 };
 
 class ResourceInt : public ResourceInstance {
 public:
+    ResourceInt(Resource* parent);
+    ~ResourceInt();
+
     int64_t getInt() const { return mValue; }
+    Status checkInt(int64_t value);
     Status setInt(int64_t value);
 
-    double getFloat() const { return mValue; }
-    Status setFloat(double value);
-
 private:
-    friend class Resource;
-
     int64_t mValue;
-
-    ResourceInt(ItemBase* parent, ResourceDesc& desc);
-    virtual ~ResourceInt();
 };
 
 class ResourceUint : public ResourceInstance {
 public:
+    ResourceUint(Resource* parent);
+    ~ResourceUint();
+
     uint64_t getUint() const { return mValue; }
+    Status checkUint(uint64_t value);
     Status setUint(uint64_t value);
 
-    double getFloat() const { return mValue; }
-    Status setFloat(double value);
-
 private:
-    friend class Resource;
-
     uint64_t mValue;
-
-    ResourceUint(ItemBase* parent, ResourceDesc& desc);
-    virtual ~ResourceUint();
 };
 
 class ResourceBool : public ResourceInstance {
 public:
+    ResourceBool(Resource* parent);
+    ~ResourceBool();
+
     uint8_t getBool() const { return mValue; }
     Status setBool(uint8_t value);
 
 private:
-    friend class Resource;
-
     uint8_t mValue;
-
-    ResourceBool(ItemBase* parent, ResourceDesc& desc);
-    virtual ~ResourceBool();
 };
 
 }  // namespace openlwm2m

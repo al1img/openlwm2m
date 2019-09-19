@@ -1,16 +1,15 @@
-#include "client.hpp"
-
 #include <signal.h>
 #include <time.h>
 #include <unistd.h>
 
-#include "coaptransport.hpp"
+// #include "client.hpp"
+// #include "coaptransport.hpp"
 #include "log.hpp"
 #include "memory.hpp"
 
 #define LOG_MODULE "Main"
 
-using namespace openlwm2m;
+// using namespace openlwm2m;
 
 bool sTerminate = false;
 bool sPollRequest = false;
@@ -42,7 +41,7 @@ int main()
     LOG_INFO("Start lwm2m client");
 
     registerSignals();
-
+#if 0
     CoapTransport transport;
 
     Client client("Test client", false, pollRequest);
@@ -101,6 +100,7 @@ int main()
 
         transport.run();
     }
+#endif
 
     LOG_INFO("Stop lwm2m client");
 

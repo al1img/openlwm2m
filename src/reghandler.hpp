@@ -22,7 +22,7 @@ public:
         void (*pollRequest)();
     };
 
-    typedef Lwm2mDynamicStorage<RegHandler, Params> Storage;
+    typedef Lwm2mDynamicStorage<RegHandler> Storage;
     typedef void (*RegistrationHandler)(void* context, RegHandler* handler, Status status);
 
     enum State {

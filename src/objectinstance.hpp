@@ -5,13 +5,24 @@
 
 #include "itembase.hpp"
 #include "resource.hpp"
-#include "resourcedesc.hpp"
 #include "storage.hpp"
 
 namespace openlwm2m {
 
+class Object;
+
 class ObjectInstance : public ItemBase {
 public:
+    typedef Lwm2mDynamicStorage<ObjectInstance> Storage;
+
+    ObjectInstance(Object* parent);
+    ~ObjectInstance();
+
+    void init();
+    void release();
+
+    Status addResource(ResourceInfo& info);
+
     Resource* getResourceById(uint16_t id);
     Resource* getFirstResource();
     Resource* getNextResource();
@@ -19,19 +30,7 @@ public:
     ResourceInstance* getResourceInstance(uint16_t resId, uint16_t resInstanceId = 0);
 
 private:
-    friend class Object;
-    friend class Lwm2mStorage<ObjectInstance>;
-    friend class Lwm2mDynamicStorage<ObjectInstance, ResourceDesc::Storage&>;
-
-    typedef Lwm2mDynamicStorage<ObjectInstance, ResourceDesc::Storage&> Storage;
-
     Resource::Storage mResourceStorage;
-
-    ObjectInstance(ItemBase* parent, ResourceDesc::Storage& resourceDescStorage);
-    ~ObjectInstance();
-
-    void init();
-    void release();
 };
 
 }  // namespace openlwm2m

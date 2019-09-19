@@ -62,7 +62,7 @@ private:
 
     coap_context_t* mContext;
 
-    openlwm2m::Lwm2mDynamicStorage<Request, Request::Param> mReqStorage;
+    openlwm2m::Lwm2mDynamicStorage<Request> mReqStorage;
 
     openlwm2m::Status resolveAddress(const char* uri, coap_address_t* dst);
 
