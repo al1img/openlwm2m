@@ -37,14 +37,6 @@ Status ResourceString::setString(const char* value)
         return STS_OK;
     }
 
-#if !CONFIG_RESERVE_MEMORY
-    if (!mDesc.mParams.maxUint && strlen(value) > mSize) {
-        delete[] mValue;
-        mSize = strlen(value);
-        mValue = new char[mSize + 1];
-    }
-#endif
-
     strncpy(mValue, value, mSize);
     mValue[mSize] = '\0';
 

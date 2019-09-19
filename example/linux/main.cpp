@@ -54,9 +54,7 @@ int main()
     status = client.init(&transport);
     ASSERT_MESSAGE(status == STS_OK, "Can't initialize client");
 
-#if CONFIG_RESERVE_MEMORY
     memInitDone();
-#endif
 
     status = client.bootstrapWriteJSON("",
                                        "\

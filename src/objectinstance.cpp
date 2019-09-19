@@ -46,8 +46,14 @@ ObjectInstance::ObjectInstance(ItemBase* parent, ResourceDesc::Storage& resource
     Node<ResourceDesc>* node = resourceDescStorage.begin();
 
     while (node) {
-        Resource* resource = mResourceStorage.newItem(this, node->get()->getId(), *node->get());
+        Resource* resource = new Resource(this, *node->get());
+
         ASSERT(resource);
+
+        resource->setId(node->get()->getId());
+
+        mResourceStorage.addItem(resource);
+
         node = node->next();
     }
 }

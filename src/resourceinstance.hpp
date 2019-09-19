@@ -83,7 +83,7 @@ protected:
 
 private:
     friend class Resource;
-    friend class Lwm2mStorage<ResourceInstance, ResourceDesc&>;
+    friend class Lwm2mStorage<ResourceInstance>;
     friend class Lwm2mDynamicStorage<ResourceInstance, ResourceDesc&>;
 
     typedef Lwm2mDynamicStorage<ResourceInstance, ResourceDesc&> Storage;

@@ -134,10 +134,10 @@ private:
     }
 };
 
-template <class T, class P>
+template <class T>
 class Lwm2mStorage : public List<T> {
 public:
-    Lwm2mStorage(size_t maxItems = 0, T* (*newFunc)(ItemBase*, P) = NULL) : mMaxItems(maxItems), mNewFunc(newFunc) {}
+    Lwm2mStorage() {}
     ~Lwm2mStorage()
     {
         Node<T>* node = this->begin();
@@ -151,50 +151,8 @@ public:
         }
     }
 
-    T* newItem(ItemBase* parent, uint16_t id, P param, Status* status = NULL)
-    {
-        if (mMaxItems > 0 && this->size() == mMaxItems) {
-            if (status) *status = STS_ERR_NO_MEM;
-            return NULL;
-        }
-
-        Node<T>* node;
-        Status retStatus;
-
-        if ((retStatus = this->findNodeAndId(&id, &node)) != STS_OK) {
-            if (status) *status = retStatus;
-            return NULL;
-        }
-
-        T* newItem;
-
-        if (mNewFunc) {
-            newItem = mNewFunc(parent, param);
-        }
-        else {
-            newItem = new T(parent, param);
-        }
-
-        Node<T>* newNode = new Node<T>(newItem);
-
-        newNode->get()->setId(id);
-
-        if (node) {
-            this->insertAfter(node, newNode);
-        }
-        else {
-            this->insertBegin(newNode);
-        }
-
-        return newNode->get();
-    }
-
     Status addItem(T* item)
     {
-        if (mMaxItems > 0 && this->size() == mMaxItems) {
-            return STS_ERR_NO_MEM;
-        }
-
         uint16_t id = item->getId();
 
         Node<T>* node;
@@ -276,12 +234,7 @@ public:
         }
     }
 
-    bool hasFreeItem() const { return mMaxItems == 0 || this->mSize < mMaxItems; }
-
 protected:
-    size_t mMaxItems;
-    T* (*mNewFunc)(ItemBase*, P);
-
     Status findNodeAndId(uint16_t* id, Node<T>** node)
     {
         uint16_t newId = 0;
@@ -320,24 +273,16 @@ private:
 };
 
 template <class T, class P>
-class Lwm2mDynamicStorage : public Lwm2mStorage<T, P> {
+class Lwm2mDynamicStorage : public Lwm2mStorage<T> {
 public:
     Lwm2mDynamicStorage(ItemBase* parent, P param, size_t maxItems, T*(newFunc)(ItemBase*, P) = NULL)
-        : Lwm2mStorage<T, P>(maxItems, newFunc)
-#if !CONFIG_RESERVE_MEMORY
-          ,
-          mParent(parent),
-          mParam(param)
-#endif
+        : mMaxItems(maxItems)
     {
-#if CONFIG_RESERVE_MEMORY
-        ASSERT_MESSAGE(this->mMaxItems, "Unlimited instances is not supported with memory reservation");
-
         for (size_t i = 0; i < this->mMaxItems; i++) {
             T* item;
 
-            if (this->mNewFunc) {
-                item = this->mNewFunc(parent, param);
+            if (newFunc) {
+                item = newFunc(parent, param);
             }
             else {
                 item = new T(parent, param);
@@ -347,12 +292,10 @@ public:
 
             mFreeList.insertEnd(newNode);
         }
-#endif
     }
 
     ~Lwm2mDynamicStorage()
     {
-#if CONFIG_RESERVE_MEMORY
         Node<T>* node = mFreeList.begin();
 
         while (node) {
@@ -363,7 +306,6 @@ public:
             node = node->next();
             delete tmp;
         }
-#endif
     }
 
     T* newItem(uint16_t id, Status* status = NULL)
@@ -381,7 +323,6 @@ public:
             return NULL;
         }
 
-#if CONFIG_RESERVE_MEMORY
         Node<T>* newNode = mFreeList.begin();
 
         if (!newNode) {
@@ -390,18 +331,6 @@ public:
         }
 
         mFreeList.remove(newNode);
-#else
-        T* newItem;
-
-        if (this->mNewFunc) {
-            item = this->mNewFunc(parent, param);
-        }
-        else {
-            newItem = new T(mParent, mParam);
-        }
-
-        Node<T>* newNode = new Node<T>(newItem);
-#endif
 
         newNode->get()->setId(id);
         newNode->get()->init();
@@ -425,12 +354,7 @@ public:
                 node->get()->release();
                 this->remove(node);
 
-#if CONFIG_RESERVE_MEMORY
                 mFreeList.insertEnd(node);
-#else
-                delete node->get();
-                delete node;
-#endif
 
                 return STS_OK;
             }
@@ -453,22 +377,15 @@ public:
             node = node->next();
             this->remove(tmp);
 
-#if CONFIG_RESERVE_MEMORY
             mFreeList.insertEnd(tmp);
-#else
-            delete tmp->get();
-            delete tmp;
-#endif
         }
     }
 
+    bool hasFreeItem() const { return mMaxItems == 0 || this->mSize < mMaxItems; }
+
 private:
-#if CONFIG_RESERVE_MEMORY
+    size_t mMaxItems;
     List<T> mFreeList;
-#else
-    ItemBase* mParent;
-    P mParam;
-#endif
 };
 
 }  // namespace openlwm2m

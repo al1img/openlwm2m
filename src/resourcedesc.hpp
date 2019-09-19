@@ -95,9 +95,9 @@ private:
     friend class ResourceInt;
     friend class ResourceUint;
     friend class ResourceBool;
-    friend class Lwm2mStorage<ResourceDesc, Params>;
+    friend class Lwm2mStorage<ResourceDesc>;
 
-    typedef Lwm2mStorage<ResourceDesc, Params> Storage;
+    typedef Lwm2mStorage<ResourceDesc> Storage;
 
     Params mParams;
 

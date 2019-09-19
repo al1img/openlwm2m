@@ -9,8 +9,6 @@
  * New
  ******************************************************************************/
 
-#if CONFIG_RESERVE_MEMORY
-
 size_t allocatedMemSize = 0;
 bool initDone = false;
 
@@ -29,5 +27,3 @@ void memInitDone()
 
     LOG_INFO("Total allocated memory: %lu", allocatedMemSize);
 }
-
-#endif

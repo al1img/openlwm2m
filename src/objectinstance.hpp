@@ -20,7 +20,7 @@ public:
 
 private:
     friend class Object;
-    friend class Lwm2mStorage<ObjectInstance, ResourceDesc::Storage&>;
+    friend class Lwm2mStorage<ObjectInstance>;
     friend class Lwm2mDynamicStorage<ObjectInstance, ResourceDesc::Storage&>;
 
     typedef Lwm2mDynamicStorage<ObjectInstance, ResourceDesc::Storage&> Storage;

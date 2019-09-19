@@ -69,10 +69,10 @@ private:
     };
 
     friend class Client;
-    friend class Lwm2mStorage<Object, Params>;
+    friend class Lwm2mStorage<Object>;
     friend class ObjectManager;
 
-    typedef Lwm2mStorage<Object, Params> Storage;
+    typedef Lwm2mStorage<Object> Storage;
 
     static bool sInstanceChanged;
 

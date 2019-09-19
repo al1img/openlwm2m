@@ -217,11 +217,11 @@ Status Object::createResource(uint16_t id, ResourceDesc::Params& params)
 
     LOG_DEBUG("Create resource /%d/%d", getId(), id);
 
-    Status status = STS_OK;
+    ResourceDesc* resourceDesc = new ResourceDesc(this, params);
 
-    mResourceDescStorage.newItem(this, id, params, &status);
+    resourceDesc->setId(id);
 
-    return status;
+    return mResourceDescStorage.addItem(resourceDesc);
 }
 
 }  // namespace openlwm2m

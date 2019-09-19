@@ -44,7 +44,17 @@ Object* ObjectManager::createObject(uint16_t id, Object::Instance instance, size
 
     Object::Params params = {instance, mandatory, interfaces, maxInstances};
 
-    return mObjectStorage.newItem(NULL, id, params, status);
+    Object* object = new Object(NULL, params);
+
+    object->setId(id);
+
+    Status retStatus = mObjectStorage.addItem(object);
+
+    if (status) {
+        *status = retStatus;
+    }
+
+    return object;
 }
 
 Object* ObjectManager::getObject(Interface interface, uint16_t id)
