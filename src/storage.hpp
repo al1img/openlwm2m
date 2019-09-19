@@ -6,7 +6,7 @@
 #include "config.hpp"
 #include "itembase.hpp"
 #include "log.hpp"
-#include "status.hpp"
+#include "lwm2m.hpp"
 
 namespace openlwm2m {
 
@@ -359,6 +359,30 @@ public:
         return STS_ERR_NOT_FOUND;
     }
 
+    T* getFirstFreeItem()
+    {
+        mCurrentNode = mFreeList->begin();
+
+        if (mCurrentNode) {
+            return mCurrentNode->get();
+        }
+
+        return NULL;
+    }
+
+    T* getNextFreeItem()
+    {
+        if (mCurrentNode) {
+            mCurrentNode = mCurrentNode->next();
+
+            if (mCurrentNode) {
+                return mCurrentNode->get();
+            }
+        }
+
+        return NULL;
+    }
+
     void clear()
     {
         Node<T>* node = this->begin();
@@ -379,6 +403,7 @@ public:
 
 private:
     List<T> mFreeList;
+    Node<T>* mCurrentNode;
 };
 
 }  // namespace openlwm2m

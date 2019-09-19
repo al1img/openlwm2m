@@ -10,14 +10,14 @@ namespace openlwm2m {
  * Public
  ******************************************************************************/
 
-ResourceInfo::ResourceInfo(uint16_t id, uint16_t operations, ItemInstance instance, size_t maxInstances,
-                           ItemMandatory mandatory, DataType type, Min min, Max max)
+ResourceInfo::ResourceInfo(uint16_t id, uint16_t operations, DataType type, bool single, bool mandatory,
+                           size_t maxInstances, Min min, Max max)
     : ItemBase(NULL, id),
       mOperations(operations),
-      mInstance(instance),
-      mMaxInstances(maxInstances),
-      mMandatory(mandatory),
       mType(type),
+      mSingle(single),
+      mMandatory(mandatory),
+      mMaxInstances(maxInstances),
       mMin(min),
       mMax(max),
       mCallback(NULL),
@@ -125,16 +125,16 @@ ResourceInstance* Resource::getNextInstance()
 ResourceInstance* Resource::newInstance(Resource* parent)
 {
     switch (parent->getInfo().getType()) {
-        case ResourceInfo::TYPE_STRING:
+        case DATA_TYPE_STRING:
             return new ResourceString(parent);
 
-        case ResourceInfo::TYPE_INT:
+        case DATA_TYPE_INT:
             return new ResourceInt(parent);
 
-        case ResourceInfo::TYPE_UINT:
+        case DATA_TYPE_UINT:
             return new ResourceUint(parent);
 
-        case ResourceInfo::TYPE_BOOL:
+        case DATA_TYPE_BOOL:
             return new ResourceBool(parent);
 
         default:

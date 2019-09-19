@@ -9,7 +9,7 @@
 #include <cstddef>
 
 #include "dataformat.hpp"
-#include "status.hpp"
+#include "lwm2m.hpp"
 
 namespace openlwm2m {
 

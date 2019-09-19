@@ -6,9 +6,9 @@
 
 #include "interface.hpp"
 #include "itembase.hpp"
+#include "lwm2m.hpp"
 #include "objectinstance.hpp"
 #include "resource.hpp"
-#include "status.hpp"
 #include "storage.hpp"
 
 namespace openlwm2m {
@@ -23,15 +23,15 @@ class Object : public ItemBase {
 public:
     typedef Lwm2mStorage<Object> Storage;
 
-    Object(uint16_t id, uint16_t interfaces, ItemInstance instance, size_t maxInstances, ItemMandatory mandatory);
+    Object(uint16_t id, uint16_t interfaces, bool single, bool manadatory, size_t maxInstances);
     ~Object();
 
     void init();
     void release();
 
-    Status createResourceString(uint16_t id, uint16_t operations, ItemInstance instance, size_t maxInstances,
-                                ItemMandatory mandatory, size_t maxLen = CONFIG_DEFAULT_STRING_LEN,
-                                ResourceInfo::ValueChangeCbk callback = 0, void* context = NULL);
+    Status createResourceString(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances,
+                                size_t maxLen = CONFIG_DEFAULT_STRING_LEN, ResourceInfo::ValueChangeCbk callback = 0,
+                                void* context = NULL);
 
 #if 0                                
     Status createResourceInt(uint16_t id, uint16_t operations, ItemInstance instance, size_t maxInstances,
@@ -69,15 +69,15 @@ private:
     static bool sInstanceChanged;
 
     uint16_t mInterfaces;
-    ItemInstance mInstance;
-    ItemMandatory mMandatory;
+    bool mSingle;
+    bool mMandatory;
 
     ResourceInfo::Storage mResourceInfoStorage;
     ObjectInstance::Storage mInstanceStorage;
 
-    Status createResource(uint16_t id, uint16_t operations, ItemInstance instance, size_t maxInstances,
-                          ItemMandatory mandatory, ResourceInfo::DataType type, ResourceInfo::Min min,
-                          ResourceInfo::Max max, ResourceInfo::ValueChangeCbk callback, void* context);
+    Status createResource(uint16_t id, uint16_t operations, DataType type, bool single, bool mandatory,
+                          size_t maxInstances, ResourceInfo::Min min, ResourceInfo::Max max,
+                          ResourceInfo::ValueChangeCbk callback, void* context);
 };
 
 }  // namespace openlwm2m

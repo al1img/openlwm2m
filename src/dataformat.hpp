@@ -8,8 +8,8 @@
 #include <cstddef>
 
 #include "itembase.hpp"
+#include "lwm2m.hpp"
 #include "resource.hpp"
-#include "status.hpp"
 #include "storage.hpp"
 
 namespace openlwm2m {
@@ -44,7 +44,7 @@ public:
         uint16_t objectInstanceId;
         uint16_t resourceId;
         uint16_t resourceInstanceId;
-        ResourceInfo::DataType dataType;
+        DataType dataType;
         int64_t timestamp;
         union {
             uint64_t uintValue;

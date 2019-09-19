@@ -2,8 +2,8 @@
 #define OPENLWM2M_RESOURCE_HPP_
 
 #include "itembase.hpp"
+#include "lwm2m.hpp"
 #include "resourceinstance.hpp"
-#include "status.hpp"
 #include "storage.hpp"
 
 // clang-format off
@@ -49,21 +49,6 @@ public:
     typedef void (*ValueChangeCbk)(void* context, ResourceInstance* resourceInstance);
     typedef Lwm2mStorage<ResourceInfo> Storage;
 
-    enum Operation { OP_NONE = 0x00, OP_READ = 0x01, OP_WRITE = 0x02, OP_READWRITE = 0x03, OP_EXECUTE = 0x04 };
-
-    enum DataType {
-        TYPE_NONE,
-        TYPE_STRING,
-        TYPE_INT,
-        TYPE_UINT,
-        TYPE_FLOAT,
-        TYPE_BOOL,
-        TYPE_OPAQUE,
-        TYPE_TIME,
-        TYPE_OBJLINK,
-        TYPE_CORELINK
-    };
-
     union Min {
         int64_t minInt;
         uint64_t minUint;
@@ -76,8 +61,8 @@ public:
         double maxFloat;
     };
 
-    ResourceInfo(uint16_t id, uint16_t operations, ItemInstance instance, size_t maxInstances, ItemMandatory mandatory,
-                 DataType type, Min min, Max max);
+    ResourceInfo(uint16_t id, uint16_t operations, DataType type, bool single, bool mandatory, size_t maxInstances,
+                 Min min, Max max);
     ~ResourceInfo();
 
     void init();
@@ -86,8 +71,8 @@ public:
     void setValueChangedCbk(ValueChangeCbk callback, void* context);
     void valueChanged(ResourceInstance* instance);
 
-    bool isSingle() const { return mInstance == SINGLE; }
-    bool isMandatory() const { return mMandatory == MANDATORY; }
+    bool isSingle() const { return mSingle; }
+    bool isMandatory() const { return mMandatory; }
     DataType getType() const { return mType; }
     size_t getMaxInstances() const { return mMaxInstances; }
     bool checkOperation(Operation operation) const { return (mOperations & operation) != 0; }
@@ -96,10 +81,10 @@ public:
 
 private:
     uint16_t mOperations;
-    ItemInstance mInstance;
-    size_t mMaxInstances;
-    ItemMandatory mMandatory;
     DataType mType;
+    bool mSingle;
+    bool mMandatory;
+    size_t mMaxInstances;
     Min mMin;
     Max mMax;
     ValueChangeCbk mCallback;
