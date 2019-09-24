@@ -21,41 +21,43 @@ namespace openlwm2m {
  */
 class Object : public ItemBase {
 public:
-    typedef Lwm2mStorage<Object> Storage;
+    typedef Lwm2mStaticStorage<Object> Storage;
 
-    Object(uint16_t id, uint16_t interfaces, bool single, bool manadatory, size_t maxInstances);
+    Object(uint16_t id, uint16_t interfaces, bool single, bool manadatory, size_t maxInstances = 1);
     ~Object();
 
     void init();
     void release();
 
-    Status createResourceString(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances,
+    Status createResourceString(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
                                 size_t maxLen = CONFIG_DEFAULT_STRING_LEN, ResourceInfo::ValueChangeCbk callback = 0,
                                 void* context = NULL);
-
-#if 0                                
-    Status createResourceInt(uint16_t id, uint16_t operations, ItemInstance instance, size_t maxInstances,
-                             ItemMandatory mandatory, int64_t min = LONG_MIN, int64_t max = LONG_MAX,
-                             ResourceInfo::ValueChangeCbk cbk = 0, void* context = NULL);
-    Status createResourceUint(uint16_t id, uint16_t operations, ItemInstance instance, size_t maxInstances,
-                              ItemMandatory mandatory, uint64_t min = 0, uint64_t max = ULONG_MAX,
-                              ResourceInfo::ValueChangeCbk cbk = 0, void* context = NULL);
-    Status createResourceBool(uint16_t id, uint16_t operations, ItemInstance instance, size_t maxInstances,
-                              ItemMandatory mandatory, ResourceInfo::ValueChangeCbk cbk = 0, void* context = NULL);
-    Status createResourceOpaque(uint16_t id, uint16_t operations, ItemInstance instance, size_t maxInstances,
-                                ItemMandatory mandatory, size_t minSize = 0, size_t maxSize = 0,
-                                ResourceInfo::ValueChangeCbk cbk = 0, void* context = NULL);
-    Status createResourceNone(uint16_t id, uint16_t operations, ItemInstance instance, size_t maxInstances,
-                              ItemMandatory mandatory, ResourceInfo::ValueChangeCbk cbk = 0, void* context = NULL);
-#endif
-    ObjectInstance* createInstance(uint16_t id = INVALID_ID, Status* status = NULL);
-    ObjectInstance* getInstanceById(uint16_t id);
-    ObjectInstance* getFirstInstance();
-    ObjectInstance* getNextInstance();
-    ResourceInstance* getResourceInstance(uint16_t objectInstanceId, uint16_t resourceId,
-                                          uint16_t resourceInstanceId = 0);
+    Status createResourceInt(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
+                             int64_t min = LONG_MIN, int64_t max = LONG_MAX, ResourceInfo::ValueChangeCbk callback = 0,
+                             void* context = NULL);
+    Status createResourceUint(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
+                              uint64_t min = 0, uint64_t max = ULONG_MAX, ResourceInfo::ValueChangeCbk callback = 0,
+                              void* context = NULL);
+    Status createResourceBool(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
+                              ResourceInfo::ValueChangeCbk callback = 0, void* context = NULL);
+    Status createResourceOpaque(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
+                                size_t minSize = 0, size_t maxSize = 0, ResourceInfo::ValueChangeCbk callback = 0,
+                                void* context = NULL);
+    Status createResourceNone(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
+                              ResourceInfo::ValueChangeCbk callback = 0, void* context = NULL);
 
     Status setResourceChangedCbk(uint16_t resourceId, ResourceInfo::ValueChangeCbk callback, void* context);
+
+    bool checkInterface(Interface interface) const { return interface == ITF_CLIENT ? true : mInterfaces & interface; };
+
+    ObjectInstance* createInstance(uint16_t id = INVALID_ID, Status* status = NULL);
+    Status deleteInstance(uint16_t id);
+    ObjectInstance* getInstanceById(uint16_t id) { return mInstanceStorage.getItemById(id); }
+    ObjectInstance* getFirstInstance() { return mInstanceStorage.getFirstItem(); }
+    ObjectInstance* getNextInstance() { return mInstanceStorage.getNextItem(); }
+
+    ResourceInstance* getResourceInstance(uint16_t objectInstanceId, uint16_t resourceId,
+                                          uint16_t resourceInstanceId = 0);
 
     static bool isInstanceChanged()
     {
@@ -71,6 +73,8 @@ private:
     uint16_t mInterfaces;
     bool mSingle;
     bool mMandatory;
+
+    bool mInitialized;
 
     ResourceInfo::Storage mResourceInfoStorage;
     ObjectInstance::Storage mInstanceStorage;

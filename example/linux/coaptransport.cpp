@@ -130,7 +130,7 @@ Status CoapTransport::registrationRequest(void* session, const char* clientName,
         return status;
     }
 
-    Request* request = mReqStorage.newItem(pdu->tid);
+    Request* request = mReqStorage.allocateItem(pdu->tid);
 
     request->mParam = (Request::Param){Request::REGISTRATION, handler, context};
 
@@ -197,7 +197,7 @@ Status CoapTransport::registrationUpdate(void* session, const char* location, co
         return status;
     }
 
-    Request* request = mReqStorage.newItem(pdu->tid);
+    Request* request = mReqStorage.allocateItem(pdu->tid);
 
     request->mParam = (Request::Param){Request::REGISTRATION, handler, context};
 
@@ -356,7 +356,7 @@ void CoapTransport::onResponse(coap_session_t* session, coap_pdu_t* sent, coap_p
                 break;
         }
 
-        mReqStorage.deleteItem(request);
+        mReqStorage.deallocateItem(request);
     }
     else {
         LOG_ERROR("Unknown response received, id: %d", id);
@@ -377,7 +377,7 @@ void CoapTransport::onNack(coap_session_t* session, coap_pdu_t* sent, coap_nack_
 
     if (request) {
         request->mParam.handler(request->mParam.context, NULL, STS_ERR_TIMEOUT);
-        mReqStorage.deleteItem(request);
+        mReqStorage.deallocateItem(request);
     }
     else {
         LOG_ERROR("Unknown Nack received, tid: %d", id);

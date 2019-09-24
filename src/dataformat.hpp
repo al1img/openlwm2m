@@ -37,7 +37,7 @@ struct Opaque {
 
 class DataConverter : public ItemBase {
 public:
-    typedef Lwm2mStorage<DataConverter> Storage;
+    typedef Lwm2mStaticStorage<DataConverter> Storage;
 
     struct ResourceData {
         uint16_t objectId;

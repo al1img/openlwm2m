@@ -28,29 +28,14 @@ void ObjectInstance::init()
 
 void ObjectInstance::release()
 {
-    LOG_DEBUG("Delete /%d/%d", getParent()->getId(), getId());
-
     mResourceStorage.release();
+
+    LOG_DEBUG("Delete /%d/%d", getParent()->getId(), getId());
 }
 
 Status ObjectInstance::addResource(ResourceInfo& info)
 {
-    return mResourceStorage.addItem(new Resource(this, info));
-}
-
-Resource* ObjectInstance::getResourceById(uint16_t id)
-{
-    return mResourceStorage.getItemById(id);
-}
-
-Resource* ObjectInstance::getFirstResource()
-{
-    return mResourceStorage.getFirstItem();
-}
-
-Resource* ObjectInstance::getNextResource()
-{
-    return mResourceStorage.getNextItem();
+    return mResourceStorage.pushItem(new Resource(this, info));
 }
 
 ResourceInstance* ObjectInstance::getResourceInstance(uint16_t resId, uint16_t resInstanceId)

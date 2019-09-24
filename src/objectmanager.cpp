@@ -381,7 +381,7 @@ void ObjectManager::resBootstrapChanged(void* context, ResourceInstance* resInst
         }
     }
     else {
-        resShortServerId->deleteInstance(resShortServerId->getFirstInstance());
+        resShortServerId->deleteInstance(0);
     }
 }
 

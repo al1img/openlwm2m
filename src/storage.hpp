@@ -135,10 +135,10 @@ private:
 };
 
 template <class T>
-class Lwm2mStorage : public List<T> {
+class Lwm2mStaticStorage : public List<T> {
 public:
-    Lwm2mStorage() {}
-    ~Lwm2mStorage()
+    Lwm2mStaticStorage() {}
+    ~Lwm2mStaticStorage()
     {
         Node<T>* node = this->begin();
         while (node) {
@@ -151,7 +151,7 @@ public:
         }
     }
 
-    Status addItem(T* item)
+    Status pushItem(T* item)
     {
         uint16_t id = item->getId();
 
@@ -275,7 +275,7 @@ private:
 };
 
 template <class T>
-class Lwm2mDynamicStorage : public Lwm2mStorage<T> {
+class Lwm2mDynamicStorage : public Lwm2mStaticStorage<T> {
 public:
     Lwm2mDynamicStorage() {}
     ~Lwm2mDynamicStorage()
@@ -292,7 +292,7 @@ public:
         }
     }
 
-    Status addItem(T* item)
+    Status pushItem(T* item)
     {
         Node<T>* newNode = new Node<T>(item);
 
@@ -301,7 +301,7 @@ public:
         return STS_OK;
     }
 
-    T* newItem(uint16_t id = INVALID_ID, Status* status = NULL)
+    T* allocateItem(uint16_t id = INVALID_ID, Status* status = NULL)
     {
         if (mFreeList.size() == 0) {
             if (status) *status = STS_ERR_NO_MEM;
@@ -338,7 +338,7 @@ public:
         return newNode->get();
     }
 
-    Status deleteItem(T* item)
+    Status deallocateItem(T* item)
     {
         Node<T>* node = this->begin();
 
@@ -361,10 +361,10 @@ public:
 
     T* getFirstFreeItem()
     {
-        mCurrentNode = mFreeList->begin();
+        mCurrentFreeNode = mFreeList.begin();
 
-        if (mCurrentNode) {
-            return mCurrentNode->get();
+        if (mCurrentFreeNode) {
+            return mCurrentFreeNode->get();
         }
 
         return NULL;
@@ -372,11 +372,11 @@ public:
 
     T* getNextFreeItem()
     {
-        if (mCurrentNode) {
-            mCurrentNode = mCurrentNode->next();
+        if (mCurrentFreeNode) {
+            mCurrentFreeNode = mCurrentFreeNode->next();
 
-            if (mCurrentNode) {
-                return mCurrentNode->get();
+            if (mCurrentFreeNode) {
+                return mCurrentFreeNode->get();
             }
         }
 
@@ -403,7 +403,7 @@ public:
 
 private:
     List<T> mFreeList;
-    Node<T>* mCurrentNode;
+    Node<T>* mCurrentFreeNode;
 };
 
 }  // namespace openlwm2m

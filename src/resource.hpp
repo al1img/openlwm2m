@@ -47,7 +47,7 @@ class ObjectInstance;
 class ResourceInfo : public ItemBase {
 public:
     typedef void (*ValueChangeCbk)(void* context, ResourceInstance* resourceInstance);
-    typedef Lwm2mStorage<ResourceInfo> Storage;
+    typedef Lwm2mStaticStorage<ResourceInfo> Storage;
 
     union Min {
         int64_t minInt;
@@ -93,7 +93,7 @@ private:
 
 class Resource : public ItemBase {
 public:
-    typedef Lwm2mStorage<Resource> Storage;
+    typedef Lwm2mStaticStorage<Resource> Storage;
 
     Resource(ObjectInstance* parent, ResourceInfo& info);
     ~Resource();
@@ -104,7 +104,7 @@ public:
     ObjectInstance* getObjectInstance() const;
 
     ResourceInstance* createInstance(uint16_t id = INVALID_ID, Status* status = NULL);
-    Status deleteInstance(ResourceInstance* instance);
+    Status deleteInstance(uint16_t id);
 
     ResourceInstance* getInstanceById(uint16_t id);
     ResourceInstance* getFirstInstance();

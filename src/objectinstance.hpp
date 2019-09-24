@@ -23,9 +23,9 @@ public:
 
     Status addResource(ResourceInfo& info);
 
-    Resource* getResourceById(uint16_t id);
-    Resource* getFirstResource();
-    Resource* getNextResource();
+    Resource* getResourceById(uint16_t id) {return mResourceStorage.getItemById(id);}
+    Resource* getFirstResource() {return mResourceStorage.getFirstItem();}
+    Resource* getNextResource(){return mResourceStorage.getNextItem();}
 
     ResourceInstance* getResourceInstance(uint16_t resId, uint16_t resInstanceId = 0);
 

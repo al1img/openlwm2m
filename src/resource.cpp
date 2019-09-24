@@ -54,10 +54,10 @@ void ResourceInfo::valueChanged(ResourceInstance* instance)
  * Public
  ******************************************************************************/
 
-Resource::Resource(ObjectInstance* parent, ResourceInfo& info) : ItemBase(parent), mInfo(info)
+Resource::Resource(ObjectInstance* parent, ResourceInfo& info) : ItemBase(parent, info.getId()), mInfo(info)
 {
     for (size_t i = 0; i < info.getMaxInstances(); i++) {
-        mInstanceStorage.addItem(newInstance(this));
+        mInstanceStorage.pushItem(newInstance(this));
     }
 }
 
@@ -73,15 +73,16 @@ void Resource::init()
     // If the Resource field “Mandatory” is “Mandatory” and the field “Instances” of theResource is “Single” then, the
     // number of Resource Instance MUST be 1
     if (mInfo.isMandatory() && mInfo.isSingle()) {
-        createInstance(0);
+        ResourceInstance* instance = createInstance(0);
+        ASSERT(instance);
     }
 }
 
 void Resource::release()
 {
-    LOG_DEBUG("Delete /%d/%d/%d", getParent()->getParent()->getId(), getParent()->getId(), getId());
-
     mInstanceStorage.clear();
+
+    LOG_DEBUG("Delete /%d/%d/%d", getParent()->getParent()->getId(), getParent()->getId(), getId());
 }
 
 ObjectInstance* Resource::getObjectInstance() const
@@ -91,16 +92,18 @@ ObjectInstance* Resource::getObjectInstance() const
 
 ResourceInstance* Resource::createInstance(uint16_t id, Status* status)
 {
-    return mInstanceStorage.newItem(id, status);
+    return mInstanceStorage.allocateItem(id, status);
 }
 
-Status Resource::deleteInstance(ResourceInstance* instance)
+Status Resource::deleteInstance(uint16_t id)
 {
-    if (instance) {
-        return mInstanceStorage.deleteItem(instance);
+    ResourceInstance* instance = mInstanceStorage.getItemById(id);
+
+    if (!instance) {
+        return STS_ERR_NOT_FOUND;
     }
 
-    return STS_OK;
+    return mInstanceStorage.deallocateItem(instance);
 }
 
 ResourceInstance* Resource::getInstanceById(uint16_t id)
