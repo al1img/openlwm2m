@@ -4,7 +4,7 @@
 
 using namespace openlwm2m;
 
-TEST_CASE("single instance mandatory object", "[object]")
+TEST_CASE("test single instance mandatory object", "[object]")
 {
     Object object(2, ITF_ALL, true, true);
 
@@ -24,7 +24,7 @@ TEST_CASE("single instance mandatory object", "[object]")
     object.release();
 }
 
-TEST_CASE("single instance non mandatory object", "[object]")
+TEST_CASE("test single instance non mandatory object", "[object]")
 {
     Status status = STS_OK;
 
@@ -49,7 +49,7 @@ TEST_CASE("single instance non mandatory object", "[object]")
     object.release();
 }
 
-TEST_CASE("multiple instance object", "[object]")
+TEST_CASE("test multiple instance object", "[object]")
 {
     Status status = STS_OK;
 
@@ -101,7 +101,7 @@ TEST_CASE("multiple instance object", "[object]")
     object.release();
 }
 
-TEST_CASE("create resources", "[object]")
+TEST_CASE("test create resources", "[object]")
 {
     Status status = STS_OK;
 

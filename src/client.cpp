@@ -224,9 +224,8 @@ void Client::updateRegistration(void* context, ResourceInstance* resInstance)
 
 void Client::onUpdateRegistration(ResourceInstance* resInstance)
 {
-    uint16_t shortServerId = static_cast<ObjectInstance*>(resInstance->getParent()->getParent())
-                                 ->getResourceInstance(RES_SHORT_SERVER_ID)
-                                 ->getInt();
+    uint16_t shortServerId =
+        resInstance->getResource()->getObjectInstance()->getResourceInstance(RES_SHORT_SERVER_ID)->getInt();
 
     RegHandler* regHandler = mRegHandlerStorage.getItemById(shortServerId);
 

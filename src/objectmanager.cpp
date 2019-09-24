@@ -369,7 +369,7 @@ void ObjectManager::createConverters()
 void ObjectManager::resBootstrapChanged(void* context, ResourceInstance* resInstance)
 {
     // E.1 This Resource MUST be set when the Bootstrap-Server Resource has a value of 'false'.
-    ObjectInstance* securityObjectInstance = static_cast<ObjectInstance*>(resInstance->getParent()->getParent());
+    ObjectInstance* securityObjectInstance = resInstance->getResource()->getObjectInstance();
     ASSERT(securityObjectInstance);
 
     Resource* resShortServerId = securityObjectInstance->getResourceById(RES_SECURITY_SHORT_SERVER_ID);

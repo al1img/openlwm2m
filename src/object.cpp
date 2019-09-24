@@ -59,8 +59,6 @@ void Object::release()
     mInitialized = false;
 
     mInstanceStorage.clear();
-
-    LOG_DEBUG("Delete /%d", getId());
 }
 
 Status Object::createResourceString(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances,

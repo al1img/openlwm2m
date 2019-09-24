@@ -23,6 +23,9 @@ ResourceInfo::ResourceInfo(uint16_t id, uint16_t operations, DataType type, bool
       mCallback(NULL),
       mContext(NULL)
 {
+    if (mSingle) {
+        mMaxInstances = 1;
+    }
 }
 
 ResourceInfo::~ResourceInfo()
@@ -46,6 +49,9 @@ void ResourceInfo::setValueChangedCbk(ValueChangeCbk callback, void* context)
 void ResourceInfo::valueChanged(ResourceInstance* instance)
 {
     if (mCallback) {
+        LOG_DEBUG("Value of resource instance /%d/%d/%d/%d changed",
+                  instance->getParent()->getParent()->getParent()->getId(), instance->getParent()->getParent()->getId(),
+                  instance->getParent()->getId(), instance->getId());
         mCallback(mContext, instance);
     }
 }

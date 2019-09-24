@@ -1,188 +1,273 @@
 #include <catch2/catch.hpp>
 
-#include "resource.hpp"
+#include <cstring>
+
+#include "object.hpp"
 
 using namespace openlwm2m;
 
-TEST_CASE("test resource instance", "[resource]")
+TEST_CASE("test resource info", "[resource]")
 {
-    
+    Object object(2, ITF_ALL, true, true);
 
-    /*******************************************************************************
-     * Data 1
-     ******************************************************************************/
+    object.createResourceString(2, OP_READWRITE, true, true, 100, 200);
 
-    const char* jsonData1 =
-        "[{\"bn\":\"/3/0/\",\"n\":\"0\",\"vs\":\"Open Mobile Alliance\"},\
-{\"n\":\"1\",\"vs\":\"Lightweight M2M Client\"},\
-{\"n\":\"2\",\"vs\":\"345000123\"},\
-{\"n\":\"3\",\"vs\":\"1.0\"},\
-{\"n\":\"6/0\",\"v\":1},\
-{\"n\":\"6/1\",\"v\":5},\
-{\"n\":\"7/0\",\"v\":3800},\
-{\"n\":\"7/1\",\"v\":5000},\
-{\"n\":\"8/0\",\"v\":125},\
-{\"n\":\"8/1\",\"v\":900},\
-{\"n\":\"9\",\"v\":100},\
-{\"n\":\"10\",\"v\":15},\
-{\"n\":\"11/0\",\"v\":0},\
-{\"n\":\"13\",\"v\":1367491215},\
-{\"n\":\"14\",\"vs\":\"+02:00\"},\
-{\"n\":\"16\",\"vs\":\"U\"}]";
+    object.init();
 
-    DataConverter::ResourceData testData1[] = {
-        {3, 0, 0, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("Open Mobile Alliance")}},
-        {3, 0, 1, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("Lightweight M2M Client")}},
-        {3, 0, 2, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("345000123")}},
-        {3, 0, 3, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("1.0")}},
-        {3, 0, 6, 0, DATA_TYPE_FLOAT, 0, {.floatValue = 1.0}},
-        {3, 0, 6, 1, DATA_TYPE_FLOAT, 0, {.floatValue = 5}},
-        {3, 0, 7, 0, DATA_TYPE_FLOAT, 0, {.floatValue = 3800}},
-        {3, 0, 7, 1, DATA_TYPE_FLOAT, 0, {.floatValue = 5000}},
-        {3, 0, 8, 0, DATA_TYPE_FLOAT, 0, {.floatValue = 125}},
-        {3, 0, 8, 1, DATA_TYPE_FLOAT, 0, {.floatValue = 900}},
-        {3, 0, 9, INVALID_ID, DATA_TYPE_FLOAT, 0, {.floatValue = 100}},
-        {3, 0, 10, INVALID_ID, DATA_TYPE_FLOAT, 0, {.floatValue = 15}},
-        {3, 0, 11, 0, DATA_TYPE_FLOAT, 0, {.floatValue = 0}},
-        {3, 0, 13, INVALID_ID, DATA_TYPE_FLOAT, 0, {.floatValue = 1367491215}},
-        {3, 0, 14, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("+02:00")}},
-        {3, 0, 16, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("U")}},
+    ResourceInstance* resourceInstance = object.getResourceInstance(0, 2);
+    REQUIRE(resourceInstance);
+
+    ResourceInfo& info = resourceInstance->getResource()->getInfo();
+
+    CHECK(info.getId() == 2);
+    CHECK(info.isSingle());
+    CHECK(info.isMandatory());
+    CHECK(info.getType() == DATA_TYPE_STRING);
+    CHECK(info.getMaxInstances() == 1);
+    CHECK(info.checkOperation(OP_READWRITE));
+    CHECK(info.min().minUint == 0);
+    CHECK(info.max().maxUint == 200);
+
+    bool cbkIndication = false;
+    ResourceInstance* cbkInstance = NULL;
+
+    auto handler = [&](void* context, ResourceInstance* resourceInstance) {
+        cbkIndication = true;
+        cbkInstance = resourceInstance;
     };
 
-    testDecoding(&converter, "", reinterpret_cast<void*>(const_cast<char*>(jsonData1)), strlen(jsonData1), testData1,
-                 sizeof(testData1) / sizeof(DataConverter::ResourceData));
-    testEncoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData1)), strlen(jsonData1), testData1,
-                 sizeof(testData1) / sizeof(DataConverter::ResourceData));
+    info.setValueChangedCbk(
+        [](void* context, ResourceInstance* resourceInstance) {
+            (*static_cast<decltype(handler)*>(context))(context, resourceInstance);
+        },
+        &handler);
 
-    /*******************************************************************************
-     * Data 2
-     ******************************************************************************/
+    CHECK_FALSE(cbkIndication);
 
-    const char* jsonData2 =
-        "[{\"bn\":\"/72/1/2\",\"bt\":25462629,\"v\":22.4,\"t\":0},\
-{\"v\":22.9,\"t\":-25},\
-{\"v\":24.1,\"t\":-45}]";
+    info.valueChanged(resourceInstance);
 
-    DataConverter::ResourceData testData2[] = {
-        {72, 1, 2, INVALID_ID, DATA_TYPE_FLOAT, 25462629, {.floatValue = 22.4}},
-        {72, 1, 2, INVALID_ID, DATA_TYPE_FLOAT, 25462629 - 25, {.floatValue = 22.9}},
-        {72, 1, 2, INVALID_ID, DATA_TYPE_FLOAT, 25462629 - 45, {.floatValue = 24.1}},
+    CHECK(cbkIndication);
+    CHECK(cbkInstance == resourceInstance);
+
+    object.release();
+}
+
+TEST_CASE("test resource", "[resource]")
+{
+    Status status = STS_OK;
+
+    Object object(2, ITF_ALL, true, true);
+
+    object.createResourceString(4, OP_READWRITE, false, false, 10);
+
+    object.init();
+
+    ObjectInstance* instance = object.getFirstInstance();
+    REQUIRE(instance);
+
+    Resource* resource = instance->getFirstResource();
+    REQUIRE(resource);
+    CHECK(resource->getId() == 4);
+    CHECK(resource->getInfo().getType() == DATA_TYPE_STRING);
+    CHECK_FALSE(resource->getInfo().isSingle());
+    CHECK_FALSE(resource->getInfo().isMandatory());
+    CHECK(resource->getInfo().getMaxInstances() == 10);
+
+    ResourceInstance* resourceInstance = resource->getFirstInstance();
+    REQUIRE_FALSE(resourceInstance);
+
+    uint16_t ids[] = {2, 4, 5, 7, 9, 11, 23, 45, 56, 78};
+
+    for (size_t i = 0; i < sizeof(ids) / sizeof(uint16_t); i++) {
+        resourceInstance = resource->createInstance(ids[i], &status);
+        REQUIRE(resourceInstance);
+        CHECK(resourceInstance->getId() == ids[i]);
+    }
+
+    int i = 0;
+
+    for (resourceInstance = resource->getFirstInstance(); resourceInstance;
+         resourceInstance = resource->getNextInstance()) {
+        REQUIRE(resourceInstance);
+        CHECK(resourceInstance->getId() == ids[i++]);
+    }
+
+    for (size_t i = 0; i < sizeof(ids) / sizeof(uint16_t); i++) {
+        status = resource->deleteInstance(ids[i]);
+        CHECK(status == STS_OK);
+        resourceInstance = resource->getInstanceById(ids[i]);
+        CHECK_FALSE(resourceInstance);
+    }
+
+    object.release();
+}
+
+TEST_CASE("test resource string", "[resource]")
+{
+    Status status = STS_OK;
+    bool cbkIndication = false;
+    ResourceInstance* cbkInstance = NULL;
+
+    auto handler = [&](void* context, ResourceInstance* resourceInstance) {
+        cbkIndication = true;
+        cbkInstance = resourceInstance;
     };
 
-    testDecoding(&converter, "", reinterpret_cast<void*>(const_cast<char*>(jsonData2)), strlen(jsonData2), testData2,
-                 sizeof(testData2) / sizeof(DataConverter::ResourceData));
-    testEncoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData2)), strlen(jsonData2), testData2,
-                 sizeof(testData2) / sizeof(DataConverter::ResourceData));
+    Object object(2, ITF_ALL, true, true);
 
-    /*******************************************************************************
-     * Data 3
-     ******************************************************************************/
-    // TODO: shall we support VLO in format of FFFF:FFFF (Table: 7.4.3.-4)
-    const char* jsonData3 =
-        "[{\"bn\":\"/65/0/0/\",\"n\":\"0\",\"vlo\":\"66:0\"},\
-{\"n\":\"1\",\"vlo\":\"66:1\"},\
-{\"bn\":\"/65/0/\",\"n\":\"1\",\"vs\":\"8613800755500\"},\
-{\"n\":\"2\",\"v\":1},\
-{\"bn\":\"/66/0/\",\"n\":\"0\",\"vs\":\"myService1\"},\
-{\"n\":\"1\",\"vs\":\"Internet.15.234\"},\
-{\"n\":\"2\",\"vlo\":\"67:0\"},\
-{\"bn\":\"/66/1/\",\"n\":\"0\",\"vs\":\"myService2\"},\
-{\"n\":\"1\",\"vs\":\"Internet.15.235\"},\
-{\"n\":\"2\",\"vlo\":\"65535:65535\"},\
-{\"bn\":\"/67/0/\",\"n\":\"0\",\"vs\":\"85.76.76.84\"},\
-{\"n\":\"1\",\"vs\":\"85.76.255.255\"}]";
+    object.createResourceString(4, OP_READWRITE, true, true, 1, 10,
+                                [](void* context, ResourceInstance* resourceInstance) {
+                                    (*static_cast<decltype(handler)*>(context))(context, resourceInstance);
+                                },
+                                &handler);
 
-    DataConverter::ResourceData testData3[] = {
-        {65, 0, 0, 0, DATA_TYPE_OBJLINK, 0, {.objlnkValue = {66, 0}}},
-        {65, 0, 0, 1, DATA_TYPE_OBJLINK, 0, {.objlnkValue = {66, 1}}},
-        {65, 0, 1, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("8613800755500")}},
-        {65, 0, 2, INVALID_ID, DATA_TYPE_FLOAT, 0, {.floatValue = 1}},
-        {66, 0, 0, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("myService1")}},
-        {66, 0, 1, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("Internet.15.234")}},
-        {66, 0, 2, INVALID_ID, DATA_TYPE_OBJLINK, 0, {.objlnkValue = {67, 0}}},
-        {66, 1, 0, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("myService2")}},
-        {66, 1, 1, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("Internet.15.235")}},
-        {66, 1, 2, INVALID_ID, DATA_TYPE_OBJLINK, 0, {.objlnkValue = {0xFFFF, 0xFFFF}}},
-        {67, 0, 0, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("85.76.76.84")}},
-        {67, 0, 1, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("85.76.255.255")}},
+    object.init();
+
+    ResourceString* instance = static_cast<ResourceString*>(object.getResourceInstance(0, 4));
+    REQUIRE(instance);
+
+    cbkIndication = false;
+    cbkInstance = NULL;
+
+    status = instance->setString("Test string");
+    CHECK_FALSE(status == STS_OK);
+
+    status = instance->setString("TestString");
+    CHECK(status == STS_OK);
+
+    CHECK(cbkIndication);
+    CHECK(cbkInstance == instance);
+
+    CHECK(strcmp(instance->getString(), "TestString") == 0);
+
+    object.release();
+}
+
+TEST_CASE("test resource int", "[resource]")
+{
+    Status status = STS_OK;
+    bool cbkIndication = false;
+    ResourceInstance* cbkInstance = NULL;
+
+    auto handler = [&](void* context, ResourceInstance* resourceInstance) {
+        cbkIndication = true;
+        cbkInstance = resourceInstance;
     };
 
-    testDecoding(&converter, "", reinterpret_cast<void*>(const_cast<char*>(jsonData3)), strlen(jsonData3), testData3,
-                 sizeof(testData3) / sizeof(DataConverter::ResourceData));
-    testEncoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData3)), strlen(jsonData3), testData3,
-                 sizeof(testData3) / sizeof(DataConverter::ResourceData));
+    Object object(2, ITF_ALL, true, true);
 
-    /*******************************************************************************
-     * Data 4
-     ******************************************************************************/
+    object.createResourceInt(4, OP_READWRITE, true, true, 1, -50, 50,
+                             [](void* context, ResourceInstance* resourceInstance) {
+                                 (*static_cast<decltype(handler)*>(context))(context, resourceInstance);
+                             },
+                             &handler);
 
-    const char* jsonData4 = "[{\"bn\":\"/3/0/0\",\"vs\":\"Open Mobile Alliance\"}]";
+    object.init();
 
-    DataConverter::ResourceData testData4[] = {
-        {3, 0, 0, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("Open Mobile Alliance")}},
+    ResourceInt* instance = static_cast<ResourceInt*>(object.getResourceInstance(0, 4));
+    REQUIRE(instance);
+
+    cbkIndication = false;
+    cbkInstance = NULL;
+
+    status = instance->setInt(-100);
+    CHECK_FALSE(status == STS_OK);
+
+    status = instance->setInt(24);
+    CHECK(status == STS_OK);
+
+    CHECK(cbkIndication);
+    CHECK(cbkInstance == instance);
+
+    CHECK(instance->getInt() == 24);
+
+    object.release();
+}
+
+TEST_CASE("test resource uint", "[resource]")
+{
+    Status status = STS_OK;
+    bool cbkIndication = false;
+    ResourceInstance* cbkInstance = NULL;
+
+    auto handler = [&](void* context, ResourceInstance* resourceInstance) {
+        cbkIndication = true;
+        cbkInstance = resourceInstance;
     };
 
-    testDecoding(&converter, "", reinterpret_cast<void*>(const_cast<char*>(jsonData4)), strlen(jsonData4), testData4,
-                 sizeof(testData4) / sizeof(DataConverter::ResourceData));
-    testEncoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData4)), strlen(jsonData4), testData4,
-                 sizeof(testData4) / sizeof(DataConverter::ResourceData));
+    Object object(2, ITF_ALL, true, true);
 
-    /*******************************************************************************
-     * Data 5
-     ******************************************************************************/
+    object.createResourceUint(4, OP_READWRITE, true, true, 1, 20, 50,
+                              [](void* context, ResourceInstance* resourceInstance) {
+                                  (*static_cast<decltype(handler)*>(context))(context, resourceInstance);
+                              },
+                              &handler);
 
-    const char* jsonData5 = "[{\"bn\":\"/3/0/\",\"n\":\"0\"},{\"n\":\"9\"},{\"bn\":\"/1/0/1\"}]";
+    object.init();
 
-    DataConverter::ResourceData testData5[] = {
-        {3, 0, 0, INVALID_ID},
-        {3, 0, 9, INVALID_ID},
-        {1, 0, 1, INVALID_ID},
+    ResourceUint* instance = static_cast<ResourceUint*>(object.getResourceInstance(0, 4));
+    REQUIRE(instance);
+
+    cbkIndication = false;
+    cbkInstance = NULL;
+
+    status = instance->setUint(10);
+    CHECK_FALSE(status == STS_OK);
+
+    status = instance->setUint(24);
+    CHECK(status == STS_OK);
+
+    CHECK(cbkIndication);
+    CHECK(cbkInstance == instance);
+
+    CHECK(instance->getUint() == 24);
+
+    object.release();
+}
+
+TEST_CASE("test resource bool", "[resource]")
+{
+    Status status = STS_OK;
+    bool cbkIndication = false;
+    ResourceInstance* cbkInstance = NULL;
+
+    auto handler = [&](void* context, ResourceInstance* resourceInstance) {
+        cbkIndication = true;
+        cbkInstance = resourceInstance;
     };
 
-    testDecoding(&converter, "", reinterpret_cast<void*>(const_cast<char*>(jsonData5)), strlen(jsonData5), testData5,
-                 sizeof(testData5) / sizeof(DataConverter::ResourceData));
-    testEncoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData5)), strlen(jsonData5), testData5,
-                 sizeof(testData5) / sizeof(DataConverter::ResourceData));
+    Object object(2, ITF_ALL, true, true);
 
-    /*******************************************************************************
-     * Data 6
-     ******************************************************************************/
+    object.createResourceBool(4, OP_READWRITE, true, true, 1,
+                              [](void* context, ResourceInstance* resourceInstance) {
+                                  (*static_cast<decltype(handler)*>(context))(context, resourceInstance);
+                              },
+                              &handler);
 
-    const char* jsonData6 =
-        "[{\"bn\":\"/3/0/\",\"n\":\"0\",\"vs\":\"Open Mobile Alliance\"},\
-{\"n\":\"9\",\"v\":95},\
-{\"bn\":\"/1/0/1\",\"v\":86400}]";
+    object.init();
 
-    DataConverter::ResourceData testData6[] = {
-        {3, 0, 0, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("Open Mobile Alliance")}},
-        {3, 0, 9, INVALID_ID, DATA_TYPE_FLOAT, 0, {.floatValue = 95}},
-        {1, 0, 1, INVALID_ID, DATA_TYPE_FLOAT, 0, {.floatValue = 86400}},
-    };
+    ResourceBool* instance = static_cast<ResourceBool*>(object.getResourceInstance(0, 4));
+    REQUIRE(instance);
 
-    testDecoding(&converter, "", reinterpret_cast<void*>(const_cast<char*>(jsonData6)), strlen(jsonData6), testData6,
-                 sizeof(testData6) / sizeof(DataConverter::ResourceData));
-    testEncoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData6)), strlen(jsonData6), testData6,
-                 sizeof(testData6) / sizeof(DataConverter::ResourceData));
+    cbkIndication = false;
+    cbkInstance = NULL;
 
-    /*******************************************************************************
-     * Data 7
-     ******************************************************************************/
+    status = instance->setBool(1);
+    CHECK(status == STS_OK);
+    CHECK(instance->getBool() == 1);
 
-    const char* jsonData7 =
-        "[{\"bn\":\"/3311/\",\"n\":\"0/5850\",\"vb\":false},\
-{\"n\":\"1/5850\",\"vb\":false},\
-{\"n\":\"2/5851\",\"v\":20},\
-{\"bn\":\"/3308/0/5900\",\"v\":18}]";
+    CHECK(cbkIndication);
+    CHECK(cbkInstance == instance);
 
-    DataConverter::ResourceData testData7[] = {
-        {3311, 0, 5850, INVALID_ID, DATA_TYPE_BOOL, 0, {.boolValue = 0}},
-        {3311, 1, 5850, INVALID_ID, DATA_TYPE_BOOL, 0, {.boolValue = 0}},
-        {3311, 2, 5851, INVALID_ID, DATA_TYPE_FLOAT, 0, {.floatValue = 20}},
-        {3308, 0, 5900, INVALID_ID, DATA_TYPE_FLOAT, 0, {.floatValue = 18}},
-    };
+    cbkIndication = false;
+    cbkInstance = NULL;
 
-    testDecoding(&converter, "", reinterpret_cast<void*>(const_cast<char*>(jsonData7)), strlen(jsonData7), testData7,
-                 sizeof(testData7) / sizeof(DataConverter::ResourceData));
-    testEncoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData7)), strlen(jsonData7), testData7,
-                 sizeof(testData7) / sizeof(DataConverter::ResourceData));
+    status = instance->setBool(0);
+    CHECK(status == STS_OK);
+    CHECK(instance->getBool() == 0);
+
+    CHECK(cbkIndication);
+    CHECK(cbkInstance == instance);
+
+    object.release();
 }

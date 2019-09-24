@@ -68,6 +68,9 @@ ResourceString::~ResourceString()
 Status ResourceString::checkString(const char* value)
 {
     if (strlen(value) > mSize) {
+        LOG_ERROR("Error setting string /%d/%d/%d/%d, value: %s", getParent()->getParent()->getParent()->getId(),
+                  getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
+
         return STS_ERR_INVALID_VALUE;
     }
 
@@ -78,12 +81,12 @@ Status ResourceString::setString(const char* value)
 {
     Status status = STS_OK;
 
-    LOG_INFO("Set string /%d/%d/%d/%d, value: %s", getParent()->getParent()->getParent()->getId(),
-             getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
-
     if ((status = checkString(value)) != STS_OK) {
         return status;
     }
+
+    LOG_INFO("Set string /%d/%d/%d/%d, value: %s", getParent()->getParent()->getParent()->getId(),
+             getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
 
     if (strcmp(value, mValue) == 0) {
         return STS_OK;
@@ -109,17 +112,31 @@ ResourceInt::~ResourceInt()
 {
 }
 
+Status ResourceInt::checkInt(int64_t value)
+{
+    if (value < getResource()->getInfo().min().minInt || value > getResource()->getInfo().max().maxInt) {
+        LOG_ERROR("Error setting int /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
+                  getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
+
+        return STS_ERR_INVALID_VALUE;
+    }
+
+    return STS_OK;
+}
+
 Status ResourceInt::setInt(int64_t value)
 {
+    Status status = STS_OK;
+
+    if ((status = checkInt(value)) != STS_OK) {
+        return status;
+    }
+
     LOG_INFO("Set int /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
              getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
 
     if (value == mValue) {
         return STS_OK;
-    }
-
-    if (value < getResource()->getInfo().min().minInt || value > getResource()->getInfo().max().maxInt) {
-        return STS_ERR_INVALID_VALUE;
     }
 
     mValue = value;
@@ -141,17 +158,31 @@ ResourceUint::~ResourceUint()
 {
 }
 
+Status ResourceUint::checkUint(uint64_t value)
+{
+    if (value < getResource()->getInfo().min().minUint || value > getResource()->getInfo().max().maxUint) {
+        LOG_ERROR("Error setting uint /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
+                  getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
+
+        return STS_ERR_INVALID_VALUE;
+    }
+
+    return STS_OK;
+}
+
 Status ResourceUint::setUint(uint64_t value)
 {
+    Status status = STS_OK;
+
+    if ((status = checkUint(value)) != STS_OK) {
+        return status;
+    }
+
     LOG_INFO("Set uint /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
              getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
 
     if (value == mValue) {
         return STS_OK;
-    }
-
-    if (value < getResource()->getInfo().min().minUint || value > getResource()->getInfo().max().maxUint) {
-        return STS_ERR_INVALID_VALUE;
     }
 
     mValue = value;
