@@ -12,8 +12,8 @@ public:
 
     void init();
 
-    Object* createObject(uint16_t id, Object::Instance instance, size_t maxInstances, Object::Mandatory mandatory,
-                         uint16_t interfaces, Status* status = NULL);
+    Object* createObject(uint16_t id, bool single, bool mandatory, size_t maxInstances, uint16_t interfaces,
+                         Status* status = NULL);
     Object* getObject(Interface interface, uint16_t id);
 
     Object* getFirstObject(Interface interface);
