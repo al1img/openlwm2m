@@ -1,5 +1,8 @@
 #include <catch2/catch.hpp>
 
+#include <cstring>
+
+#include "jsonconverter.hpp"
 #include "object.hpp"
 
 using namespace openlwm2m;
@@ -161,6 +164,54 @@ TEST_CASE("test create resources", "[object]")
 
     status = object.createResourceString(8, OP_READ, true, true);
     CHECK_FALSE(status == STS_OK);
+
+    object.release();
+}
+
+TEST_CASE("test object write", "[object]")
+{
+    Status status = STS_OK;
+
+    Object object(2, ITF_ALL, true, true);
+
+    status = object.createResourceString(0, OP_READWRITE, true, true);
+    REQUIRE(status == STS_OK);
+
+    status = object.createResourceInt(1, OP_READWRITE, true, true);
+    REQUIRE(status == STS_OK);
+
+    object.init();
+
+    JsonConverter writeConverter;
+
+    const char* writeData =
+        "[\
+{\"bn\":\"/2/0/\",\"n\":\"0\",\"vs\":\"test string\"},\
+{\"n\":\"1\",\"v\":10}\
+]";
+
+    status = writeConverter.startDecoding(reinterpret_cast<void*>(const_cast<char*>(writeData)), strlen(writeData));
+    CHECK(status == STS_OK);
+
+    status = object.write(&writeConverter);
+    CHECK(status == STS_OK);
+
+    JsonConverter readConverter;
+
+    char readData[1500];
+
+    status = readConverter.startEncoding(readData, sizeof(readData) - 1);
+    REQUIRE(status == STS_OK);
+
+    status = object.read(&readConverter);
+    CHECK(status == STS_OK);
+
+    size_t size;
+    status = readConverter.finishEncoding(&size);
+    REQUIRE(status == STS_OK);
+    readData[size] = '\0';
+
+    CHECK(strcmp(writeData, readData) == 0);
 
     object.release();
 }

@@ -22,18 +22,14 @@ TextConverter::~TextConverter()
 {
 }
 
-Status TextConverter::startDecoding(const char* path, void* data, size_t size)
+Status TextConverter::startDecoding(void* data, size_t size)
 {
-    LOG_DEBUG("Start decoding, path: %s, size: %zu", path, size);
+    LOG_DEBUG("Start decoding, size: %zu", size);
 
     mData = data;
     mSize = size;
     mFinish = false;
-
-    if (Utils::convertPath(const_cast<char*>(path), &mObjectId, &mObjectInstanceId, &mResourceId,
-                           &mResourceInstanceId) < 0) {
-        return STS_ERR_INVALID_VALUE;
-    }
+    mObjectId = mObjectInstanceId = mResourceId = mResourceInstanceId = INVALID_ID;
 
     if (size > sBufferSize) {
         return STS_ERR_NO_MEM;

@@ -23,11 +23,16 @@ public:
 
     Status addResource(ResourceInfo& info);
 
-    Resource* getResourceById(uint16_t id) {return mResourceStorage.getItemById(id);}
-    Resource* getFirstResource() {return mResourceStorage.getFirstItem();}
-    Resource* getNextResource(){return mResourceStorage.getNextItem();}
+    Resource* getResourceById(uint16_t id) { return mResourceStorage.getItemById(id); }
+    Resource* getFirstResource() { return mResourceStorage.getFirstItem(); }
+    Resource* getNextResource() { return mResourceStorage.getNextItem(); }
 
     ResourceInstance* getResourceInstance(uint16_t resId, uint16_t resInstanceId = 0);
+
+    Status write(DataConverter* converter, bool checkOperation = false, bool ignoreMissing = true,
+                 bool replace = false);
+
+    Status read(DataConverter* converter, bool checkOperation = false);
 
 private:
     Resource::Storage mResourceStorage;

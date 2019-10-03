@@ -28,11 +28,11 @@ include_directories(
 
 set(TEST_SOURCES
 	main.cpp
-	testobject.cpp
-#	testreghandler.cpp
-	testresource.cpp
 	testconverter.cpp
-#	testobjectmanager.cpp
+	testobject.cpp
+	testobjectmanager.cpp
+	testresource.cpp
+#	testreghandler.cpp
 #	testtimer.cpp
 )
 

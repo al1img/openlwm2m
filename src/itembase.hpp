@@ -4,9 +4,9 @@
 #include <stdint.h>
 #include <cstddef>
 
-namespace openlwm2m {
+#include "lwm2m.hpp"
 
-#define INVALID_ID 0xFFFF
+namespace openlwm2m {
 
 enum ItemMandatory { MANDATORY, OPTIONAL };
 

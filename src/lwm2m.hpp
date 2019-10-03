@@ -7,6 +7,8 @@
 
 namespace openlwm2m {
 
+#define INVALID_ID 0xFFFF
+
 /**
  * Status.
  */

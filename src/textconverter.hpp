@@ -14,7 +14,7 @@ public:
     TextConverter();
     ~TextConverter();
 
-    Status startDecoding(const char* path, void* data, size_t size);
+    Status startDecoding(void* data, size_t size);
     Status nextDecoding(ResourceData* resourceData);
 
     Status startEncoding(void* data, size_t size);

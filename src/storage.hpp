@@ -399,8 +399,6 @@ public:
         }
     }
 
-    bool hasFreeItem() const { return mFreeList.size > 0; }
-
 private:
     List<T> mFreeList;
     Node<T>* mCurrentFreeNode;

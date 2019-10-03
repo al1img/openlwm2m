@@ -127,6 +127,38 @@ ResourceInstance* Resource::getNextInstance()
     return mInstanceStorage.getNextItem();
 }
 
+Status Resource::write(DataConverter* converter, bool checkOperation, bool replace)
+{
+    return STS_OK;
+}
+
+Status Resource::read(DataConverter* converter, bool checkOperation)
+{
+    Status status = STS_OK;
+
+    if (getInfo().checkOperation(OP_EXECUTE)) {
+        return STS_OK;
+    }
+
+    if (checkOperation && !getInfo().checkOperation(OP_READ)) {
+        return STS_ERR_NO_ACCESS;
+    }
+
+    for (ResourceInstance* instance = getFirstInstance(); instance != NULL; instance = getNextInstance()) {
+        DataConverter::ResourceData resourceData;
+
+        if ((status = instance->read(&resourceData)) != STS_OK) {
+            return status;
+        }
+
+        if ((status = converter->nextEncoding(&resourceData)) != STS_OK) {
+            return status;
+        }
+    }
+
+    return STS_OK;
+}
+
 /*******************************************************************************
  * Private
  ******************************************************************************/
@@ -145,6 +177,9 @@ ResourceInstance* Resource::newInstance(Resource* parent)
 
         case DATA_TYPE_BOOL:
             return new ResourceBool(parent);
+
+        case DATA_TYPE_FLOAT:
+            return new ResourceFloat(parent);
 
         default:
             return new ResourceInstance(parent);

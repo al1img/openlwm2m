@@ -12,16 +12,18 @@ public:
 
     void init();
 
-    Object* createObject(uint16_t id, bool single, bool mandatory, size_t maxInstances, uint16_t interfaces,
+    Object* createObject(uint16_t id, uint16_t interfaces, bool single, bool mandatory, size_t maxInstances = 1,
                          Status* status = NULL);
-    Object* getObject(Interface interface, uint16_t id);
+    Object* getObjectById(Interface interface, uint16_t id);
 
     Object* getFirstObject(Interface interface);
     Object* getNextObject(Interface interface);
 
-    Status write(Interface interface, const char* path, DataFormat format, void* data, size_t size);
-    Status read(Interface interface, const char* path, DataFormat inFormat, void* inData, size_t inSize,
-                DataFormat reqFormat, void* outData, size_t* outSize, DataFormat* outFormat);
+    Status bootstrapWrite(DataFormat dataFormat, void* data, size_t size, uint16_t objectId,
+                          uint16_t objectInstanceId = INVALID_ID, uint16_t resourceId = INVALID_ID);
+
+    Status bootstrepRead(DataFormat* dataFormat, void* data, size_t* size, uint16_t objectId,
+                         uint16_t objectInstanceId = INVALID_ID);
 
     Status addConverter(DataConverter* converter);
     bool isFormatSupported(DataFormat format);
@@ -40,8 +42,22 @@ private:
 
     static void resBootstrapChanged(void* context, ResourceInstance* resInstance);
 
-    Status bootstrapWrite(DataConverter* converter, const char* path, void* data, size_t size);
-    Status writeResource(ResourceInstance* instance, DataConverter::ResourceData* resourceData);
+    // TODO store/restore items
+    Status storeObject(Object* object);
+    Status restoreObject(Object* object);
+    Status storeObjectInstance(ObjectInstance* objectInstance);
+    Status restoreObjectInstance(ObjectInstance* objectInstance);
+    Status storeResource(Resource* resoure);
+    Status restoreResource(Resource* resource);
+
+    Status writeObject(Object* object, DataConverter* converter, bool checkOperation = false, bool ignoreMissing = true,
+                       bool replace = false);
+    Status writeObjectInstance(ObjectInstance* objectInstance, DataConverter* converter, bool checkOperation = false,
+                               bool ignoreMissing = true, bool replace = false);
+    Status writeResource(Resource* resource, DataConverter* converter, bool checkOperation = false,
+                         bool replace = false);
+    Status writeResourceInstance(ResourceInstance* resourceInstance, DataConverter* converter,
+                                 bool checkOperation = false);
 
     Status readResourceInstance(DataConverter* converter, ResourceInstance* resourceInstance);
     Status readResource(DataConverter* converter, Resource* resource);

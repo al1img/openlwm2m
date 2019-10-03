@@ -52,7 +52,8 @@ public:
     // Bootstrap
     virtual void bootstrapDiscover() = 0;
     virtual void bootstrapRead() = 0;
-    virtual Status bootstrapWrite(const char* path, DataFormat dataFormat, void* data, size_t size) = 0;
+    virtual Status bootstrapWrite(DataFormat dataFormat, void* data, size_t size, uint16_t objectId,
+                                  uint16_t objectInstanceId = INVALID_ID, uint16_t resourceId = INVALID_ID) = 0;
     virtual void bootstrapDelete() = 0;
 
     // Device

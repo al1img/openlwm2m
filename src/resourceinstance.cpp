@@ -1,6 +1,8 @@
 #include "resourceinstance.hpp"
 #include "resource.hpp"
 
+#include <inttypes.h>
+#include <cstdio>
 #include <cstring>
 
 #include "log.hpp"
@@ -49,6 +51,199 @@ void ResourceInstance::valueChanged()
     getResource()->getInfo().valueChanged(this);
 }
 
+Status ResourceInstance::write(DataConverter::ResourceData* resourceData)
+{
+    switch (resourceData->dataType) {
+        case DATA_TYPE_STRING:
+            return writeString(resourceData->strValue);
+
+        case DATA_TYPE_INT:
+            return writeInt(resourceData->intValue);
+
+        case DATA_TYPE_UINT:
+            return writeUint(resourceData->uintValue);
+
+        case DATA_TYPE_FLOAT:
+            return writeFloat(resourceData->floatValue);
+
+        case DATA_TYPE_BOOL:
+            return writeBool(resourceData->boolValue);
+
+        // TODO:
+        case DATA_TYPE_OPAQUE:
+        case DATA_TYPE_TIME:
+        case DATA_TYPE_OBJLINK:
+        case DATA_TYPE_CORELINK:
+
+        default:
+            return STS_ERR_FORMAT;
+    }
+
+    return STS_OK;
+}
+
+Status ResourceInstance::writeString(char* value)
+{
+    switch (getResource()->getInfo().getType()) {
+        case DATA_TYPE_STRING:
+            return static_cast<ResourceString*>(this)->setValue(value);
+
+        case DATA_TYPE_INT:
+            int64_t intValue;
+
+            if (1 != sscanf(value, "%" PRId64, &intValue)) {
+                return STS_ERR_FORMAT;
+            }
+
+            return static_cast<ResourceInt*>(this)->setValue(intValue);
+
+        case DATA_TYPE_UINT:
+            uint64_t uintValue;
+
+            if (1 != sscanf(value, "%" PRIu64, &uintValue)) {
+                return STS_ERR_FORMAT;
+            }
+
+            return static_cast<ResourceUint*>(this)->setValue(uintValue);
+
+        case DATA_TYPE_FLOAT:
+            double floatValue;
+
+            if (1 != sscanf(value, "%lf", &floatValue)) {
+                return STS_ERR_FORMAT;
+            }
+
+            return static_cast<ResourceFloat*>(this)->setValue(floatValue);
+
+        case DATA_TYPE_BOOL:
+            uint8_t boolValue;
+
+            if (strcmp("true", value) == 0) {
+                boolValue = 1;
+            }
+            else if (strcmp("false", value) == 0) {
+                boolValue = 0;
+            }
+            else {
+                if (1 != sscanf(value, "%" SCNu8, &boolValue)) {
+                    return STS_ERR_FORMAT;
+                }
+            }
+
+            return static_cast<ResourceBool*>(this)->setValue(boolValue);
+
+        // TODO
+        case DATA_TYPE_OPAQUE:
+        case DATA_TYPE_TIME:
+        case DATA_TYPE_OBJLINK:
+        case DATA_TYPE_CORELINK:
+
+        default:
+            return STS_ERR_FORMAT;
+    }
+}
+
+Status ResourceInstance::writeInt(int64_t value)
+{
+    if (getResource()->getInfo().getType() != DATA_TYPE_INT) {
+        return STS_ERR_FORMAT;
+    }
+
+    return static_cast<ResourceInt*>(this)->setValue(value);
+}
+
+Status ResourceInstance::writeUint(uint64_t value)
+{
+    if (getResource()->getInfo().getType() != DATA_TYPE_UINT) {
+        return STS_ERR_FORMAT;
+    }
+
+    return static_cast<ResourceInt*>(this)->setValue(value);
+}
+
+Status ResourceInstance::writeFloat(double value)
+{
+    switch (getResource()->getInfo().getType()) {
+        case DATA_TYPE_INT: {
+            int64_t intValue = value;
+
+            if (value != intValue) {
+                return STS_ERR_FORMAT;
+            }
+
+            return static_cast<ResourceInt*>(this)->setValue(intValue);
+        }
+
+        case DATA_TYPE_UINT: {
+            uint64_t uintValue = value;
+
+            if (value != uintValue) {
+                return STS_ERR_FORMAT;
+            }
+
+            return static_cast<ResourceUint*>(this)->setValue(uintValue);
+        }
+
+        case DATA_TYPE_FLOAT:
+            return static_cast<ResourceFloat*>(this)->setValue(value);
+
+        default:
+            return STS_ERR_FORMAT;
+    }
+}
+
+Status ResourceInstance::writeBool(uint8_t value)
+{
+    if (getResource()->getInfo().getType() != DATA_TYPE_BOOL) {
+        return STS_ERR_FORMAT;
+    }
+
+    return static_cast<ResourceBool*>(this)->setValue(value);
+}
+
+Status ResourceInstance::read(DataConverter::ResourceData* resourceData)
+{
+    resourceData->resourceInstanceId = getId();
+    resourceData->resourceId = getParent()->getId();
+    resourceData->objectInstanceId = getParent()->getParent()->getId();
+    resourceData->objectId = getParent()->getParent()->getParent()->getId();
+
+    resourceData->timestamp = 0;
+
+    if (getResource()->getInfo().isSingle()) {
+        resourceData->resourceInstanceId = INVALID_ID;
+    }
+
+    resourceData->dataType = getResource()->getInfo().getType();
+
+    switch (resourceData->dataType) {
+        case DATA_TYPE_STRING:
+            resourceData->strValue = const_cast<char*>(static_cast<ResourceString*>(this)->getValue());
+            break;
+
+        case DATA_TYPE_INT:
+            resourceData->intValue = static_cast<ResourceInt*>(this)->getValue();
+            break;
+
+        case DATA_TYPE_UINT:
+            resourceData->uintValue = static_cast<ResourceUint*>(this)->getValue();
+            break;
+
+        case DATA_TYPE_FLOAT:
+            resourceData->floatValue = static_cast<ResourceFloat*>(this)->getValue();
+            break;
+
+        case DATA_TYPE_BOOL:
+            resourceData->boolValue = static_cast<ResourceBool*>(this)->getValue();
+            break;
+
+        default:
+            return STS_ERR;
+    }
+
+    return STS_OK;
+}
+
 /*******************************************************************************
  * ResourceString
  ******************************************************************************/
@@ -65,7 +260,7 @@ ResourceString::~ResourceString()
     delete[] mValue;
 }
 
-Status ResourceString::checkString(const char* value)
+Status ResourceString::checkValue(const char* value)
 {
     if (strlen(value) > mSize) {
         LOG_ERROR("Error setting string /%d/%d/%d/%d, value: %s", getParent()->getParent()->getParent()->getId(),
@@ -77,11 +272,11 @@ Status ResourceString::checkString(const char* value)
     return STS_OK;
 }
 
-Status ResourceString::setString(const char* value)
+Status ResourceString::setValue(const char* value)
 {
     Status status = STS_OK;
 
-    if ((status = checkString(value)) != STS_OK) {
+    if ((status = checkValue(value)) != STS_OK) {
         return status;
     }
 
@@ -112,7 +307,7 @@ ResourceInt::~ResourceInt()
 {
 }
 
-Status ResourceInt::checkInt(int64_t value)
+Status ResourceInt::checkValue(int64_t value)
 {
     if (value < getResource()->getInfo().min().minInt || value > getResource()->getInfo().max().maxInt) {
         LOG_ERROR("Error setting int /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
@@ -124,11 +319,11 @@ Status ResourceInt::checkInt(int64_t value)
     return STS_OK;
 }
 
-Status ResourceInt::setInt(int64_t value)
+Status ResourceInt::setValue(int64_t value)
 {
     Status status = STS_OK;
 
-    if ((status = checkInt(value)) != STS_OK) {
+    if ((status = checkValue(value)) != STS_OK) {
         return status;
     }
 
@@ -158,7 +353,7 @@ ResourceUint::~ResourceUint()
 {
 }
 
-Status ResourceUint::checkUint(uint64_t value)
+Status ResourceUint::checkValue(uint64_t value)
 {
     if (value < getResource()->getInfo().min().minUint || value > getResource()->getInfo().max().maxUint) {
         LOG_ERROR("Error setting uint /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
@@ -170,15 +365,61 @@ Status ResourceUint::checkUint(uint64_t value)
     return STS_OK;
 }
 
-Status ResourceUint::setUint(uint64_t value)
+Status ResourceUint::setValue(uint64_t value)
 {
     Status status = STS_OK;
 
-    if ((status = checkUint(value)) != STS_OK) {
+    if ((status = checkValue(value)) != STS_OK) {
         return status;
     }
 
     LOG_INFO("Set uint /%d/%d/%d/%d, value: %ld", getParent()->getParent()->getParent()->getId(),
+             getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
+
+    if (value == mValue) {
+        return STS_OK;
+    }
+
+    mValue = value;
+
+    valueChanged();
+
+    return STS_OK;
+}
+
+/*******************************************************************************
+ * ResourceFloat
+ ******************************************************************************/
+
+ResourceFloat::ResourceFloat(Resource* parent) : ResourceInstance(parent), mValue(0)
+{
+}
+
+ResourceFloat::~ResourceFloat()
+{
+}
+
+Status ResourceFloat::checkValue(double value)
+{
+    if (value < getResource()->getInfo().min().minFloat || value > getResource()->getInfo().max().maxFloat) {
+        LOG_ERROR("Error setting float /%d/%d/%d/%d, value: %f", getParent()->getParent()->getParent()->getId(),
+                  getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
+
+        return STS_ERR_INVALID_VALUE;
+    }
+
+    return STS_OK;
+}
+
+Status ResourceFloat::setValue(double value)
+{
+    Status status = STS_OK;
+
+    if ((status = checkValue(value)) != STS_OK) {
+        return status;
+    }
+
+    LOG_INFO("Set float /%d/%d/%d/%d, value: %f", getParent()->getParent()->getParent()->getId(),
              getParent()->getParent()->getId(), getParent()->getId(), getId(), value);
 
     if (value == mValue) {
@@ -204,7 +445,7 @@ ResourceBool::~ResourceBool()
 {
 }
 
-Status ResourceBool::setBool(uint8_t value)
+Status ResourceBool::setValue(uint8_t value)
 {
     LOG_INFO("Set bool /%d/%d/%d/%d, value: %u", getParent()->getParent()->getParent()->getId(),
              getParent()->getParent()->getId(), getParent()->getId(), getId(), value);

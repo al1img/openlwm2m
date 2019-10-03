@@ -56,6 +56,8 @@ void Object::release()
         return;
     }
 
+    LOG_DEBUG("Delete /%d", getId());
+
     mInitialized = false;
 
     mInstanceStorage.clear();
@@ -127,6 +129,10 @@ Status Object::deleteInstance(uint16_t id)
         return STS_ERR_NOT_ALLOWED;
     }
 
+    if (mSingle && mMandatory) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
     ObjectInstance* instance = mInstanceStorage.getItemById(id);
 
     if (!instance) {
@@ -162,6 +168,107 @@ Status Object::setResourceChangedCbk(uint16_t resourceId, ResourceInfo::ValueCha
     }
 
     info->setValueChangedCbk(callback, context);
+
+    return STS_OK;
+}
+
+Status Object::write(DataConverter* converter, bool checkOperation, bool ignoreMissing, bool replace)
+{
+    Status status = STS_OK;
+    DataConverter::ResourceData resourceData;
+
+    LOG_DEBUG("Write /%d", getId());
+
+    if (replace) {
+        mInstanceStorage.clear();
+
+        if (mSingle && mMandatory) {
+            ObjectInstance* instance = createInstance(0);
+            ASSERT(instance);
+        }
+    }
+
+    while ((status = converter->nextDecoding(&resourceData)) == STS_OK) {
+        if (resourceData.objectId != getId() || resourceData.objectInstanceId == INVALID_ID ||
+            resourceData.resourceId == INVALID_ID) {
+            LOG_ERROR("Unexpected path: /%d/%d/%d", resourceData.objectId, resourceData.objectInstanceId,
+                      resourceData.resourceId);
+            return STS_ERR_FORMAT;
+        }
+
+        ObjectInstance* objectInstance = getInstanceById(resourceData.objectInstanceId);
+
+        if (!objectInstance) {
+            objectInstance = createInstance(resourceData.objectInstanceId, &status);
+            if (!objectInstance) {
+                LOG_ERROR("Can't create object instance: /%d/%d, status: %d", resourceData.objectId,
+                          resourceData.objectInstanceId, status);
+                return status;
+            }
+        }
+
+        Resource* resource = objectInstance->getResourceById(resourceData.resourceId);
+
+        if (!resource) {
+            if (!ignoreMissing) {
+                LOG_ERROR("Can't find resource: /%d/%d/%d", resourceData.objectId, resourceData.objectInstanceId,
+                          resourceData.resourceId);
+                return STS_ERR_NOT_FOUND;
+            }
+            else {
+                continue;
+            }
+        }
+
+        if (checkOperation && !resource->getInfo().checkOperation(OP_WRITE)) {
+            return STS_ERR_NOT_ALLOWED;
+        }
+
+        if (resource->getInfo().isSingle()) {
+            if (resourceData.resourceInstanceId != INVALID_ID) {
+                LOG_ERROR("Address single resource as multiple: /%d/%d/%d/%d", resourceData.objectId,
+                          resourceData.objectInstanceId, resourceData.resourceId, resourceData.resourceInstanceId);
+                return STS_ERR_NOT_FOUND;
+            }
+            else {
+                resourceData.resourceInstanceId = 0;
+            }
+        }
+
+        ResourceInstance* resourceInstance = resource->getInstanceById(resourceData.resourceInstanceId);
+
+        if (!resourceInstance) {
+            resourceInstance = resource->createInstance(resourceData.resourceInstanceId, &status);
+            if (!resourceInstance) {
+                LOG_ERROR("Can't find resource instance: /%d/%d/%d/%d", resourceData.objectId,
+                          resourceData.objectInstanceId, resourceData.resourceId, resourceData.resourceInstanceId);
+                return status;
+            }
+        }
+
+        if ((status = resourceInstance->write(&resourceData)) != STS_OK) {
+            LOG_ERROR("Can't write resource instance: /%d/%d/%d/%d, status: %d", resourceData.objectId,
+                      resourceData.objectInstanceId, resourceData.resourceId, resourceData.resourceInstanceId, status);
+            return status;
+        }
+    }
+
+    if (status != STS_ERR_NOT_FOUND) {
+        return status;
+    }
+
+    return STS_OK;
+}
+
+Status Object::read(DataConverter* converter, bool checkOperation)
+{
+    Status status = STS_OK;
+
+    for (ObjectInstance* instance = getFirstInstance(); instance != NULL; instance = getNextInstance()) {
+        if ((status = instance->read(converter, checkOperation)) != STS_OK) {
+            return status;
+        }
+    }
 
     return STS_OK;
 }

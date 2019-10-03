@@ -129,16 +129,16 @@ TEST_CASE("test resource string", "[resource]")
     cbkIndication = false;
     cbkInstance = NULL;
 
-    status = instance->setString("Test string");
+    status = instance->setValue("Test string");
     CHECK_FALSE(status == STS_OK);
 
-    status = instance->setString("TestString");
+    status = instance->setValue("TestString");
     CHECK(status == STS_OK);
 
     CHECK(cbkIndication);
     CHECK(cbkInstance == instance);
 
-    CHECK(strcmp(instance->getString(), "TestString") == 0);
+    CHECK(strcmp(instance->getValue(), "TestString") == 0);
 
     object.release();
 }
@@ -170,16 +170,16 @@ TEST_CASE("test resource int", "[resource]")
     cbkIndication = false;
     cbkInstance = NULL;
 
-    status = instance->setInt(-100);
+    status = instance->setValue(-100);
     CHECK_FALSE(status == STS_OK);
 
-    status = instance->setInt(24);
+    status = instance->setValue(24);
     CHECK(status == STS_OK);
 
     CHECK(cbkIndication);
     CHECK(cbkInstance == instance);
 
-    CHECK(instance->getInt() == 24);
+    CHECK(instance->getValue() == 24);
 
     object.release();
 }
@@ -211,16 +211,16 @@ TEST_CASE("test resource uint", "[resource]")
     cbkIndication = false;
     cbkInstance = NULL;
 
-    status = instance->setUint(10);
+    status = instance->setValue(10);
     CHECK_FALSE(status == STS_OK);
 
-    status = instance->setUint(24);
+    status = instance->setValue(24);
     CHECK(status == STS_OK);
 
     CHECK(cbkIndication);
     CHECK(cbkInstance == instance);
 
-    CHECK(instance->getUint() == 24);
+    CHECK(instance->getValue() == 24);
 
     object.release();
 }
@@ -252,9 +252,9 @@ TEST_CASE("test resource bool", "[resource]")
     cbkIndication = false;
     cbkInstance = NULL;
 
-    status = instance->setBool(1);
+    status = instance->setValue(1);
     CHECK(status == STS_OK);
-    CHECK(instance->getBool() == 1);
+    CHECK(instance->getValue() == 1);
 
     CHECK(cbkIndication);
     CHECK(cbkInstance == instance);
@@ -262,9 +262,9 @@ TEST_CASE("test resource bool", "[resource]")
     cbkIndication = false;
     cbkInstance = NULL;
 
-    status = instance->setBool(0);
+    status = instance->setValue(0);
     CHECK(status == STS_OK);
-    CHECK(instance->getBool() == 0);
+    CHECK(instance->getValue() == 0);
 
     CHECK(cbkIndication);
     CHECK(cbkInstance == instance);

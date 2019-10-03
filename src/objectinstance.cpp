@@ -49,6 +49,24 @@ ResourceInstance* ObjectInstance::getResourceInstance(uint16_t resId, uint16_t r
     return resource->getInstanceById(resInstanceId);
 }
 
+Status ObjectInstance::write(DataConverter* converter, bool checkOperation, bool ignoreMissing, bool replace)
+{
+    return STS_OK;
+}
+
+Status ObjectInstance::read(DataConverter* converter, bool checkOperation)
+{
+    Status status = STS_OK;
+
+    for (Resource* resource = getFirstResource(); resource != NULL; resource = getNextResource()) {
+        if ((status = resource->read(converter, checkOperation)) != STS_OK) {
+            return status;
+        }
+    }
+
+    return STS_OK;
+}
+
 /*******************************************************************************
  * Private
  ******************************************************************************/

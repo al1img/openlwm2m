@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "lwm2m.hpp"
+
 namespace openlwm2m {
 
 /*******************************************************************************
@@ -38,27 +40,28 @@ int Utils::strCat(char* dst, const char* src, size_t len)
     return strCopy(&dst[dstLen], src, len - dstLen - 1);
 }
 
-int Utils::convertPath(char* path, uint16_t* objectId, uint16_t* objectInstanceId, uint16_t* resourceId,
+int Utils::convertPath(const char* path, uint16_t* objectId, uint16_t* objectInstanceId, uint16_t* resourceId,
                        uint16_t* resourceInstanceId)
 {
     uint16_t* setValues[4] = {objectId, objectInstanceId, resourceId, resourceInstanceId};
+    char* pos = const_cast<char*>(path);
 
     for (int i = 0; i < 4; i++) {
-        *setValues[i] = UINT16_MAX;
+        *setValues[i] = INVALID_ID;
     }
 
     for (int i = 0; i < 4; i++) {
-        if (path == NULL || *path == '\0') {
+        if (pos == NULL || *pos == '\0') {
             return 0;
         }
 
-        if (*path != '/') {
+        if (*pos != '/') {
             return -1;
         }
 
-        path++;
+        pos++;
 
-        uint64_t value = strtol(path, &path, 0);
+        uint64_t value = strtol(pos, &pos, 0);
 
         if (value > UINT16_MAX) {
             return -1;

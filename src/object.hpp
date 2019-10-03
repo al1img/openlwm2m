@@ -13,8 +13,13 @@
 
 namespace openlwm2m {
 
-#define OBJ_LWM2M_SECURITY 0
-#define OBJ_LWM2M_SERVER 1
+// clang-format off
+
+#define OBJ_LWM2M_SECURITY  0
+#define OBJ_LWM2M_SERVER    1
+#define OBJ_DEVICE          3
+
+// clang-format on
 
 /**
  * lwm2m object.
@@ -58,6 +63,11 @@ public:
 
     ResourceInstance* getResourceInstance(uint16_t objectInstanceId, uint16_t resourceId,
                                           uint16_t resourceInstanceId = 0);
+
+    Status write(DataConverter* converter, bool checkOperation = false, bool ignoreMissing = true,
+                 bool replace = false);
+
+    Status read(DataConverter* converter, bool checkOperation = false);
 
     static bool isInstanceChanged()
     {

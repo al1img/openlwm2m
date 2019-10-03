@@ -9,7 +9,6 @@
 
 #include "itembase.hpp"
 #include "lwm2m.hpp"
-#include "resource.hpp"
 #include "storage.hpp"
 
 namespace openlwm2m {
@@ -60,7 +59,7 @@ public:
     DataConverter(DataFormat format) : ItemBase(NULL) { setId(format); }
     virtual ~DataConverter() {}
 
-    virtual Status startDecoding(const char* path, void* data, size_t size) = 0;
+    virtual Status startDecoding(void* data, size_t size) = 0;
     virtual Status nextDecoding(ResourceData* resourceData) = 0;
 
     virtual Status startEncoding(void* data, size_t size) = 0;

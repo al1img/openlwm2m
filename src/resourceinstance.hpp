@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#include "dataformat.hpp"
 #include "itembase.hpp"
 #include "storage.hpp"
 
@@ -22,8 +23,19 @@ public:
 
     Resource* getResource() const;
 
+    Status write(DataConverter::ResourceData* resourceData);
+    Status read(DataConverter::ResourceData* resourceData);
+
 protected:
     void valueChanged();
+
+private:
+    Status writeString(char* value);
+    Status writeInt(int64_t value);
+    Status writeUint(uint64_t value);
+    Status writeFloat(double value);
+    Status writeBool(uint8_t value);
+    // TODO: rest of types
 };
 
 class ResourceString : public ResourceInstance {
@@ -31,9 +43,9 @@ public:
     ResourceString(Resource* parent);
     ~ResourceString();
 
-    const char* getString() const { return mValue; }
-    Status checkString(const char* value);
-    Status setString(const char* value);
+    const char* getValue() const { return mValue; }
+    Status checkValue(const char* value);
+    Status setValue(const char* value);
 
 private:
     char* mValue;
@@ -45,9 +57,9 @@ public:
     ResourceInt(Resource* parent);
     ~ResourceInt();
 
-    int64_t getInt() const { return mValue; }
-    Status checkInt(int64_t value);
-    Status setInt(int64_t value);
+    int64_t getValue() const { return mValue; }
+    Status checkValue(int64_t value);
+    Status setValue(int64_t value);
 
 private:
     int64_t mValue;
@@ -58,12 +70,25 @@ public:
     ResourceUint(Resource* parent);
     ~ResourceUint();
 
-    uint64_t getUint() const { return mValue; }
-    Status checkUint(uint64_t value);
-    Status setUint(uint64_t value);
+    uint64_t getValue() const { return mValue; }
+    Status checkValue(uint64_t value);
+    Status setValue(uint64_t value);
 
 private:
     uint64_t mValue;
+};
+
+class ResourceFloat : public ResourceInstance {
+public:
+    ResourceFloat(Resource* parent);
+    ~ResourceFloat();
+
+    uint64_t getValue() const { return mValue; }
+    Status checkValue(double value);
+    Status setValue(double value);
+
+private:
+    double mValue;
 };
 
 class ResourceBool : public ResourceInstance {
@@ -71,8 +96,8 @@ public:
     ResourceBool(Resource* parent);
     ~ResourceBool();
 
-    uint8_t getBool() const { return mValue; }
-    Status setBool(uint8_t value);
+    uint8_t getValue() const { return mValue; }
+    Status setValue(uint8_t value);
 
 private:
     uint8_t mValue;

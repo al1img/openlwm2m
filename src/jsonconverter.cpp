@@ -23,11 +23,11 @@ JsonConverter::~JsonConverter()
 {
 }
 
-Status JsonConverter::startDecoding(const char* path, void* data, size_t size)
+Status JsonConverter::startDecoding(void* data, size_t size)
 {
     Status status = STS_OK;
 
-    LOG_DEBUG("Start decoding, path: %s, size: %zu", path, size);
+    LOG_DEBUG("Start decoding, size: %zu", size);
 
     mDecodingPos = static_cast<char*>(data);
     mDecodingEndPos = mDecodingPos + size;

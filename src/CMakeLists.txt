@@ -11,18 +11,18 @@ include_directories(
 ################################################################################
 
 set(SOURCES
-#	client.cpp
 	jsonconverter.cpp
 	object.cpp
 	objectinstance.cpp
-#	objectmanager.cpp
-#	reghandler.cpp
+	objectmanager.cpp
 	resource.cpp
-#	resourcedesc.cpp
 	resourceinstance.cpp
 	textconverter.cpp
-#	timer.cpp
 	utils.cpp
+#	client.cpp
+#	reghandler.cpp
+#	resourcedesc.cpp
+#	timer.cpp
 )
 
 ################################################################################

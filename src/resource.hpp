@@ -38,6 +38,11 @@
 #define RES_SEQUENCE_DELAY_TIMER        19
 #define RES_SEQUENCE_RETRY_COUNT        20
 
+// LwM2M Object: Device
+#define RES_REBOOT                      4
+#define RES_ERR_CODE                    11
+#define RES_BINDING_AND_MODES           16
+
 // clang-format on
 
 namespace openlwm2m {
@@ -111,6 +116,10 @@ public:
     ResourceInstance* getNextInstance();
 
     ResourceInfo& getInfo() const { return mInfo; }
+
+    Status write(DataConverter* converter, bool checkOperation = false, bool replace = false);
+
+    Status read(DataConverter* converter, bool checkOperation = false);
 
 private:
     ResourceInfo& mInfo;

@@ -63,7 +63,7 @@ void testDecoding(DataConverter* converter, const char* path, void* data, size_t
     Status status = STS_OK;
     DataConverter::ResourceData resource;
 
-    status = converter->startDecoding(path, data, size);
+    status = converter->startDecoding(data, size);
     REQUIRE(status == STS_OK);
 
     for (size_t i = 0; i < count; i++) {
