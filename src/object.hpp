@@ -2,6 +2,7 @@
 #define OPENLWM2M_OBJECT_HPP_
 
 #include <stdint.h>
+#include <cfloat>
 #include <climits>
 
 #include "interface.hpp"
@@ -43,6 +44,9 @@ public:
     Status createResourceUint(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
                               uint64_t min = 0, uint64_t max = ULONG_MAX, ResourceInfo::ValueChangeCbk callback = 0,
                               void* context = NULL);
+    Status createResourceFloat(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
+                               double min = -DBL_MAX, double max = DBL_MAX, ResourceInfo::ValueChangeCbk callback = 0,
+                               void* context = NULL);
     Status createResourceBool(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
                               ResourceInfo::ValueChangeCbk callback = 0, void* context = NULL);
     Status createResourceOpaque(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,

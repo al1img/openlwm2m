@@ -84,6 +84,14 @@ Status Object::createResourceUint(uint16_t id, uint16_t operations, bool single,
                           (ResourceInfo::Min){.minUint = min}, (ResourceInfo::Max){.maxUint = max}, callback, context);
 }
 
+Status Object::createResourceFloat(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances,
+                                   double min, double max, ResourceInfo::ValueChangeCbk callback, void* context)
+{
+    return createResource(id, operations, DATA_TYPE_FLOAT, single, mandatory, maxInstances,
+                          (ResourceInfo::Min){.minFloat = min}, (ResourceInfo::Max){.maxFloat = max}, callback,
+                          context);
+}
+
 Status Object::createResourceBool(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances,
                                   ResourceInfo::ValueChangeCbk callback, void* context)
 {
@@ -283,8 +291,8 @@ Status Object::createResource(uint16_t id, uint16_t operations, DataType type, b
 
     // Appendix D.1
     // Resource which supports “Execute” operation MUST have “Single” as value of the “Instances” field.
-    if (operations & OP_EXECUTE && !single) {
-        return STS_ERR_INVALID_VALUE;
+    if (operations & OP_EXECUTE) {
+        single = true;
     }
 
     if (single) {

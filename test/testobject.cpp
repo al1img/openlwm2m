@@ -180,38 +180,46 @@ TEST_CASE("test object write", "[object]")
     status = object.createResourceInt(1, OP_READWRITE, true, true);
     REQUIRE(status == STS_OK);
 
+    status = object.createResourceFloat(2, OP_READ, true, true);
+    REQUIRE(status == STS_OK);
+
+    status = object.createResourceUint(3, OP_READWRITE, false, false, 10);
+    REQUIRE(status == STS_OK);
+
     object.init();
 
-    JsonConverter writeConverter;
+    char readBuffer[1500];
 
-    const char* writeData =
-        "[\
+    JsonConverter writeConverter;
+    JsonConverter readConverter;
+
+    SECTION("write update")
+    {
+        const char* writeData =
+            "[\
 {\"bn\":\"/2/0/\",\"n\":\"0\",\"vs\":\"test string\"},\
 {\"n\":\"1\",\"v\":10}\
 ]";
 
-    status = writeConverter.startDecoding(reinterpret_cast<void*>(const_cast<char*>(writeData)), strlen(writeData));
-    CHECK(status == STS_OK);
+        status = writeConverter.startDecoding(reinterpret_cast<void*>(const_cast<char*>(writeData)), strlen(writeData));
+        CHECK(status == STS_OK);
 
-    status = object.write(&writeConverter);
-    CHECK(status == STS_OK);
+        status = object.write(&writeConverter);
+        CHECK(status == STS_OK);
 
-    JsonConverter readConverter;
+        status = readConverter.startEncoding(readBuffer, sizeof(readBuffer) - 1);
+        REQUIRE(status == STS_OK);
 
-    char readData[1500];
+        status = object.read(&readConverter);
+        CHECK(status == STS_OK);
 
-    status = readConverter.startEncoding(readData, sizeof(readData) - 1);
-    REQUIRE(status == STS_OK);
+        size_t size;
+        status = readConverter.finishEncoding(&size);
+        REQUIRE(status == STS_OK);
+        readBuffer[size] = '\0';
 
-    status = object.read(&readConverter);
-    CHECK(status == STS_OK);
-
-    size_t size;
-    status = readConverter.finishEncoding(&size);
-    REQUIRE(status == STS_OK);
-    readData[size] = '\0';
-
-    CHECK(strcmp(writeData, readData) == 0);
+        CHECK(strcmp(writeData, readBuffer) == 0);
+    }
 
     object.release();
 }
