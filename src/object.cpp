@@ -180,12 +180,8 @@ Status Object::write(DataConverter* converter, bool checkOperation, bool ignoreM
     LOG_DEBUG("Write /%d", getId());
 
     if (replace) {
-        mInstanceStorage.clear();
-
-        if (mSingle && mMandatory) {
-            ObjectInstance* instance = createInstance(0);
-            ASSERT(instance);
-        }
+        release();
+        init();
     }
 
     while ((status = converter->nextDecoding(&resourceData)) == STS_OK) {
