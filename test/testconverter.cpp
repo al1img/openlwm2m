@@ -57,8 +57,8 @@ bool compareResourceData(DataConverter::ResourceData* data1, DataConverter::Reso
     }
 }
 
-void testDecoding(DataConverter* converter, const char* path, void* data, size_t size,
-                  DataConverter::ResourceData* resources, size_t count)
+void testDecoding(DataConverter* converter, void* data, size_t size, DataConverter::ResourceData* resources,
+                  size_t count)
 {
     Status status = STS_OK;
     DataConverter::ResourceData resource;
@@ -139,7 +139,7 @@ TEST_CASE("test jsonconverter", "[converter]")
         {3, 0, 16, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("U")}},
     };
 
-    testDecoding(&converter, "", reinterpret_cast<void*>(const_cast<char*>(jsonData1)), strlen(jsonData1), testData1,
+    testDecoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData1)), strlen(jsonData1), testData1,
                  sizeof(testData1) / sizeof(DataConverter::ResourceData));
     testEncoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData1)), strlen(jsonData1), testData1,
                  sizeof(testData1) / sizeof(DataConverter::ResourceData));
@@ -159,7 +159,7 @@ TEST_CASE("test jsonconverter", "[converter]")
         {72, 1, 2, INVALID_ID, DATA_TYPE_FLOAT, 25462629 - 45, {.floatValue = 24.1}},
     };
 
-    testDecoding(&converter, "", reinterpret_cast<void*>(const_cast<char*>(jsonData2)), strlen(jsonData2), testData2,
+    testDecoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData2)), strlen(jsonData2), testData2,
                  sizeof(testData2) / sizeof(DataConverter::ResourceData));
     testEncoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData2)), strlen(jsonData2), testData2,
                  sizeof(testData2) / sizeof(DataConverter::ResourceData));
@@ -197,7 +197,7 @@ TEST_CASE("test jsonconverter", "[converter]")
         {67, 0, 1, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("85.76.255.255")}},
     };
 
-    testDecoding(&converter, "", reinterpret_cast<void*>(const_cast<char*>(jsonData3)), strlen(jsonData3), testData3,
+    testDecoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData3)), strlen(jsonData3), testData3,
                  sizeof(testData3) / sizeof(DataConverter::ResourceData));
     testEncoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData3)), strlen(jsonData3), testData3,
                  sizeof(testData3) / sizeof(DataConverter::ResourceData));
@@ -212,7 +212,7 @@ TEST_CASE("test jsonconverter", "[converter]")
         {3, 0, 0, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("Open Mobile Alliance")}},
     };
 
-    testDecoding(&converter, "", reinterpret_cast<void*>(const_cast<char*>(jsonData4)), strlen(jsonData4), testData4,
+    testDecoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData4)), strlen(jsonData4), testData4,
                  sizeof(testData4) / sizeof(DataConverter::ResourceData));
     testEncoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData4)), strlen(jsonData4), testData4,
                  sizeof(testData4) / sizeof(DataConverter::ResourceData));
@@ -229,7 +229,7 @@ TEST_CASE("test jsonconverter", "[converter]")
         {1, 0, 1, INVALID_ID},
     };
 
-    testDecoding(&converter, "", reinterpret_cast<void*>(const_cast<char*>(jsonData5)), strlen(jsonData5), testData5,
+    testDecoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData5)), strlen(jsonData5), testData5,
                  sizeof(testData5) / sizeof(DataConverter::ResourceData));
     testEncoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData5)), strlen(jsonData5), testData5,
                  sizeof(testData5) / sizeof(DataConverter::ResourceData));
@@ -249,7 +249,7 @@ TEST_CASE("test jsonconverter", "[converter]")
         {1, 0, 1, INVALID_ID, DATA_TYPE_FLOAT, 0, {.floatValue = 86400}},
     };
 
-    testDecoding(&converter, "", reinterpret_cast<void*>(const_cast<char*>(jsonData6)), strlen(jsonData6), testData6,
+    testDecoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData6)), strlen(jsonData6), testData6,
                  sizeof(testData6) / sizeof(DataConverter::ResourceData));
     testEncoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData6)), strlen(jsonData6), testData6,
                  sizeof(testData6) / sizeof(DataConverter::ResourceData));
@@ -271,7 +271,7 @@ TEST_CASE("test jsonconverter", "[converter]")
         {3308, 0, 5900, INVALID_ID, DATA_TYPE_FLOAT, 0, {.floatValue = 18}},
     };
 
-    testDecoding(&converter, "", reinterpret_cast<void*>(const_cast<char*>(jsonData7)), strlen(jsonData7), testData7,
+    testDecoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData7)), strlen(jsonData7), testData7,
                  sizeof(testData7) / sizeof(DataConverter::ResourceData));
     testEncoding(&converter, reinterpret_cast<void*>(const_cast<char*>(jsonData7)), strlen(jsonData7), testData7,
                  sizeof(testData7) / sizeof(DataConverter::ResourceData));
@@ -288,11 +288,11 @@ TEST_CASE("test textconverter", "[converter]")
     const char* textData1 = "123";
 
     DataConverter::ResourceData testData1[] = {
-        {1, 0, 0, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("123")}},
+        {INVALID_ID, INVALID_ID, INVALID_ID, INVALID_ID, DATA_TYPE_STRING, 0, {.strValue = const_cast<char*>("123")}},
     };
 
-    testDecoding(&converter, "/1/0/0", reinterpret_cast<void*>(const_cast<char*>(textData1)), strlen(textData1),
-                 testData1, sizeof(testData1) / sizeof(DataConverter::ResourceData));
+    testDecoding(&converter, reinterpret_cast<void*>(const_cast<char*>(textData1)), strlen(textData1), testData1,
+                 sizeof(testData1) / sizeof(DataConverter::ResourceData));
     testEncoding(&converter, reinterpret_cast<void*>(const_cast<char*>(textData1)), strlen(textData1), testData1,
                  sizeof(testData1) / sizeof(DataConverter::ResourceData));
 }
