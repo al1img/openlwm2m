@@ -107,11 +107,10 @@ Status Object::createResourceOpaque(uint16_t id, uint16_t operations, bool singl
                           context);
 }
 
-Status Object::createResourceNone(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances,
-                                  ResourceInfo::Callback callback, void* context)
+Status Object::createExecutableResource(uint16_t id, bool mandatory, ResourceInfo::Callback callback, void* context)
 {
-    return createResource(id, operations, DATA_TYPE_NONE, single, mandatory, maxInstances,
-                          (ResourceInfo::Min){.minUint = 0}, (ResourceInfo::Max){.maxUint = 0}, callback, context);
+    return createResource(id, OP_EXECUTE, DATA_TYPE_NONE, true, mandatory, 1, (ResourceInfo::Min){.minUint = 0},
+                          (ResourceInfo::Max){.maxUint = 0}, callback, context);
 }
 
 ObjectInstance* Object::createInstance(uint16_t id, Status* status)

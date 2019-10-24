@@ -389,7 +389,7 @@ void ObjectManager::createServerObject()
     status = object->createResourceString(RES_BINDING, OP_READWRITE, true, true, 1, CONFIG_BINDING_STR_MAX_LEN);
     ASSERT(status == STS_OK);
     // Registration Update Trigger
-    status = object->createResourceNone(RES_REGISTRATION_UPDATE_TRIGGER, OP_EXECUTE, true, true);
+    status = object->createExecutableResource(RES_REGISTRATION_UPDATE_TRIGGER, true);
     ASSERT(status == STS_OK);
 
 #if CONFIG_MINIMAL_CLIENT == 0
@@ -427,7 +427,7 @@ void ObjectManager::createDeviceObject()
     Object* object = createObject(OBJ_DEVICE, ITF_ALL, true, true);
     ASSERT(object);
     // Reboot
-    status = object->createResourceNone(RES_REBOOT, OP_EXECUTE, true, true);
+    status = object->createExecutableResource(RES_REBOOT, true);
     ASSERT(status == STS_OK);
     // Error Code
     status = object->createResourceInt(RES_ERR_CODE, OP_READ, false, true, CONFIG_ERR_CODE_MAX_SIZE, 0, 8);

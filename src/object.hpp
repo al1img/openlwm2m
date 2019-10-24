@@ -52,8 +52,8 @@ public:
     Status createResourceOpaque(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
                                 size_t minSize = 0, size_t maxSize = 0, ResourceInfo::Callback callback = 0,
                                 void* context = NULL);
-    Status createResourceNone(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
-                              ResourceInfo::Callback callback = 0, void* context = NULL);
+    Status createExecutableResource(uint16_t id, bool mandatory = true, ResourceInfo::Callback callback = 0,
+                                    void* context = NULL);
 
     Status setResourceCallback(uint16_t resourceId, ResourceInfo::Callback callback, void* context);
 

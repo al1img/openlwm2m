@@ -135,7 +135,7 @@ TEST_CASE("test create resources", "[object]")
     status = object.createResourceOpaque(testData[4].id, testData[4].operations, true, true);
     CHECK(status == STS_OK);
 
-    status = object.createResourceNone(testData[5].id, testData[5].operations, true, true);
+    status = object.createExecutableResource(testData[5].id, true);
     CHECK(status == STS_OK);
 
     object.init();
