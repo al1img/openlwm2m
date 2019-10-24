@@ -53,6 +53,10 @@ void ResourceInstance::valueChanged()
 
 Status ResourceInstance::write(DataConverter::ResourceData* resourceData)
 {
+    if (getResource()->getInfo().checkOperation(OP_EXECUTE)) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
     switch (resourceData->dataType) {
         case DATA_TYPE_STRING:
             return writeString(resourceData->strValue);

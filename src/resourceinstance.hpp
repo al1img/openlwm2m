@@ -83,7 +83,7 @@ public:
     ResourceFloat(Resource* parent);
     ~ResourceFloat();
 
-    uint64_t getValue() const { return mValue; }
+    double getValue() const { return mValue; }
     Status checkValue(double value);
     Status setValue(double value);
 

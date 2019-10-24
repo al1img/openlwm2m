@@ -168,11 +168,54 @@ TEST_CASE("test create resources", "[object]")
     object.release();
 }
 
+struct TestData {
+    const char* writeData;
+    const char* readData;
+    Status status;
+};
+
+void testReadWrite(Object* object, TestData* testData, size_t size, bool checkOperation, bool ignoreMissing,
+                   bool replace)
+{
+    Status status = STS_OK;
+    JsonConverter writeConverter, readConverter;
+    char readBuffer[1500];
+
+    for (size_t i = 0; i < size; i++) {
+        if (testData[i].writeData != NULL) {
+            status = writeConverter.startDecoding(reinterpret_cast<void*>(const_cast<char*>(testData[i].writeData)),
+                                                  strlen(testData[i].writeData));
+            CHECK(status == STS_OK);
+
+            status = object->write(&writeConverter);
+            CHECK(status == testData[i].status);
+        }
+
+        if (testData[i].readData != NULL) {
+            status = readConverter.startEncoding(readBuffer, sizeof(readBuffer) - 1);
+            REQUIRE(status == STS_OK);
+
+            status = object->read(&readConverter);
+            CHECK(status == STS_OK);
+
+            size_t size;
+            status = readConverter.finishEncoding(&size);
+            REQUIRE(status == STS_OK);
+            readBuffer[size] = '\0';
+
+            printf("%s\n", readBuffer);
+            printf("%s\n", testData[i].readData);
+
+            CHECK(strcmp(testData[i].readData, readBuffer) == 0);
+        }
+    }
+}
+
 TEST_CASE("test object write", "[object]")
 {
     Status status = STS_OK;
 
-    Object object(2, ITF_ALL, true, true);
+    Object object(2, ITF_ALL, false, false, 5);
 
     status = object.createResourceString(0, OP_READWRITE, true, true);
     REQUIRE(status == STS_OK);
@@ -183,44 +226,151 @@ TEST_CASE("test object write", "[object]")
     status = object.createResourceFloat(2, OP_READ, true, true);
     REQUIRE(status == STS_OK);
 
-    status = object.createResourceUint(3, OP_READWRITE, false, false, 10);
+    status = object.createResourceBool(3, OP_READWRITE, true, false);
+    REQUIRE(status == STS_OK);
+
+    status = object.createResourceUint(4, OP_READWRITE, false, false, 10);
+    REQUIRE(status == STS_OK);
+
+    status = object.createExecutableResource(5, true);
     REQUIRE(status == STS_OK);
 
     object.init();
 
-    char readBuffer[1500];
-
-    JsonConverter writeConverter;
-    JsonConverter readConverter;
-
     SECTION("write update")
     {
-        const char* writeData =
-            "[\
+        TestData testData[] = {
+            {// Write resources 0, 1
+             "[\
 {\"bn\":\"/2/0/\",\"n\":\"0\",\"vs\":\"test string\"},\
 {\"n\":\"1\",\"v\":10}\
-]";
+]",
+             "[\
+{\"bn\":\"/2/0/\",\"n\":\"0\",\"vs\":\"test string\"},\
+{\"n\":\"1\",\"v\":10},\
+{\"n\":\"2\",\"v\":0}\
+]",
+             STS_OK},
+            {// Write resources 2, 3
+             "[\
+{\"bn\":\"/2/0/\",\"n\":\"2\",\"v\":3.2},\
+{\"n\":\"3\",\"vb\":true}\
+]",
+             "[\
+{\"bn\":\"/2/0/\",\"n\":\"0\",\"vs\":\"test string\"},\
+{\"n\":\"1\",\"v\":10},\
+{\"n\":\"2\",\"v\":3.2},\
+{\"n\":\"3\",\"vb\":true}\
+]",
+             STS_OK},
+            {// Write resources 4, instances 2, 5, 8
+             "[\
+{\"bn\":\"/2/0/\",\"n\":\"4/2\",\"v\":45},\
+{\"n\":\"4/5\",\"v\":89},\
+{\"n\":\"4/8\",\"v\":21}\
+]",
+             "[\
+{\"bn\":\"/2/0/\",\"n\":\"0\",\"vs\":\"test string\"},\
+{\"n\":\"1\",\"v\":10},\
+{\"n\":\"2\",\"v\":3.2},\
+{\"n\":\"3\",\"vb\":true},\
+{\"n\":\"4/2\",\"v\":45},\
+{\"n\":\"4/5\",\"v\":89},\
+{\"n\":\"4/8\",\"v\":21}\
+]",
+             STS_OK},
+            {// Write resources 4, instances 4, 12, 0
+             "[\
+{\"bn\":\"/2/0/\",\"n\":\"4/4\",\"v\":456},\
+{\"n\":\"4/12\",\"v\":928},\
+{\"n\":\"4/0\",\"v\":234}\
+]",
+             "[\
+{\"bn\":\"/2/0/\",\"n\":\"0\",\"vs\":\"test string\"},\
+{\"n\":\"1\",\"v\":10},\
+{\"n\":\"2\",\"v\":3.2},\
+{\"n\":\"3\",\"vb\":true},\
+{\"n\":\"4/0\",\"v\":234},\
+{\"n\":\"4/2\",\"v\":45},\
+{\"n\":\"4/4\",\"v\":456},\
+{\"n\":\"4/5\",\"v\":89},\
+{\"n\":\"4/8\",\"v\":21},\
+{\"n\":\"4/12\",\"v\":928}\
+]",
+             STS_OK},
+            {// Try write executable resource 5
+             "[\
+{\"bn\":\"/2/0/\",\"n\":\"5\",\"v\":1023}\
+]",
+             "[\
+{\"bn\":\"/2/0/\",\"n\":\"0\",\"vs\":\"test string\"},\
+{\"n\":\"1\",\"v\":10},\
+{\"n\":\"2\",\"v\":3.2},\
+{\"n\":\"3\",\"vb\":true},\
+{\"n\":\"4/0\",\"v\":234},\
+{\"n\":\"4/2\",\"v\":45},\
+{\"n\":\"4/4\",\"v\":456},\
+{\"n\":\"4/5\",\"v\":89},\
+{\"n\":\"4/8\",\"v\":21},\
+{\"n\":\"4/12\",\"v\":928}\
+]",
+             STS_ERR_NOT_ALLOWED},
+            {// Write missing resource 6
+             "[\
+{\"bn\":\"/2/0/\",\"n\":\"6\",\"v\":324.5}\
+]",
+             "[\
+{\"bn\":\"/2/0/\",\"n\":\"0\",\"vs\":\"test string\"},\
+{\"n\":\"1\",\"v\":10},\
+{\"n\":\"2\",\"v\":3.2},\
+{\"n\":\"3\",\"vb\":true},\
+{\"n\":\"4/0\",\"v\":234},\
+{\"n\":\"4/2\",\"v\":45},\
+{\"n\":\"4/4\",\"v\":456},\
+{\"n\":\"4/5\",\"v\":89},\
+{\"n\":\"4/8\",\"v\":21},\
+{\"n\":\"4/12\",\"v\":928}\
+]",
+             STS_OK},
+            {// Write instance 1
+             "[\
+{\"bn\":\"/2/1/\",\"n\":\"0\",\"vs\":\"simple string\"},\
+{\"n\":\"1\",\"v\":19},\
+{\"n\":\"2\",\"v\":6.8},\
+{\"n\":\"3\",\"vb\":false},\
+{\"n\":\"4/1\",\"v\":10234},\
+{\"n\":\"4/3\",\"v\":596},\
+{\"n\":\"4/7\",\"v\":12},\
+{\"n\":\"4/9\",\"v\":2355},\
+{\"n\":\"4/24\",\"v\":22004},\
+{\"n\":\"4/120\",\"v\":3450}\
+]",
+             "[\
+{\"bn\":\"/2/0/\",\"n\":\"0\",\"vs\":\"test string\"},\
+{\"n\":\"1\",\"v\":10},\
+{\"n\":\"2\",\"v\":3.2},\
+{\"n\":\"3\",\"vb\":true},\
+{\"n\":\"4/0\",\"v\":234},\
+{\"n\":\"4/2\",\"v\":45},\
+{\"n\":\"4/4\",\"v\":456},\
+{\"n\":\"4/5\",\"v\":89},\
+{\"n\":\"4/8\",\"v\":21},\
+{\"n\":\"4/12\",\"v\":928},\
+{\"bn\":\"/2/1/\",\"n\":\"0\",\"vs\":\"simple string\"},\
+{\"n\":\"1\",\"v\":19},\
+{\"n\":\"2\",\"v\":6.8},\
+{\"n\":\"3\",\"vb\":false},\
+{\"n\":\"4/1\",\"v\":10234},\
+{\"n\":\"4/3\",\"v\":596},\
+{\"n\":\"4/7\",\"v\":12},\
+{\"n\":\"4/9\",\"v\":2355},\
+{\"n\":\"4/24\",\"v\":22004},\
+{\"n\":\"4/120\",\"v\":3450}\
+]",
+             STS_OK},
+        };
 
-        status = writeConverter.startDecoding(reinterpret_cast<void*>(const_cast<char*>(writeData)), strlen(writeData));
-        CHECK(status == STS_OK);
-
-        status = object.write(&writeConverter);
-        CHECK(status == STS_OK);
-
-        status = readConverter.startEncoding(readBuffer, sizeof(readBuffer) - 1);
-        REQUIRE(status == STS_OK);
-
-        status = object.read(&readConverter);
-        CHECK(status == STS_OK);
-
-        size_t size;
-        status = readConverter.finishEncoding(&size);
-        REQUIRE(status == STS_OK);
-        readBuffer[size] = '\0';
-
-        printf(readBuffer);
-
-        CHECK(strcmp(writeData, readBuffer) == 0);
+        testReadWrite(&object, testData, sizeof(testData) / sizeof(TestData), false, true, false);
     }
 
     object.release();
