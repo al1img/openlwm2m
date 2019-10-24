@@ -51,7 +51,7 @@ class ObjectInstance;
 
 class ResourceInfo : public ItemBase {
 public:
-    typedef void (*ValueChangeCbk)(void* context, ResourceInstance* resourceInstance);
+    typedef void (*Callback)(void* context, ResourceInstance* resourceInstance);
     typedef Lwm2mStaticStorage<ResourceInfo> Storage;
 
     union Min {
@@ -73,7 +73,7 @@ public:
     void init();
     void release();
 
-    void setValueChangedCbk(ValueChangeCbk callback, void* context);
+    void setCallback(Callback callback, void* context);
     void valueChanged(ResourceInstance* instance);
 
     bool isSingle() const { return mSingle; }
@@ -92,7 +92,7 @@ private:
     size_t mMaxInstances;
     Min mMin;
     Max mMax;
-    ValueChangeCbk mCallback;
+    Callback mCallback;
     void* mContext;
 };
 

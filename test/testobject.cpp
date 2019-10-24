@@ -218,6 +218,8 @@ TEST_CASE("test object write", "[object]")
         REQUIRE(status == STS_OK);
         readBuffer[size] = '\0';
 
+        printf(readBuffer);
+
         CHECK(strcmp(writeData, readBuffer) == 0);
     }
 

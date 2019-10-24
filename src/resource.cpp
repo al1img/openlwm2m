@@ -40,7 +40,7 @@ void ResourceInfo::release()
 {
 }
 
-void ResourceInfo::setValueChangedCbk(ValueChangeCbk callback, void* context)
+void ResourceInfo::setCallback(Callback callback, void* context)
 {
     mCallback = callback;
     mContext = context;

@@ -36,7 +36,7 @@ TEST_CASE("test resource info", "[resource]")
         cbkInstance = resourceInstance;
     };
 
-    info.setValueChangedCbk(
+    info.setCallback(
         [](void* context, ResourceInstance* resourceInstance) {
             (*static_cast<decltype(handler)*>(context))(context, resourceInstance);
         },

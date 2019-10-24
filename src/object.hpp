@@ -36,26 +36,26 @@ public:
     void release();
 
     Status createResourceString(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
-                                size_t maxLen = CONFIG_DEFAULT_STRING_LEN, ResourceInfo::ValueChangeCbk callback = 0,
+                                size_t maxLen = CONFIG_DEFAULT_STRING_LEN, ResourceInfo::Callback callback = 0,
                                 void* context = NULL);
     Status createResourceInt(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
-                             int64_t min = LONG_MIN, int64_t max = LONG_MAX, ResourceInfo::ValueChangeCbk callback = 0,
+                             int64_t min = LONG_MIN, int64_t max = LONG_MAX, ResourceInfo::Callback callback = 0,
                              void* context = NULL);
     Status createResourceUint(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
-                              uint64_t min = 0, uint64_t max = ULONG_MAX, ResourceInfo::ValueChangeCbk callback = 0,
+                              uint64_t min = 0, uint64_t max = ULONG_MAX, ResourceInfo::Callback callback = 0,
                               void* context = NULL);
     Status createResourceFloat(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
-                               double min = -DBL_MAX, double max = DBL_MAX, ResourceInfo::ValueChangeCbk callback = 0,
+                               double min = -DBL_MAX, double max = DBL_MAX, ResourceInfo::Callback callback = 0,
                                void* context = NULL);
     Status createResourceBool(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
-                              ResourceInfo::ValueChangeCbk callback = 0, void* context = NULL);
+                              ResourceInfo::Callback callback = 0, void* context = NULL);
     Status createResourceOpaque(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
-                                size_t minSize = 0, size_t maxSize = 0, ResourceInfo::ValueChangeCbk callback = 0,
+                                size_t minSize = 0, size_t maxSize = 0, ResourceInfo::Callback callback = 0,
                                 void* context = NULL);
     Status createResourceNone(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances = 1,
-                              ResourceInfo::ValueChangeCbk callback = 0, void* context = NULL);
+                              ResourceInfo::Callback callback = 0, void* context = NULL);
 
-    Status setResourceChangedCbk(uint16_t resourceId, ResourceInfo::ValueChangeCbk callback, void* context);
+    Status setResourceCallback(uint16_t resourceId, ResourceInfo::Callback callback, void* context);
 
     bool checkInterface(Interface interface) const { return interface == ITF_CLIENT ? true : mInterfaces & interface; };
 
@@ -95,7 +95,7 @@ private:
 
     Status createResource(uint16_t id, uint16_t operations, DataType type, bool single, bool mandatory,
                           size_t maxInstances, ResourceInfo::Min min, ResourceInfo::Max max,
-                          ResourceInfo::ValueChangeCbk callback, void* context);
+                          ResourceInfo::Callback callback, void* context);
 };
 
 }  // namespace openlwm2m

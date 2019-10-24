@@ -64,28 +64,28 @@ void Object::release()
 }
 
 Status Object::createResourceString(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances,
-                                    size_t maxLen, ResourceInfo::ValueChangeCbk callback, void* context)
+                                    size_t maxLen, ResourceInfo::Callback callback, void* context)
 {
     return createResource(id, operations, DATA_TYPE_STRING, single, mandatory, maxInstances,
                           (ResourceInfo::Min){.minUint = 0}, (ResourceInfo::Max){.maxUint = maxLen}, callback, context);
 }
 
 Status Object::createResourceInt(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances,
-                                 int64_t min, int64_t max, ResourceInfo::ValueChangeCbk callback, void* context)
+                                 int64_t min, int64_t max, ResourceInfo::Callback callback, void* context)
 {
     return createResource(id, operations, DATA_TYPE_INT, single, mandatory, maxInstances,
                           (ResourceInfo::Min){.minInt = min}, (ResourceInfo::Max){.maxInt = max}, callback, context);
 }
 
 Status Object::createResourceUint(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances,
-                                  uint64_t min, uint64_t max, ResourceInfo::ValueChangeCbk callback, void* context)
+                                  uint64_t min, uint64_t max, ResourceInfo::Callback callback, void* context)
 {
     return createResource(id, operations, DATA_TYPE_UINT, single, mandatory, maxInstances,
                           (ResourceInfo::Min){.minUint = min}, (ResourceInfo::Max){.maxUint = max}, callback, context);
 }
 
 Status Object::createResourceFloat(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances,
-                                   double min, double max, ResourceInfo::ValueChangeCbk callback, void* context)
+                                   double min, double max, ResourceInfo::Callback callback, void* context)
 {
     return createResource(id, operations, DATA_TYPE_FLOAT, single, mandatory, maxInstances,
                           (ResourceInfo::Min){.minFloat = min}, (ResourceInfo::Max){.maxFloat = max}, callback,
@@ -93,15 +93,14 @@ Status Object::createResourceFloat(uint16_t id, uint16_t operations, bool single
 }
 
 Status Object::createResourceBool(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances,
-                                  ResourceInfo::ValueChangeCbk callback, void* context)
+                                  ResourceInfo::Callback callback, void* context)
 {
     return createResource(id, operations, DATA_TYPE_BOOL, single, mandatory, maxInstances,
                           (ResourceInfo::Min){.minUint = 0}, (ResourceInfo::Max){.maxUint = 0}, callback, context);
 }
 
 Status Object::createResourceOpaque(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances,
-                                    size_t minSize, size_t maxSize, ResourceInfo::ValueChangeCbk callback,
-                                    void* context)
+                                    size_t minSize, size_t maxSize, ResourceInfo::Callback callback, void* context)
 {
     return createResource(id, operations, DATA_TYPE_OPAQUE, single, mandatory, maxInstances,
                           (ResourceInfo::Min){.minUint = minSize}, (ResourceInfo::Max){.maxUint = maxSize}, callback,
@@ -109,7 +108,7 @@ Status Object::createResourceOpaque(uint16_t id, uint16_t operations, bool singl
 }
 
 Status Object::createResourceNone(uint16_t id, uint16_t operations, bool single, bool mandatory, size_t maxInstances,
-                                  ResourceInfo::ValueChangeCbk callback, void* context)
+                                  ResourceInfo::Callback callback, void* context)
 {
     return createResource(id, operations, DATA_TYPE_NONE, single, mandatory, maxInstances,
                           (ResourceInfo::Min){.minUint = 0}, (ResourceInfo::Max){.maxUint = 0}, callback, context);
@@ -167,7 +166,7 @@ ResourceInstance* Object::getResourceInstance(uint16_t objInstanceId, uint16_t r
     return objInstance->getResourceInstance(resId, resInstanceId);
 }
 
-Status Object::setResourceChangedCbk(uint16_t resourceId, ResourceInfo::ValueChangeCbk callback, void* context)
+Status Object::setResourceCallback(uint16_t resourceId, ResourceInfo::Callback callback, void* context)
 {
     ResourceInfo* info = mResourceInfoStorage.getItemById(resourceId);
 
@@ -175,7 +174,7 @@ Status Object::setResourceChangedCbk(uint16_t resourceId, ResourceInfo::ValueCha
         return STS_ERR_NOT_FOUND;
     }
 
-    info->setValueChangedCbk(callback, context);
+    info->setCallback(callback, context);
 
     return STS_OK;
 }
@@ -283,7 +282,7 @@ Status Object::read(DataConverter* converter, bool checkOperation)
 
 Status Object::createResource(uint16_t id, uint16_t operations, DataType type, bool single, bool mandatory,
                               size_t maxInstances, ResourceInfo::Min min, ResourceInfo::Max max,
-                              ResourceInfo::ValueChangeCbk callback, void* context)
+                              ResourceInfo::Callback callback, void* context)
 {
     if (mInitialized) {
         return STS_ERR_NOT_ALLOWED;
@@ -303,7 +302,7 @@ Status Object::createResource(uint16_t id, uint16_t operations, DataType type, b
 
     ResourceInfo* info = new ResourceInfo(id, operations, type, single, mandatory, maxInstances, min, max);
 
-    info->setValueChangedCbk(callback, context);
+    info->setCallback(callback, context);
 
     Status status = STS_OK;
 
