@@ -187,7 +187,7 @@ void testReadWrite(Object* object, TestData* testData, size_t size, bool checkOp
                                                   strlen(testData[i].writeData));
             CHECK(status == STS_OK);
 
-            status = object->write(&writeConverter);
+            status = object->write(&writeConverter, checkOperation, ignoreMissing, replace);
             CHECK(status == testData[i].status);
         }
 
@@ -203,8 +203,9 @@ void testReadWrite(Object* object, TestData* testData, size_t size, bool checkOp
             REQUIRE(status == STS_OK);
             readBuffer[size] = '\0';
 
-            printf("%s\n", readBuffer);
-            printf("%s\n", testData[i].readData);
+            printf("Index: %zu\n", i);
+            printf("Read: %s\n", readBuffer);
+            printf("Test: %s\n", testData[i].readData);
 
             CHECK(strcmp(testData[i].readData, readBuffer) == 0);
         }
