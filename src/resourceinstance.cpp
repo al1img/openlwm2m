@@ -32,6 +32,36 @@ void ResourceInstance::init()
     LOG_DEBUG("Create /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(), getParent()->getParent()->getId(),
               getParent()->getId(), getId());
 
+    switch (getResource()->getInfo().getType()) {
+        case DATA_TYPE_STRING:
+            static_cast<ResourceString*>(this)->setValue("");
+            break;
+
+        case DATA_TYPE_INT:
+            static_cast<ResourceInt*>(this)->setValue(0);
+            break;
+
+        case DATA_TYPE_UINT:
+            static_cast<ResourceUint*>(this)->setValue(0);
+            break;
+
+        case DATA_TYPE_FLOAT:
+            static_cast<ResourceFloat*>(this)->setValue(0.0);
+            break;
+
+        case DATA_TYPE_BOOL:
+            static_cast<ResourceBool*>(this)->setValue(0);
+
+        // TODO:
+        case DATA_TYPE_OPAQUE:
+        case DATA_TYPE_TIME:
+        case DATA_TYPE_OBJLINK:
+        case DATA_TYPE_CORELINK:
+
+        default:
+            break;
+    }
+
     valueChanged();
 }
 
