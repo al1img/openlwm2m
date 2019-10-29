@@ -129,6 +129,33 @@ ResourceInstance* Resource::getNextInstance()
 
 Status Resource::write(DataConverter* converter, bool checkOperation, bool replace)
 {
+    Status status = STS_OK;
+    DataConverter::ResourceData resourceData;
+
+    LOG_DEBUG("Write /%d", getId());
+
+    if (replace) {
+        release();
+        init();
+    }
+
+    while ((status = converter->nextDecoding(&resourceData)) == STS_OK) {
+        if (resourceData.objectId != getParent()->getParent()->getId() ||
+            resourceData.objectInstanceId != getParent()->getId() || resourceData.resourceId != getId()) {
+            LOG_ERROR("Unexpected path: /%d/%d/%d", resourceData.objectId, resourceData.objectInstanceId,
+                      resourceData.resourceId);
+            return STS_ERR_FORMAT;
+        }
+
+        if ((status = write(&resourceData, checkOperation)) != STS_OK) {
+            return status;
+        }
+    }
+
+    if (status != STS_ERR_NOT_FOUND) {
+        return status;
+    }
+
     return STS_OK;
 }
 

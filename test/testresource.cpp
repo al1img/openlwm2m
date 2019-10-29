@@ -2,6 +2,7 @@
 
 #include <cstring>
 
+#include "jsonconverter.hpp"
 #include "object.hpp"
 
 using namespace openlwm2m;
@@ -269,5 +270,159 @@ TEST_CASE("test resource bool", "[resource]")
     CHECK(cbkIndication);
     CHECK(cbkInstance == instance);
 
+    object.release();
+}
+
+struct TestData {
+    const char* writeData;
+    const char* readData;
+    Status status;
+};
+
+void testReadWrite(Resource* resource, TestData* testData, size_t size, bool checkOperation, bool ignoreMissing,
+                   bool replace)
+{
+    Status status = STS_OK;
+    JsonConverter writeConverter, readConverter;
+    char readBuffer[1500];
+
+    for (size_t i = 0; i < size; i++) {
+        if (testData[i].writeData != NULL) {
+            status = writeConverter.startDecoding(reinterpret_cast<void*>(const_cast<char*>(testData[i].writeData)),
+                                                  strlen(testData[i].writeData));
+            CHECK(status == STS_OK);
+
+            status = resource->write(&writeConverter, checkOperation, replace);
+            CHECK(status == testData[i].status);
+        }
+
+        if (testData[i].readData != NULL) {
+            status = readConverter.startEncoding(readBuffer, sizeof(readBuffer) - 1);
+            REQUIRE(status == STS_OK);
+
+            status = resource->read(&readConverter);
+            CHECK(status == STS_OK);
+
+            size_t size;
+            status = readConverter.finishEncoding(&size);
+            REQUIRE(status == STS_OK);
+            readBuffer[size] = '\0';
+
+            printf("Index: %zu\n", i);
+            printf("Read: %s\n", readBuffer);
+            printf("Test: %s\n", testData[i].readData);
+
+            CHECK(strcmp(testData[i].readData, readBuffer) == 0);
+        }
+    }
+}
+
+TEST_CASE("test resource write", "[resource]")
+{
+    Status status = STS_OK;
+
+    Object object(4, ITF_ALL, true, true);
+
+    status = object.createResourceUint(0, OP_READWRITE, false, false, 10);
+    REQUIRE(status == STS_OK);
+
+    status = object.createResourceInt(1, OP_READWRITE, true, true);
+    REQUIRE(status == STS_OK);
+
+    object.init();
+
+    SECTION("write update")
+    {
+        TestData testData[] = {
+            {// Write resources instances 2, 5, 8
+             "[\
+{\"bn\":\"/4/0/0/\",\"n\":\"2\",\"v\":45},\
+{\"n\":\"5\",\"v\":89},\
+{\"n\":\"8\",\"v\":21}\
+]",
+             "[\
+{\"bn\":\"/4/0/0/\",\"n\":\"2\",\"v\":45},\
+{\"n\":\"5\",\"v\":89},\
+{\"n\":\"8\",\"v\":21}\
+]",
+             STS_OK},
+            {// Write resources 4, instances 4, 12, 0
+             "[\
+{\"bn\":\"/4/0/0/\",\"n\":\"4\",\"v\":456},\
+{\"n\":\"12\",\"v\":928},\
+{\"n\":\"0\",\"v\":234}\
+]",
+             "[\
+{\"bn\":\"/4/0/0/\",\"n\":\"0\",\"v\":234},\
+{\"n\":\"2\",\"v\":45},\
+{\"n\":\"4\",\"v\":456},\
+{\"n\":\"5\",\"v\":89},\
+{\"n\":\"8\",\"v\":21},\
+{\"n\":\"12\",\"v\":928}\
+]",
+             STS_OK},
+        };
+
+        testReadWrite(object.getFirstInstance()->getFirstResource(), testData, sizeof(testData) / sizeof(TestData),
+                      true, true, false);
+    }
+
+    SECTION("write replace")
+    {
+        TestData testData[] = {
+            {// Write resources instances 2, 5, 8
+             "[\
+{\"bn\":\"/4/0/0/\",\"n\":\"2\",\"v\":45},\
+{\"n\":\"5\",\"v\":89},\
+{\"n\":\"8\",\"v\":21}\
+]",
+             "[\
+{\"bn\":\"/4/0/0/\",\"n\":\"2\",\"v\":45},\
+{\"n\":\"5\",\"v\":89},\
+{\"n\":\"8\",\"v\":21}\
+]",
+             STS_OK},
+            {// Write resources 4, instances 4, 12, 0
+             "[\
+{\"bn\":\"/4/0/0/\",\"n\":\"4\",\"v\":456},\
+{\"n\":\"12\",\"v\":928},\
+{\"n\":\"0\",\"v\":234}\
+]",
+             "[\
+{\"bn\":\"/4/0/0/\",\"n\":\"0\",\"v\":234},\
+{\"n\":\"4\",\"v\":456},\
+{\"n\":\"12\",\"v\":928}\
+]",
+             STS_OK},
+        };
+
+        testReadWrite(object.getFirstInstance()->getFirstResource(), testData, sizeof(testData) / sizeof(TestData),
+                      true, true, true);
+    }
+
+    SECTION("write single resource")
+    {
+        TestData testData[] = {
+            {// Write resources 1
+             "[\
+{\"bn\":\"/4/0/1/\",\"n\":\"0\",\"v\":45}\
+]",
+             "[\
+{\"bn\":\"/4/0/1\",\"v\":0}\
+]",
+             STS_ERR_NOT_FOUND},
+            {// Write resources 1
+             "[\
+{\"bn\":\"/4/0/1\",\"v\":45}\
+]",
+             "[\
+{\"bn\":\"/4/0/1\",\"v\":45}\
+]",
+             STS_OK},
+        };
+
+        testReadWrite(object.getFirstInstance()->getResourceById(1), testData, sizeof(testData) / sizeof(TestData),
+                      true, true, false);
+    }
     object.release();
 }
