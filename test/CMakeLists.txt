@@ -30,6 +30,7 @@ set(TEST_SOURCES
 	main.cpp
 	testconverter.cpp
 	testobject.cpp
+	testobjectinstance.cpp
 	testobjectmanager.cpp
 	testresource.cpp
 #	testreghandler.cpp

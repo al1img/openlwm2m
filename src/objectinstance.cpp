@@ -51,6 +51,46 @@ ResourceInstance* ObjectInstance::getResourceInstance(uint16_t resId, uint16_t r
 
 Status ObjectInstance::write(DataConverter* converter, bool checkOperation, bool ignoreMissing, bool replace)
 {
+    Status status = STS_OK;
+    DataConverter::ResourceData resourceData;
+
+    LOG_DEBUG("Write /%d", getId());
+
+    if (replace) {
+        release();
+        init();
+    }
+
+    while ((status = converter->nextDecoding(&resourceData)) == STS_OK) {
+        if (resourceData.objectId != getParent()->getId() || resourceData.objectInstanceId != getId() ||
+            resourceData.resourceId == INVALID_ID) {
+            LOG_ERROR("Unexpected path: /%d/%d/%d", resourceData.objectId, resourceData.objectInstanceId,
+                      resourceData.resourceId);
+            return STS_ERR_FORMAT;
+        }
+
+        Resource* resource = getResourceById(resourceData.resourceId);
+
+        if (!resource) {
+            if (!ignoreMissing) {
+                LOG_ERROR("Can't find resource: /%d/%d/%d", resourceData.objectId, resourceData.objectInstanceId,
+                          resourceData.resourceId);
+                return STS_ERR_NOT_FOUND;
+            }
+            else {
+                continue;
+            }
+        }
+
+        if ((status = resource->write(&resourceData, checkOperation)) != STS_OK) {
+            return status;
+        }
+    }
+
+    if (status != STS_ERR_NOT_FOUND) {
+        return status;
+    }
+
     return STS_OK;
 }
 
