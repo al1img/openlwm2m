@@ -132,6 +132,45 @@ Status Resource::write(DataConverter* converter, bool checkOperation, bool repla
     return STS_OK;
 }
 
+Status Resource::write(DataConverter::ResourceData* resourceData, bool checkOperation)
+{
+    Status status = STS_OK;
+
+    if (checkOperation && !getInfo().checkOperation(OP_WRITE)) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    if (getInfo().isSingle()) {
+        if (resourceData->resourceInstanceId != INVALID_ID) {
+            LOG_ERROR("Address single resource as multiple: /%d/%d/%d/%d", resourceData->objectId,
+                      resourceData->objectInstanceId, resourceData->resourceId, resourceData->resourceInstanceId);
+            return STS_ERR_NOT_FOUND;
+        }
+        else {
+            resourceData->resourceInstanceId = 0;
+        }
+    }
+
+    ResourceInstance* resourceInstance = getInstanceById(resourceData->resourceInstanceId);
+
+    if (!resourceInstance) {
+        resourceInstance = createInstance(resourceData->resourceInstanceId, &status);
+        if (!resourceInstance) {
+            LOG_ERROR("Can't find resource instance: /%d/%d/%d/%d", resourceData->objectId,
+                      resourceData->objectInstanceId, resourceData->resourceId, resourceData->resourceInstanceId);
+            return status;
+        }
+    }
+
+    if ((status = resourceInstance->write(resourceData)) != STS_OK) {
+        LOG_ERROR("Can't write resource instance: /%d/%d/%d/%d, status: %d", resourceData->objectId,
+                  resourceData->objectInstanceId, resourceData->resourceId, resourceData->resourceInstanceId, status);
+        return status;
+    }
+
+    return STS_OK;
+}
+
 Status Resource::read(DataConverter* converter, bool checkOperation)
 {
     Status status = STS_OK;
