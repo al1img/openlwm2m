@@ -9,13 +9,9 @@ using namespace openlwm2m;
 
 TEST_CASE("test single instance mandatory object", "[object]")
 {
-    Object object(2, ITF_ALL, true, true);
+    Object object(2, true, true);
 
     CHECK(object.getId() == 2);
-    CHECK(object.checkInterface(ITF_REGISTER));
-    CHECK(object.checkInterface(ITF_BOOTSTRAP));
-    CHECK(object.checkInterface(ITF_DEVICE));
-    CHECK(object.checkInterface(ITF_REPORTTING));
 
     object.init();
 
@@ -31,11 +27,9 @@ TEST_CASE("test single instance non mandatory object", "[object]")
 {
     Status status = STS_OK;
 
-    Object object(5, ITF_BOOTSTRAP, true, false);
+    Object object(5, true, false);
 
     CHECK(object.getId() == 5);
-    CHECK_FALSE(object.checkInterface(ITF_REGISTER));
-    CHECK(object.checkInterface(ITF_BOOTSTRAP));
 
     object.init();
 
@@ -56,10 +50,9 @@ TEST_CASE("test multiple instance object", "[object]")
 {
     Status status = STS_OK;
 
-    Object object(13, ITF_BOOTSTRAP, false, false, 10);
+    Object object(13, false, false, 10);
 
     CHECK(object.getId() == 13);
-    CHECK(object.checkInterface(ITF_CLIENT));
 
     object.init();
 
@@ -118,7 +111,7 @@ TEST_CASE("test create resources", "[object]")
                            {4, OP_READWRITE, DATA_TYPE_UINT},   {5, OP_READWRITE, DATA_TYPE_BOOL},
                            {6, OP_READWRITE, DATA_TYPE_OPAQUE}, {7, OP_EXECUTE, DATA_TYPE_NONE}};
 
-    Object object(2, ITF_ALL, true, true);
+    Object object(2, true, true);
 
     status = object.createResourceString(testData[0].id, testData[0].operations, true, true);
     CHECK(status == STS_OK);
@@ -216,7 +209,7 @@ TEST_CASE("test object write", "[object]")
 {
     Status status = STS_OK;
 
-    Object object(2, ITF_ALL, false, false, 5);
+    Object object(2, false, false, 5);
 
     status = object.createResourceString(0, OP_READWRITE, true, true);
     REQUIRE(status == STS_OK);

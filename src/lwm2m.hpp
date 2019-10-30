@@ -25,24 +25,6 @@ enum Status {
     STS_ERR_FORMAT          ///< Unsupported content format.
 };
 
-/**
- * Define LWM2M Interfaces.
- *
- * See: 6. Interfaces.
- */
-enum Interface {
-    ITF_CLIENT = 0x00,     ///< Client interface: this interface access all objects.
-    ITF_BOOTSTRAP = 0x01,  ///< Bootstrap interface.
-    ITF_REGISTER = 0x02,   ///< Client registration interface.
-    ITF_DEVICE = 0x04,     ///< Device Management and Service Enablement Interface.
-    ITF_REPORTTING = 0x08  ///< Information Reporting Interface.
-};
-
-/**
- * Defines all interfaces.
- */
-#define ITF_ALL (ITF_BOOTSTRAP | ITF_REGISTER | ITF_DEVICE | ITF_REPORTTING)
-
 enum Operation { OP_NONE = 0x00, OP_READ = 0x01, OP_WRITE = 0x02, OP_READWRITE = 0x03, OP_EXECUTE = 0x04 };
 
 enum DataType {

@@ -12,12 +12,11 @@ public:
 
     void init();
 
-    Object* createObject(uint16_t id, uint16_t interfaces, bool single, bool mandatory, size_t maxInstances = 1,
-                         Status* status = NULL);
-    Object* getObjectById(Interface interface, uint16_t id);
+    Object* createObject(uint16_t id, bool single, bool mandatory, size_t maxInstances = 1, Status* status = NULL);
+    Object* getObjectById(uint16_t id);
 
-    Object* getFirstObject(Interface interface);
-    Object* getNextObject(Interface interface);
+    Object* getFirstObject();
+    Object* getNextObject();
 
     Status bootstrapWrite(DataFormat dataFormat, void* data, size_t size, uint16_t objectId,
                           uint16_t objectInstanceId = INVALID_ID, uint16_t resourceId = INVALID_ID);

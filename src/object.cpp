@@ -15,8 +15,8 @@ bool Object::sInstanceChanged = false;
  * Public
  ******************************************************************************/
 
-Object::Object(uint16_t id, uint16_t interfaces, bool single, bool mandatory, size_t maxInstances)
-    : ItemBase(NULL, id), mInterfaces(interfaces), mSingle(single), mMandatory(mandatory), mInitialized(false)
+Object::Object(uint16_t id, bool single, bool mandatory, size_t maxInstances)
+    : ItemBase(NULL, id), mSingle(single), mMandatory(mandatory), mInitialized(false)
 {
     if (single) {
         maxInstances = 1;

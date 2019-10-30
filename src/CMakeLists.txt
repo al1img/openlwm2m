@@ -18,11 +18,10 @@ set(SOURCES
 	resource.cpp
 	resourceinstance.cpp
 	textconverter.cpp
+	timer.cpp
 	utils.cpp
 #	client.cpp
 #	reghandler.cpp
-#	resourcedesc.cpp
-#	timer.cpp
 )
 
 ################################################################################

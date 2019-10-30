@@ -29,7 +29,7 @@ class Object : public ItemBase {
 public:
     typedef Lwm2mStaticStorage<Object> Storage;
 
-    Object(uint16_t id, uint16_t interfaces, bool single, bool manadatory, size_t maxInstances = 1);
+    Object(uint16_t id, bool single, bool manadatory, size_t maxInstances = 1);
     ~Object();
 
     void init();
@@ -57,8 +57,6 @@ public:
 
     Status setResourceCallback(uint16_t resourceId, ResourceInfo::Callback callback, void* context);
 
-    bool checkInterface(Interface interface) const { return interface == ITF_CLIENT ? true : mInterfaces & interface; };
-
     ObjectInstance* createInstance(uint16_t id = INVALID_ID, Status* status = NULL);
     Status deleteInstance(uint16_t id);
     ObjectInstance* getInstanceById(uint16_t id) { return mInstanceStorage.getItemById(id); }
@@ -84,7 +82,6 @@ public:
 private:
     static bool sInstanceChanged;
 
-    uint16_t mInterfaces;
     bool mSingle;
     bool mMandatory;
 

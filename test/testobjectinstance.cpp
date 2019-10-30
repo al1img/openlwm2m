@@ -11,7 +11,7 @@ TEST_CASE("test object instance", "[objectinstance]")
 {
     Status status = STS_OK;
 
-    Object object(4, ITF_ALL, true, true);
+    Object object(4, true, true);
 
     status = object.createResourceString(0, OP_READWRITE, true, true);
     REQUIRE(status == STS_OK);
@@ -132,7 +132,7 @@ TEST_CASE("test object instance write", "[objectinstance]")
 {
     Status status = STS_OK;
 
-    Object object(4, ITF_ALL, true, true);
+    Object object(4, true, true);
 
     status = object.createResourceString(0, OP_READWRITE, true, true);
     REQUIRE(status == STS_OK);

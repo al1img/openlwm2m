@@ -33,8 +33,8 @@ set(TEST_SOURCES
 	testobjectinstance.cpp
 	testobjectmanager.cpp
 	testresource.cpp
+	testtimer.cpp
 #	testreghandler.cpp
-#	testtimer.cpp
 )
 
 ################################################################################

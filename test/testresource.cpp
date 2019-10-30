@@ -9,7 +9,7 @@ using namespace openlwm2m;
 
 TEST_CASE("test resource info", "[resource]")
 {
-    Object object(2, ITF_ALL, true, true);
+    Object object(2, true, true);
 
     object.createResourceString(2, OP_READWRITE, true, true, 100, 200);
 
@@ -57,7 +57,7 @@ TEST_CASE("test resource", "[resource]")
 {
     Status status = STS_OK;
 
-    Object object(2, ITF_ALL, true, true);
+    Object object(2, true, true);
 
     object.createResourceString(4, OP_READWRITE, false, false, 10);
 
@@ -114,7 +114,7 @@ TEST_CASE("test resource string", "[resource]")
         cbkInstance = resourceInstance;
     };
 
-    Object object(2, ITF_ALL, true, true);
+    Object object(2, true, true);
 
     object.createResourceString(4, OP_READWRITE, true, true, 1, 10,
                                 [](void* context, ResourceInstance* resourceInstance) {
@@ -155,7 +155,7 @@ TEST_CASE("test resource int", "[resource]")
         cbkInstance = resourceInstance;
     };
 
-    Object object(2, ITF_ALL, true, true);
+    Object object(2, true, true);
 
     object.createResourceInt(4, OP_READWRITE, true, true, 1, -50, 50,
                              [](void* context, ResourceInstance* resourceInstance) {
@@ -196,7 +196,7 @@ TEST_CASE("test resource uint", "[resource]")
         cbkInstance = resourceInstance;
     };
 
-    Object object(2, ITF_ALL, true, true);
+    Object object(2, true, true);
 
     object.createResourceUint(4, OP_READWRITE, true, true, 1, 20, 50,
                               [](void* context, ResourceInstance* resourceInstance) {
@@ -237,7 +237,7 @@ TEST_CASE("test resource bool", "[resource]")
         cbkInstance = resourceInstance;
     };
 
-    Object object(2, ITF_ALL, true, true);
+    Object object(2, true, true);
 
     object.createResourceBool(4, OP_READWRITE, true, true, 1,
                               [](void* context, ResourceInstance* resourceInstance) {
@@ -321,7 +321,7 @@ TEST_CASE("test resource write", "[resource]")
 {
     Status status = STS_OK;
 
-    Object object(4, ITF_ALL, true, true);
+    Object object(4, true, true);
 
     status = object.createResourceUint(0, OP_READWRITE, false, false, 10);
     REQUIRE(status == STS_OK);

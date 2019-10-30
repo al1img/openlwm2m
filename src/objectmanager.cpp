@@ -37,8 +37,7 @@ void ObjectManager::init()
     mObjectStorage.init();
 }
 
-Object* ObjectManager::createObject(uint16_t id, uint16_t interfaces, bool single, bool mandatory, size_t maxInstances,
-                                    Status* status)
+Object* ObjectManager::createObject(uint16_t id, bool single, bool mandatory, size_t maxInstances, Status* status)
 {
     if (single) {
         maxInstances = 1;
@@ -46,7 +45,7 @@ Object* ObjectManager::createObject(uint16_t id, uint16_t interfaces, bool singl
 
     LOG_DEBUG("Create object /%d", id);
 
-    Object* object = new Object(id, interfaces, single, mandatory, maxInstances);
+    Object* object = new Object(id, single, mandatory, maxInstances);
 
     Status retStatus = mObjectStorage.pushItem(object);
 
@@ -57,47 +56,19 @@ Object* ObjectManager::createObject(uint16_t id, uint16_t interfaces, bool singl
     return object;
 }
 
-Object* ObjectManager::getObjectById(Interface interface, uint16_t id)
+Object* ObjectManager::getObjectById(uint16_t id)
 {
-    Object* object = mObjectStorage.getItemById(id);
-
-    if (object && !(object->checkInterface(interface))) {
-        return NULL;
-    }
-
-    return object;
+    return mObjectStorage.getItemById(id);
 }
 
-Object* ObjectManager::getFirstObject(Interface interface)
+Object* ObjectManager::getFirstObject()
 {
-    Object* object = mObjectStorage.getFirstItem();
-
-    while (object) {
-        if (!object->checkInterface(interface)) {
-            object = mObjectStorage.getNextItem();
-            continue;
-        }
-
-        return object;
-    }
-
-    return NULL;
+    return mObjectStorage.getFirstItem();
 }
 
-Object* ObjectManager::getNextObject(Interface interface)
+Object* ObjectManager::getNextObject()
 {
-    Object* object = mObjectStorage.getNextItem();
-
-    while (object) {
-        if (!object->checkInterface(interface)) {
-            object = mObjectStorage.getNextItem();
-            continue;
-        }
-
-        return object;
-    }
-
-    return NULL;
+    return mObjectStorage.getNextItem();
 }
 
 Status ObjectManager::addConverter(DataConverter* converter)
@@ -121,7 +92,7 @@ Status ObjectManager::bootstrapWrite(DataFormat dataFormat, void* data, size_t s
         return status;
     }
 
-    Object* object = getObjectById(ITF_BOOTSTRAP, objectId);
+    Object* object = getObjectById(objectId);
 
     if (!object) {
         return STS_ERR_NOT_FOUND;
@@ -198,7 +169,7 @@ Status ObjectManager::bootstrepRead(DataFormat* dataFormat, void* data, size_t* 
         return status;
     }
 
-    Object* object = getObjectById(ITF_BOOTSTRAP, objectId);
+    Object* object = getObjectById(objectId);
 
     if (!object) {
         return STS_ERR_NOT_FOUND;
@@ -337,8 +308,7 @@ void ObjectManager::createSecurityObject()
 {
     Status status = STS_OK;
 
-    Object* object =
-        createObject(OBJ_LWM2M_SECURITY, ITF_BOOTSTRAP, false, true, CONFIG_NUM_SERVERS + CONFIG_BOOTSTRAP_SERVER);
+    Object* object = createObject(OBJ_LWM2M_SECURITY, false, true, CONFIG_NUM_SERVERS + CONFIG_BOOTSTRAP_SERVER);
     ASSERT(object);
     // LWM2M Server URI
     status = object->createResourceString(RES_LWM2M_SERVER_URI, OP_NONE, true, true, 1, 255);
@@ -374,7 +344,7 @@ void ObjectManager::createServerObject()
 {
     Status status = STS_OK;
 
-    Object* object = createObject(OBJ_LWM2M_SERVER, ITF_ALL, false, true, CONFIG_NUM_SERVERS);
+    Object* object = createObject(OBJ_LWM2M_SERVER, false, true, CONFIG_NUM_SERVERS);
     ASSERT(object);
     // Short Server ID
     status = object->createResourceInt(RES_SHORT_SERVER_ID, OP_READ, true, true, 1, 1, 65535);
@@ -424,7 +394,7 @@ void ObjectManager::createDeviceObject()
 {
     Status status = STS_OK;
 
-    Object* object = createObject(OBJ_DEVICE, ITF_ALL, true, true);
+    Object* object = createObject(OBJ_DEVICE, true, true);
     ASSERT(object);
     // Reboot
     status = object->createExecutableResource(RES_REBOOT, true);
