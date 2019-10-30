@@ -15,13 +15,6 @@ class Client;
 
 class RegHandler : public ItemBase {
 public:
-    struct Params {
-        ObjectManager& objectManager;
-        const char* clientName;
-        bool queueMode;
-        void (*pollRequest)();
-    };
-
     typedef Lwm2mDynamicStorage<RegHandler> Storage;
     typedef void (*RegistrationHandler)(void* context, RegHandler* handler, Status status);
 
@@ -34,7 +27,7 @@ public:
         STATE_DEREGISTERED
     };
 
-    RegHandler(ItemBase* parent, Params params);
+    RegHandler(const char* clientName, bool queueMode, ObjectManager& objectManager, void (*pollRequest)());
     ~RegHandler();
 
     void init();
@@ -55,7 +48,11 @@ private:
         void* context;
     };
 
-    Params mParams;
+    const char* mClientName;
+    bool mQueueMode;
+    ObjectManager& mObjectManager;
+    void (*mPollRequest)();
+
     TransportItf* mTransport;
     void* mSession;
     ObjectInstance* mServerInstance;

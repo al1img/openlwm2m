@@ -13,8 +13,6 @@
 #include "reghandler.hpp"
 #include "status.hpp"
 
-#define LWM2M_VERSION "1.1"
-
 namespace openlwm2m {
 
 /**

@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <cstring>
 
-#include "client.hpp"
 #include "log.hpp"
 #include "utils.hpp"
 
@@ -15,8 +14,15 @@ namespace openlwm2m {
  * Public
  ******************************************************************************/
 
-RegHandler::RegHandler(ItemBase* parent, Params params)
-    : ItemBase(parent), mParams(params), mTransport(NULL), mSession(NULL), mTimer(INVALID_ID)
+RegHandler::RegHandler(const char* clientName, bool queueMode, ObjectManager& objectManager, void (*pollRequest)())
+    : ItemBase(NULL),
+      mClientName(clientName),
+      mQueueMode(queueMode),
+      mObjectManager(objectManager),
+      mPollRequest(pollRequest),
+      mTransport(NULL),
+      mSession(NULL),
+      mTimer(INVALID_ID)
 {
 }
 
@@ -53,21 +59,22 @@ Status RegHandler::bind(TransportItf* transport)
 {
     mTransport = transport;
 
-    mServerInstance = mParams.objectManager.getServerInstance(getId());
+    mServerInstance = mObjectManager.getServerInstance(getId());
     ASSERT(mServerInstance);
 
-    Object* object = mParams.objectManager.getObject(ITF_CLIENT, OBJ_LWM2M_SECURITY);
+    Object* object = mObjectManager.getObjectById(OBJ_LWM2M_SECURITY);
     ASSERT(object);
 
     mSecurityInstance = object->getFirstInstance();
 
     while (mSecurityInstance) {
-        if (mSecurityInstance->getResourceInstance(RES_BOOTSTRAP_SERVER)->getBool()) {
+        if (static_cast<ResourceBool*>(mSecurityInstance->getResourceInstance(RES_BOOTSTRAP_SERVER))->getValue()) {
             continue;
         }
 
-        if (mSecurityInstance->getResourceInstance(RES_SECURITY_SHORT_SERVER_ID)->getInt() ==
-            mServerInstance->getResourceInstance(RES_SHORT_SERVER_ID)->getInt()) {
+        if (static_cast<ResourceInt*>(mSecurityInstance->getResourceInstance(RES_SECURITY_SHORT_SERVER_ID))
+                ->getValue() ==
+            static_cast<ResourceInt*>(mServerInstance->getResourceInstance(RES_SHORT_SERVER_ID))->getValue()) {
             break;
         }
 
@@ -78,7 +85,8 @@ Status RegHandler::bind(TransportItf* transport)
         return STS_ERR_NOT_FOUND;
     }
 
-    const char* serverUri = mSecurityInstance->getResourceInstance(RES_LWM2M_SERVER_URI)->getString();
+    const char* serverUri =
+        static_cast<ResourceString*>(mSecurityInstance->getResourceInstance(RES_LWM2M_SERVER_URI))->getValue();
 
     LOG_INFO("Bind %d to: %s", getId(), serverUri);
 
@@ -104,7 +112,7 @@ Status RegHandler::registration(bool ordered, RegistrationHandler handler, void*
     uint64_t initDelayMs = 0;
 
     if (initRegDelay) {
-        initDelayMs = initRegDelay->getUint() * 1000;
+        initDelayMs = static_cast<ResourceUint*>(initRegDelay)->getValue() * 1000;
     }
 
     LOG_INFO("Start %d, delay: %lu", getId(), initDelayMs);
@@ -211,7 +219,7 @@ void RegHandler::onRegistrationCallback(char* location, Status status)
 
         ResourceInstance* failureBlock = mServerInstance->getResourceInstance(RES_REG_FAILURE_BLOCK);
 
-        if (mOrdered && (!failureBlock || !failureBlock->getBool())) {
+        if (mOrdered && (!failureBlock || !static_cast<ResourceBool*>(failureBlock)->getValue())) {
             mState = STATE_DEREGISTERED;
 
             if (mRegistrationContext.handler) {
@@ -227,8 +235,8 @@ void RegHandler::onRegistrationCallback(char* location, Status status)
         }
     }
 
-    if (mParams.pollRequest) {
-        mParams.pollRequest();
+    if (mPollRequest) {
+        mPollRequest();
     }
 }
 
@@ -260,8 +268,8 @@ void RegHandler::onUpdateCallback(Status status)
 
     mTimer.start(timeMs, &RegHandler::timerCallback, this, true);
 
-    if (mParams.pollRequest) {
-        mParams.pollRequest();
+    if (mPollRequest) {
+        mPollRequest();
     }
 }
 
@@ -289,25 +297,19 @@ void RegHandler::onDeregistrationCallback(Status status)
         mDeregistrationContext.handler(mDeregistrationContext.context, this, status);
     }
 
-    if (mParams.pollRequest) {
-        mParams.pollRequest();
+    if (mPollRequest) {
+        mPollRequest();
     }
 }
 
+// TODO: move to object manager
 Status RegHandler::getObjectsStr(char* str, int maxSize)
 {
     int ret = 0;
     int size = 0;
 
-    Object* object = mParams.objectManager.getFirstObject(ITF_REGISTER);
-
-    if (mParams.objectManager.isFormatSupported(DATA_FMT_SENML_JSON)) {
-        if (object) {
-            ret = snprintf(&str[size], maxSize, "</>;rt=\"oma.lwm2m\";ct=%d,", DATA_FMT_SENML_JSON);
-        }
-        else {
-            ret = snprintf(&str[size], maxSize, "</>;rt=\"oma.lwm2m\";ct=%d", DATA_FMT_SENML_JSON);
-        }
+    if (mObjectManager.isFormatSupported(DATA_FMT_SENML_JSON)) {
+        ret = snprintf(&str[size], maxSize, "</>;rt=\"oma.lwm2m\";ct=%d,", DATA_FMT_SENML_JSON);
 
         if (ret < 0) {
             return STS_ERR;
@@ -316,7 +318,11 @@ Status RegHandler::getObjectsStr(char* str, int maxSize)
         size += ret;
     }
 
-    while (object) {
+    for (Object* object = mObjectManager.getFirstObject(); object; object = mObjectManager.getNextObject()) {
+        if (object->getId() == OBJ_LWM2M_SECURITY || object->getId() == OBJ_OSCORE) {
+            continue;
+        }
+
         ObjectInstance* instance = object->getFirstInstance();
 
         for (;;) {
@@ -343,8 +349,6 @@ Status RegHandler::getObjectsStr(char* str, int maxSize)
                 break;
             }
         }
-
-        object = mParams.objectManager.getNextObject(ITF_REGISTER);
     }
 
     if (size > 0 && str[size - 1] == ',') {
@@ -364,16 +368,17 @@ Status RegHandler::sendRegistration()
         return status;
     }
 
-    mLifetime = mServerInstance->getResourceInstance(RES_LIFETIME)->getInt();
-    strncpy(mBindingStr, mServerInstance->getResourceInstance(RES_BINDING)->getString(), CONFIG_BINDING_STR_MAX_LEN);
+    mLifetime = static_cast<ResourceInt*>(mServerInstance->getResourceInstance(RES_LIFETIME))->getValue();
+    strncpy(mBindingStr, static_cast<ResourceString*>(mServerInstance->getResourceInstance(RES_BINDING))->getValue(),
+            CONFIG_BINDING_STR_MAX_LEN);
     mBindingStr[CONFIG_BINDING_STR_MAX_LEN] = '\0';
 
     LOG_INFO("Send registration request %d, lifetime: %d, objects: %s, bindings: %s", getId(), mLifetime, mObjectsStr,
              mBindingStr);
 
-    if ((status = mTransport->registrationRequest(mSession, mParams.clientName, mLifetime, LWM2M_VERSION, mBindingStr,
-                                                  mParams.queueMode, NULL, mObjectsStr,
-                                                  &RegHandler::registrationCallback, this)) != STS_OK) {
+    if ((status =
+             mTransport->registrationRequest(mSession, mClientName, mLifetime, LWM2M_VERSION, mBindingStr, mQueueMode,
+                                             NULL, mObjectsStr, &RegHandler::registrationCallback, this)) != STS_OK) {
         return status;
     }
 
@@ -399,15 +404,17 @@ Status RegHandler::sendUpdate()
         objectsPtr = mObjectsStr;
     }
 
-    if (strcmp(mBindingStr, mServerInstance->getResourceInstance(RES_BINDING)->getString()) != 0) {
-        strncpy(mBindingStr, mServerInstance->getResourceInstance(RES_BINDING)->getString(),
+    if (strcmp(mBindingStr,
+               static_cast<ResourceString*>(mServerInstance->getResourceInstance(RES_BINDING))->getValue()) != 0) {
+        strncpy(mBindingStr,
+                static_cast<ResourceString*>(mServerInstance->getResourceInstance(RES_BINDING))->getValue(),
                 CONFIG_BINDING_STR_MAX_LEN);
         mBindingStr[CONFIG_BINDING_STR_MAX_LEN] = '\n';
         bindingPtr = mBindingStr;
     }
 
-    if (mLifetime != mServerInstance->getResourceInstance(RES_LIFETIME)->getInt()) {
-        mLifetime = mServerInstance->getResourceInstance(RES_LIFETIME)->getInt();
+    if (mLifetime != static_cast<ResourceInt*>(mServerInstance->getResourceInstance(RES_LIFETIME))->getValue()) {
+        mLifetime = static_cast<ResourceInt*>(mServerInstance->getResourceInstance(RES_LIFETIME))->getValue();
         lifetimePtr = &mLifetime;
     }
 
@@ -432,11 +439,11 @@ bool RegHandler::setupRetry()
     ResourceInstance* countInstance = mServerInstance->getResourceInstance(RES_SEQUENCE_RETRY_COUNT);
 
     if (countInstance) {
-        count = countInstance->getUint();
+        count = static_cast<ResourceUint*>(countInstance)->getValue();
     }
 
     if (timerInstance) {
-        delay = timerInstance->getUint();
+        delay = static_cast<ResourceUint*>(timerInstance)->getValue();
     }
 
     if (delay < ULONG_MAX && mCurrentSequence < count) {

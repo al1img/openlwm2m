@@ -164,8 +164,8 @@ void setupObjects(ObjectManager* objectManager)
 ]\
 ";
 
-    status = objectManager->write(ITF_BOOTSTRAP, "/0", DATA_FMT_SENML_JSON,
-                                  reinterpret_cast<void*>(const_cast<char*>(security1)), strlen(security1));
+    status = objectManager->bootstrapWrite(DATA_FMT_SENML_JSON, reinterpret_cast<void*>(const_cast<char*>(security1)),
+                                           strlen(security1), 0);
     REQUIRE(status == STS_OK);
 
     const char* server1 =
@@ -179,8 +179,8 @@ void setupObjects(ObjectManager* objectManager)
 ]\
 ";
 
-    status = objectManager->write(ITF_BOOTSTRAP, "/1", DATA_FMT_SENML_JSON,
-                                  reinterpret_cast<void*>(const_cast<char*>(server1)), strlen(server1));
+    status = objectManager->bootstrapWrite(DATA_FMT_SENML_JSON, reinterpret_cast<void*>(const_cast<char*>(server1)),
+                                           strlen(server1), 1);
     REQUIRE(status == STS_OK);
 }
 
@@ -190,7 +190,7 @@ TEST_CASE("test reghandler", "[reghandler]")
     ObjectManager objectManager;
     TestTransport transport;
 
-    RegHandler regHandler(NULL, (RegHandler::Params){objectManager, "TestClient", false, pollRequest});
+    RegHandler regHandler("TestClient", false, objectManager, pollRequest);
 
     objectManager.init();
 

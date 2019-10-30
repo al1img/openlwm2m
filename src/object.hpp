@@ -19,6 +19,7 @@ namespace openlwm2m {
 #define OBJ_LWM2M_SECURITY  0
 #define OBJ_LWM2M_SERVER    1
 #define OBJ_DEVICE          3
+#define OBJ_OSCORE          21
 
 // clang-format on
 

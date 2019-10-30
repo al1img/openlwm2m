@@ -15,13 +15,13 @@ set(SOURCES
 	object.cpp
 	objectinstance.cpp
 	objectmanager.cpp
+	reghandler.cpp
 	resource.cpp
 	resourceinstance.cpp
 	textconverter.cpp
 	timer.cpp
 	utils.cpp
 #	client.cpp
-#	reghandler.cpp
 )
 
 ################################################################################

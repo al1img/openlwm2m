@@ -7,6 +7,8 @@
 
 namespace openlwm2m {
 
+#define LWM2M_VERSION "1.1"
+
 #define INVALID_ID 0xFFFF
 
 /**
