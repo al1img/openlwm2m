@@ -7,8 +7,6 @@
 #include "itembase.hpp"
 #include "storage.hpp"
 
-#define REQ_STORAGE_SIZE 16
-
 class CoapTransport : public openlwm2m::TransportItf {
 public:
     CoapTransport();
@@ -40,22 +38,33 @@ public:
     void run();
 
 private:
+    static const int sReqStorageSize = 16;
     static const int sDataSize = 256;
 
-    struct Request : public openlwm2m::ItemBase {
+    class Request : public openlwm2m::ItemBase {
+    public:
         enum RequestType { REGISTRATION, UPDATE, DEREGISTRATION };
-        struct Param {
-            RequestType type;
-            RequestHandler handler;
-            void* context;
-        };
 
-        Request(ItemBase* parent, Param param) : openlwm2m::ItemBase(parent), mParam(param) {}
+        Request() : openlwm2m::ItemBase(NULL) {}
 
         void init() {}
         void release() {}
 
-        Param mParam;
+        void set(RequestType type, RequestHandler handler, void* context)
+        {
+            mType = type;
+            mHandler = handler;
+            mContext = context;
+        }
+
+        RequestType getType() const { return mType; }
+        RequestHandler getHandler() const { return mHandler; }
+        void* getContext() const { return mContext; }
+
+    private:
+        RequestType mType;
+        RequestHandler mHandler;
+        void* mContext;
     };
 
     openlwm2m::ClientItf* mClient;

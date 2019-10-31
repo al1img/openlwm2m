@@ -32,6 +32,10 @@ CoapTransport::CoapTransport() : mClient(NULL)
 
     coap_register_response_handler(mContext, &CoapTransport::responseHandler);
     coap_register_nack_handler(mContext, &CoapTransport::nackHandler);
+
+    for (size_t i = 0; i < sReqStorageSize; i++) {
+        mReqStorage.pushItem(new Request());
+    }
 }
 
 CoapTransport::~CoapTransport()
@@ -132,11 +136,11 @@ Status CoapTransport::registrationRequest(void* session, const char* clientName,
 
     Request* request = mReqStorage.allocateItem(pdu->tid);
 
-    request->mParam = (Request::Param){Request::REGISTRATION, handler, context};
-
     if (!request) {
         return STS_ERR_NO_MEM;
     }
+
+    request->set(Request::REGISTRATION, handler, context);
 
     LOG_DEBUG("Send registration request, tid: %d", pdu->tid);
 
@@ -199,11 +203,11 @@ Status CoapTransport::registrationUpdate(void* session, const char* location, co
 
     Request* request = mReqStorage.allocateItem(pdu->tid);
 
-    request->mParam = (Request::Param){Request::REGISTRATION, handler, context};
-
     if (!request) {
         return STS_ERR_NO_MEM;
     }
+
+    request->set(Request::REGISTRATION, handler, context);
 
     LOG_DEBUG("Send registration update, tid: %d", pdu->tid);
 
@@ -346,13 +350,13 @@ void CoapTransport::onResponse(coap_session_t* session, coap_pdu_t* sent, coap_p
     Request* request = mReqStorage.getItemById(id);
 
     if (request) {
-        switch (request->mParam.type) {
+        switch (request->getType()) {
             case Request::REGISTRATION:
                 registrationResponse(received, request);
                 break;
 
             default:
-                request->mParam.handler(request->mParam.context, NULL, code2Status(received->code));
+                request->getHandler()(request->getContext(), NULL, code2Status(received->code));
                 break;
         }
 
@@ -376,7 +380,7 @@ void CoapTransport::onNack(coap_session_t* session, coap_pdu_t* sent, coap_nack_
     Request* request = mReqStorage.getItemById(id);
 
     if (request) {
-        request->mParam.handler(request->mParam.context, NULL, STS_ERR_TIMEOUT);
+        request->getHandler()(request->getContext(), NULL, STS_ERR_TIMEOUT);
         mReqStorage.deallocateItem(request);
     }
     else {
@@ -610,5 +614,5 @@ void CoapTransport::registrationResponse(coap_pdu_t* received, Request* request)
         status = getLocationPath(received, location, CONFIG_DEFAULT_STRING_LEN);
     }
 
-    request->mParam.handler(request->mParam.context, location, status);
+    request->getHandler()(request->getContext(), location, status);
 }
