@@ -13,31 +13,31 @@
 #if CONFIG_LOG_LEVEL >= LOG_LEVEL_CRITICAL
 #define LOG_CRITICAL(format, ...) platformLog(LOG_LEVEL_CRITICAL, LOG_MODULE, format, ##__VA_ARGS__)
 #else
-#define LOG_CRITICAL()
+#define LOG_CRITICAL(format, ...)
 #endif
 
 #if CONFIG_LOG_LEVEL >= LOG_LEVEL_ERROR
 #define LOG_ERROR(format, ...) platformLog(LOG_LEVEL_ERROR, LOG_MODULE, format, ##__VA_ARGS__)
 #else
-#define LOG_ERROR()
+#define LOG_ERROR(format, ...)
 #endif
 
 #if CONFIG_LOG_LEVEL >= LOG_LEVEL_WARNING
 #define LOG_WARNING(format, ...) platformLog(LOG_LEVEL_WARNING, LOG_MODULE, format, ##__VA_ARGS__)
 #else
-#define LOG_LOG_WARNING()
+#define LOG_WARNING(format, ...)
 #endif
 
 #if CONFIG_LOG_LEVEL >= LOG_LEVEL_INFO
 #define LOG_INFO(format, ...) platformLog(LOG_LEVEL_INFO, LOG_MODULE, format, ##__VA_ARGS__)
 #else
-#define LOG_INFO()
+#define LOG_INFO(format, ...)
 #endif
 
 #if CONFIG_LOG_LEVEL >= LOG_LEVEL_DEBUG
 #define LOG_DEBUG(format, ...) platformLog(LOG_LEVEL_DEBUG, LOG_MODULE, format, ##__VA_ARGS__)
 #else
-#define LOG_LOG_DEBUG()
+#define LOG_DEBUG(format, ...)
 #endif
 
 #if CONFIG_LOG_LEVEL >= LOG_LEVEL_CRITICAL
