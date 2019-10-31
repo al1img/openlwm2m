@@ -2,14 +2,14 @@
 #include <time.h>
 #include <unistd.h>
 
-// #include "client.hpp"
-// #include "coaptransport.hpp"
+#include "client.hpp"
+#include "coaptransport.hpp"
 #include "log.hpp"
 #include "memory.hpp"
 
 #define LOG_MODULE "Main"
 
-// using namespace openlwm2m;
+using namespace openlwm2m;
 
 bool sTerminate = false;
 bool sPollRequest = false;
@@ -41,10 +41,10 @@ int main()
     LOG_INFO("Start lwm2m client");
 
     registerSignals();
-#if 0
+
     CoapTransport transport;
 
-    Client client("Test client", false, pollRequest);
+    Client client("TestClient", false, pollRequest);
 
     transport.setClient(&client);
 
@@ -55,7 +55,7 @@ int main()
 
     memInitDone();
 
-    status = client.bootstrapWriteJSON("",
+    status = client.bootstrapWriteJSON("/0/0",
                                        "\
 [\
 {\"bn\":\"/0/0/\",\"n\":\"0\",\"vs\":\"coap://::1:5683\"},\
@@ -64,7 +64,7 @@ int main()
 ");
     ASSERT_MESSAGE(status == STS_OK, "Can't write bootstrap");
 
-    status = client.bootstrapWriteJSON("",
+    status = client.bootstrapWriteJSON("/1/0",
                                        "\
 [\
 {\"bn\":\"/1/0/\",\"n\":\"0\",\"v\":1},\
@@ -100,7 +100,6 @@ int main()
 
         transport.run();
     }
-#endif
 
     LOG_INFO("Stop lwm2m client");
 
