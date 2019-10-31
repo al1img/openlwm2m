@@ -32,22 +32,48 @@ void ResourceInstance::init()
     LOG_DEBUG("Create /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(), getParent()->getParent()->getId(),
               getParent()->getId(), getId());
 
-    switch (getResource()->getInfo().getType()) {
+    ResourceInfo& info = getResource()->getInfo();
+
+    switch (info.getType()) {
         case DATA_TYPE_STRING:
             static_cast<ResourceString*>(this)->setValue("");
             break;
 
-        case DATA_TYPE_INT:
-            static_cast<ResourceInt*>(this)->setValue(0);
-            break;
+        case DATA_TYPE_INT: {
+            int64_t value = 0;
 
-        case DATA_TYPE_UINT:
-            static_cast<ResourceUint*>(this)->setValue(0);
-            break;
+            if (info.min().minInt > value) {
+                value = info.min().minInt;
+            }
 
-        case DATA_TYPE_FLOAT:
-            static_cast<ResourceFloat*>(this)->setValue(0.0);
+            static_cast<ResourceInt*>(this)->setValue(value);
+
             break;
+        }
+
+        case DATA_TYPE_UINT: {
+            uint64_t value = 0;
+
+            if (info.min().minUint > value) {
+                value = info.min().minUint;
+            }
+
+            static_cast<ResourceUint*>(this)->setValue(value);
+
+            break;
+        }
+
+        case DATA_TYPE_FLOAT: {
+            double value = 0.0;
+
+            if (info.min().minFloat > value) {
+                value = info.min().minFloat;
+            }
+
+            static_cast<ResourceFloat*>(this)->setValue(value);
+
+            break;
+        }
 
         case DATA_TYPE_BOOL:
             static_cast<ResourceBool*>(this)->setValue(0);
