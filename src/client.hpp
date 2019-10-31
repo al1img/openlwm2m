@@ -8,10 +8,10 @@
 #include <stdint.h>
 
 #include "interface.hpp"
+#include "lwm2m.hpp"
 #include "object.hpp"
 #include "objectmanager.hpp"
-#include "reghandler.hpp"
-#include "status.hpp"
+#include "serverhandler.hpp"
 
 namespace openlwm2m {
 
@@ -36,19 +36,16 @@ public:
      * See: D.1 Object Template.
      *
      * @param[in] id            Object id.
-     * @param[in] instance      Indicates whether this Object supports multiple ObjectInstance's or not.
-     * @param[in] maxInstances  Defines maximum number of instances. This parameter relevant for multiple
-     *                          ObjectInstance's. It can be set to 0 to have unlimited instances in case memory
-     *                          reservation is disabled.
+     * @param[in] single        Indicates whether this Object supports multiple ObjectInstance's or not.
      * @param[in] mandatory     Indicates whether this Object is mandatory or optional.
-     * @param[in] interfaces    Defines interfaces which can access this object.
+     * @param[in] maxInstances  Defines maximum number of instances. This parameter relevant for multiple
+     *                          ObjectInstance's.
      *
      * @param[out] status       Returns status of operation openlwm2m::Status.
      *
      * @retval pointer to Object.
      */
-    Object* createObject(uint16_t id, Object::Instance instance, size_t maxInstances, Object::Mandatory mandatory,
-                         uint16_t interfaces, Status* status = NULL);
+    Object* createObject(uint16_t id, bool single, bool mandatory, size_t maxInstances = 1, Status* status = NULL);
 
     /**
      * Returns lwm2m object.
@@ -58,12 +55,12 @@ public:
      *
      * @retval pointer to Object.
      */
-    Object* getObject(Interface interface, uint16_t id);
+    Object* getObjectById(uint16_t id);
 
-    Object* getFirstObject(Interface interface);
-    Object* getNextObject(Interface interface);
+    Object* getFirstObject();
+    Object* getNextObject();
 
-    ResourceInstance* getResourceInstance(Interface interface, uint16_t objId, uint16_t objInstanceId, uint16_t resId,
+    ResourceInstance* getResourceInstance(uint16_t objId, uint16_t objInstanceId, uint16_t resId,
                                           uint16_t resInstanceId = 0);
 
     TransportItf* getTransport() const { return mTransport; }
@@ -77,7 +74,8 @@ public:
     void bootstrapDiscover();
     void bootstrapRead();
     Status bootstrapWriteJSON(const char* path, const char* dataJSON);
-    Status bootstrapWrite(const char* path, DataFormat dataFormat, void* data, size_t size);
+    Status bootstrapWrite(DataFormat dataFormat, void* data, size_t size, uint16_t objectId,
+                          uint16_t objectInstanceId = INVALID_ID, uint16_t resourceId = INVALID_ID);
     void bootstrapDelete();
 
     // Device
@@ -110,16 +108,16 @@ private:
     TransportItf* mTransport;
 
     ObjectManager mObjectManager;
-    RegHandler::Storage mRegHandlerStorage;
+    ServerHandler::Storage mServerHandlerStorage;
 
-    RegHandler* mCurrentHandler = NULL;
+    ServerHandler* mCurrentHandler = NULL;
     State mState;
 
     static void updateRegistration(void* context, ResourceInstance* resInstance);
     void onUpdateRegistration(ResourceInstance* resInstance);
 
-    static void registrationStatus(void* context, RegHandler* handler, Status status);
-    void onRegistrationStatus(RegHandler* handler, Status status);
+    static void registrationStatus(void* context, ServerHandler* handler, Status status);
+    void onRegistrationStatus(ServerHandler* handler, Status status);
 
     Status createRegHandlers();
 

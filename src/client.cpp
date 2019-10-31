@@ -5,6 +5,7 @@
 #include "interface.hpp"
 #include "log.hpp"
 #include "timer.hpp"
+#include "utils.hpp"
 
 #define LOG_MODULE "Client"
 
@@ -20,8 +21,7 @@ Client::Client(const char* name, bool queueMode, PollRequest pollRequest)
     LOG_DEBUG("Create client");
 
     for (int i = 0; i < CONFIG_NUM_SERVERS; i++) {
-        RegHandler* handler = new RegHandler(NULL, (RegHandler::Params){mObjectManager, name, queueMode, pollRequest});
-        mRegHandlerStorage.addItem(handler);
+        mServerHandlerStorage.pushItem(new ServerHandler(name, queueMode, mObjectManager, pollRequest));
     }
 }
 
@@ -29,7 +29,7 @@ Client::~Client()
 {
     LOG_DEBUG("Delete client");
 
-    mRegHandlerStorage.clear();
+    mServerHandlerStorage.clear();
 }
 
 /*******************************************************************************
@@ -49,10 +49,10 @@ Status Client::poll(uint64_t currentTimeMs, uint64_t* pollTimeMs)
     }
 
     if (Object::isInstanceChanged()) {
-        for (RegHandler* regHandler = mRegHandlerStorage.getFirstItem(); regHandler;
-             regHandler = mRegHandlerStorage.getNextItem()) {
-            if (regHandler->getState() == RegHandler::STATE_REGISTERED) {
-                regHandler->updateRegistration();
+        for (ServerHandler* handler = mServerHandlerStorage.getFirstItem(); handler;
+             handler = mServerHandlerStorage.getNextItem()) {
+            if (handler->getState() == ServerHandler::STATE_REGISTERED) {
+                handler->updateRegistration();
             }
         }
     }
@@ -60,36 +60,35 @@ Status Client::poll(uint64_t currentTimeMs, uint64_t* pollTimeMs)
     return STS_OK;
 }
 
-Object* Client::createObject(uint16_t id, Object::Instance instance, size_t maxInstances, Object::Mandatory mandatory,
-                             uint16_t interfaces, Status* status)
+Object* Client::createObject(uint16_t id, bool single, bool mandatory, size_t maxInstances, Status* status)
 {
     if (mState != STATE_INIT) {
         if (status) *status = STS_ERR_NOT_ALLOWED;
         return NULL;
     }
 
-    return mObjectManager.createObject(id, instance, maxInstances, mandatory, interfaces, status);
+    return mObjectManager.createObject(id, single, mandatory, maxInstances, status);
 }
 
-Object* Client::getObject(Interface interface, uint16_t id)
+Object* Client::getObjectById(uint16_t id)
 {
-    return mObjectManager.getObject(interface, id);
+    return mObjectManager.getObjectById(id);
 }
 
-Object* Client::getFirstObject(Interface interface)
+Object* Client::getFirstObject()
 {
-    return mObjectManager.getFirstObject(interface);
+    return mObjectManager.getFirstObject();
 }
 
-Object* Client::getNextObject(Interface interface)
+Object* Client::getNextObject()
 {
-    return mObjectManager.getNextObject(interface);
+    return mObjectManager.getNextObject();
 }
 
-ResourceInstance* Client::getResourceInstance(Interface interface, uint16_t objId, uint16_t objInstanceId,
-                                              uint16_t resId, uint16_t resInstanceId)
+ResourceInstance* Client::getResourceInstance(uint16_t objId, uint16_t objInstanceId, uint16_t resId,
+                                              uint16_t resInstanceId)
 {
-    Object* object = getObject(interface, objId);
+    Object* object = getObjectById(objId);
 
     if (!object) {
         return NULL;
@@ -112,8 +111,8 @@ Status Client::init(TransportItf* transport)
 
     mObjectManager.init();
 
-    status = mObjectManager.getObject(ITF_BOOTSTRAP, OBJ_LWM2M_SERVER)
-                 ->setResourceChangedCbk(RES_LIFETIME, &Client::updateRegistration, this);
+    status = mObjectManager.getObjectById(OBJ_LWM2M_SERVER)
+                 ->setResourceCallback(RES_LIFETIME, &Client::updateRegistration, this);
     ASSERT(status == STS_OK);
 
     mState = STATE_INITIALIZED;
@@ -125,7 +124,7 @@ Status Client::registration()
 {
     LOG_DEBUG("Register client");
 
-    if (mState != STATE_INITIALIZED || mRegHandlerStorage.size()) {
+    if (mState != STATE_INITIALIZED || mServerHandlerStorage.size()) {
         return STS_ERR_NOT_ALLOWED;
     }
 
@@ -136,7 +135,7 @@ Status Client::registration()
     }
 
     if ((status = startNextRegistration()) != STS_OK) {
-        mRegHandlerStorage.clear();
+        mServerHandlerStorage.clear();
         return status;
     }
 
@@ -155,13 +154,22 @@ void Client::bootstrapRead()
 
 Status Client::bootstrapWriteJSON(const char* path, const char* dataJSON)
 {
-    return mObjectManager.write(ITF_BOOTSTRAP, path, DATA_FMT_SENML_JSON,
-                                reinterpret_cast<void*>(const_cast<char*>(dataJSON)), strlen(dataJSON));
+    uint16_t objectId = INVALID_ID, objectInstanceId = INVALID_ID, resourceId = INVALID_ID,
+             resourceInstanceId = INVALID_ID;
+
+    if (Utils::convertPath(path, &objectId, &objectInstanceId, &resourceId, &resourceInstanceId) < 0 ||
+        resourceInstanceId != INVALID_ID) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    return mObjectManager.bootstrapWrite(DATA_FMT_SENML_JSON, reinterpret_cast<void*>(const_cast<char*>(dataJSON)),
+                                         strlen(dataJSON), objectId, objectInstanceId, resourceId);
 }
 
-Status Client::bootstrapWrite(const char* path, DataFormat dataFormat, void* data, size_t size)
+Status Client::bootstrapWrite(DataFormat dataFormat, void* data, size_t size, uint16_t objectId,
+                              uint16_t objectInstanceId, uint16_t resourceId)
 {
-    return mObjectManager.write(ITF_BOOTSTRAP, path, dataFormat, data, size);
+    return mObjectManager.bootstrapWrite(dataFormat, data, size, objectId, objectInstanceId, resourceId);
 }
 
 void Client::bootstrapDelete()
@@ -172,7 +180,9 @@ Status Client::deviceRead(const char* path, DataFormat reqFormat, void* data, si
 {
     LOG_DEBUG("Read, path: %s", path);
 
-    return mObjectManager.read(ITF_DEVICE, path, DATA_FMT_TEXT, NULL, 0, reqFormat, data, size, format);
+    //    return mObjectManager.read(ITF_DEVICE, path, DATA_FMT_TEXT, NULL, 0, reqFormat, data, size, format);
+
+    return STS_OK;
 }
 
 void Client::deviceDiscover()
@@ -225,24 +235,31 @@ void Client::updateRegistration(void* context, ResourceInstance* resInstance)
 void Client::onUpdateRegistration(ResourceInstance* resInstance)
 {
     uint16_t shortServerId =
-        resInstance->getResource()->getObjectInstance()->getResourceInstance(RES_SHORT_SERVER_ID)->getInt();
+        static_cast<ResourceInt*>(
+            resInstance->getResource()->getObjectInstance()->getResourceInstance(RES_SHORT_SERVER_ID))
+            ->getValue();
 
-    RegHandler* regHandler = mRegHandlerStorage.getItemById(shortServerId);
+    ServerHandler* handler = mServerHandlerStorage.getItemById(shortServerId);
 
-    if (regHandler != NULL && regHandler->getState() == RegHandler::STATE_REGISTERED) {
+    if (handler != NULL && handler->getState() == ServerHandler::STATE_REGISTERED) {
+        Status status = handler->updateRegistration();
+
+        if (status != STS_OK) {
+            LOG_ERROR("Can't update registration, status %d", status);
+        }
     }
 }
 
 Status Client::createRegHandlers()
 {
-    Object* object = getObject(ITF_REGISTER, OBJ_LWM2M_SERVER);
+    Object* object = getObjectById(OBJ_LWM2M_SERVER);
     ASSERT(object);
 
     ObjectInstance* serverInstance = object->getFirstInstance();
 
     while (serverInstance) {
-        RegHandler* handler =
-            mRegHandlerStorage.newItem(serverInstance->getResourceInstance(RES_SHORT_SERVER_ID)->getInt());
+        ServerHandler* handler = mServerHandlerStorage.allocateItem(
+            static_cast<ResourceInt*>(serverInstance->getResourceInstance(RES_SHORT_SERVER_ID))->getValue());
         ASSERT(handler);
 
         Status status = STS_OK;
@@ -250,13 +267,13 @@ Status Client::createRegHandlers()
         if ((status = handler->bind(mTransport)) != STS_OK) {
             LOG_ERROR("Can't bind to lwm2m server %d", status);
 
-            mRegHandlerStorage.deleteItem(handler);
+            mServerHandlerStorage.deallocateItem(handler);
         }
 
         serverInstance = object->getNextInstance();
     }
 
-    if (mRegHandlerStorage.size() == 0) {
+    if (mServerHandlerStorage.size() == 0) {
         LOG_ERROR("No valid lwm2m servers found");
 
         return STS_ERR_NOT_FOUND;
@@ -265,18 +282,18 @@ Status Client::createRegHandlers()
     return STS_OK;
 }
 
-void Client::registrationStatus(void* context, RegHandler* handler, Status status)
+void Client::registrationStatus(void* context, ServerHandler* handler, Status status)
 {
     static_cast<Client*>(context)->onRegistrationStatus(handler, status);
 }
 
-void Client::onRegistrationStatus(RegHandler* handler, Status status)
+void Client::onRegistrationStatus(ServerHandler* handler, Status status)
 {
     if (status != STS_OK) {
         ResourceInstance* bootstrapOnFailure =
             mObjectManager.getServerInstance(handler->getId())->getResourceInstance(RES_BOOTSTRAP_ON_REG_FAILURE);
 
-        if (bootstrapOnFailure && bootstrapOnFailure->getBool()) {
+        if (bootstrapOnFailure && static_cast<ResourceBool*>(bootstrapOnFailure)->getValue()) {
             // TODO: start bootstrap and return
         }
     }
@@ -298,14 +315,14 @@ Status Client::startNextRegistration()
 
     // Start priority handlers
 
-    for (RegHandler* regHandler = mRegHandlerStorage.getFirstItem(); regHandler;
-         regHandler = mRegHandlerStorage.getNextItem()) {
+    for (ServerHandler* handler = mServerHandlerStorage.getFirstItem(); handler;
+         handler = mServerHandlerStorage.getNextItem()) {
         // Skip already started handlers
-        if (regHandler->getState() != RegHandler::STATE_INIT) {
+        if (handler->getState() != ServerHandler::STATE_INIT) {
             continue;
         }
 
-        ObjectInstance* serverInstance = mObjectManager.getServerInstance(regHandler->getId());
+        ObjectInstance* serverInstance = mObjectManager.getServerInstance(handler->getId());
         ASSERT(serverInstance);
 
         ResourceInstance* regPriority = serverInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER);
@@ -315,9 +332,9 @@ Status Client::startNextRegistration()
             continue;
         }
 
-        if (regPriority->getUint() <= minPriority) {
-            mCurrentHandler = regHandler;
-            minPriority = regPriority->getUint();
+        if (static_cast<ResourceUint*>(regPriority)->getValue() <= minPriority) {
+            mCurrentHandler = handler;
+            minPriority = static_cast<ResourceUint*>(regPriority)->getValue();
         }
     }
 
@@ -327,31 +344,32 @@ Status Client::startNextRegistration()
 
     // Non blocking priority order
 
-    for (RegHandler* regHandler = mRegHandlerStorage.getFirstItem(); regHandler;
-         regHandler = mRegHandlerStorage.getNextItem()) {
-        ObjectInstance* serverInstance = mObjectManager.getServerInstance(regHandler->getId());
+    for (ServerHandler* handler = mServerHandlerStorage.getFirstItem(); handler;
+         handler = mServerHandlerStorage.getNextItem()) {
+        ObjectInstance* serverInstance = mObjectManager.getServerInstance(handler->getId());
         ASSERT(serverInstance);
 
         ResourceInstance* regPriority = serverInstance->getResourceInstance(RES_REGISTRATION_PRIORITY_ORDER);
         ResourceInstance* failureBlock = serverInstance->getResourceInstance(RES_REG_FAILURE_BLOCK);
 
-        if (regPriority && regHandler->getState() == RegHandler::STATE_DEREGISTERED &&
-            (!failureBlock || !failureBlock->getBool())) {
-            mCurrentHandler = regHandler;
+        if (regPriority && handler->getState() == ServerHandler::STATE_DEREGISTERED &&
+            (!failureBlock || !static_cast<ResourceBool*>(failureBlock)->getValue())) {
+            mCurrentHandler = handler;
             return mCurrentHandler->registration(false, registrationStatus, this);
         }
     }
 
     // All other
 
-    for (RegHandler* regHandler = mRegHandlerStorage.getFirstItem(); regHandler;
-         regHandler = mRegHandlerStorage.getNextItem()) {
+    for (ServerHandler* handler = mServerHandlerStorage.getFirstItem(); handler;
+         handler = mServerHandlerStorage.getNextItem()) {
         // Skip already started handlers
-        if (regHandler->getState() != RegHandler::STATE_INIT) {
+        if (handler->getState() != ServerHandler::STATE_INIT) {
             continue;
         }
 
-        mCurrentHandler = regHandler;
+        mCurrentHandler = handler;
+
         return mCurrentHandler->registration(false, registrationStatus, this);
     }
 
