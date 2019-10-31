@@ -1,5 +1,5 @@
-#ifndef OPENLWM2M_REGHANDLER_HPP_
-#define OPENLWM2M_REGHANDLER_HPP_
+#ifndef OPENLWM2M_SERVERHANDLER_HPP_
+#define OPENLWM2M_SERVERHANDLER_HPP_
 
 #include "interface.hpp"
 #include "itembase.hpp"
@@ -11,12 +11,10 @@
 
 namespace openlwm2m {
 
-class Client;
-
-class RegHandler : public ItemBase {
+class ServerHandler : public ItemBase {
 public:
-    typedef Lwm2mDynamicStorage<RegHandler> Storage;
-    typedef void (*RegistrationHandler)(void* context, RegHandler* handler, Status status);
+    typedef Lwm2mDynamicStorage<ServerHandler> Storage;
+    typedef void (*RegistrationHandler)(void* context, ServerHandler* handler, Status status);
 
     enum State {
         STATE_INIT,
@@ -27,8 +25,8 @@ public:
         STATE_DEREGISTERED
     };
 
-    RegHandler(const char* clientName, bool queueMode, ObjectManager& objectManager, void (*pollRequest)());
-    ~RegHandler();
+    ServerHandler(const char* clientName, bool queueMode, ObjectManager& objectManager, void (*pollRequest)());
+    ~ServerHandler();
 
     void init();
     void release();
@@ -94,4 +92,4 @@ private:
 
 }  // namespace openlwm2m
 
-#endif /* OPENLWM2M_REGHANDLER_HPP_ */
+#endif /* OPENLWM2M_SERVERHANDLER_HPP_ */

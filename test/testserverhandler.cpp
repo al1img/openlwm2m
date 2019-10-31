@@ -4,7 +4,7 @@
 
 #include "jsonconverter.hpp"
 #include "objectmanager.hpp"
-#include "reghandler.hpp"
+#include "serverhandler.hpp"
 
 using namespace openlwm2m;
 
@@ -184,13 +184,13 @@ void setupObjects(ObjectManager* objectManager)
     REQUIRE(status == STS_OK);
 }
 
-TEST_CASE("test reghandler", "[reghandler]")
+TEST_CASE("test ServerHandler", "[ServerHandler]")
 {
     Status status = STS_OK;
     ObjectManager objectManager;
     TestTransport transport;
 
-    RegHandler regHandler("TestClient", false, objectManager, pollRequest);
+    ServerHandler serverHandler("TestClient", false, objectManager, pollRequest);
 
     objectManager.init();
 
@@ -198,11 +198,11 @@ TEST_CASE("test reghandler", "[reghandler]")
 
     SECTION("Success registration")
     {
-        regHandler.setId(1);
+        serverHandler.setId(1);
 
-        regHandler.init();
+        serverHandler.init();
 
-        status = regHandler.bind(&transport);
+        status = serverHandler.bind(&transport);
         REQUIRE(status == STS_OK);
 
         TestSession* session = transport.getLastSession();
@@ -211,7 +211,7 @@ TEST_CASE("test reghandler", "[reghandler]")
 
         session->setStatus(STS_OK);
 
-        status = regHandler.registration();
+        status = serverHandler.registration();
         REQUIRE(status == STS_OK);
 
         setCurrentTime(0);
@@ -244,32 +244,20 @@ TEST_CASE("test reghandler", "[reghandler]")
 
         setCurrentTime(160000);
 
-        status = regHandler.deregistration(
-            [](void* context, RegHandler* handler, Status status) { REQUIRE(status == STS_OK); });
+        status = serverHandler.deregistration(
+            [](void* context, ServerHandler* handler, Status status) { REQUIRE(status == STS_OK); });
         REQUIRE(status == STS_OK);
 
-        CHECK(regHandler.getState() == RegHandler::STATE_DEREGISTERED);
+        CHECK(serverHandler.getState() == ServerHandler::STATE_DEREGISTERED);
     }
 
     SECTION("Failed unordered registration")
     {
-        /*
-        const char* serverJSON =
-            "\
-[\
-{\"bn\":\"/1/0/\",\"n\":\"15\",\"vb\":true}\
-]\
-";
+        serverHandler.setId(1);
 
-        status = objectManager.write(ITF_BOOTSTRAP, DATA_FMT_SENML_JSON, "/1",
-                                     reinterpret_cast<void*>(const_cast<char*>(serverJSON)), strlen(serverJSON));
-        REQUIRE(status == STS_OK);
-*/
-        regHandler.setId(1);
+        serverHandler.init();
 
-        regHandler.init();
-
-        status = regHandler.bind(&transport);
+        status = serverHandler.bind(&transport);
         REQUIRE(status == STS_OK);
 
         TestSession* session = transport.getLastSession();
@@ -282,11 +270,11 @@ TEST_CASE("test reghandler", "[reghandler]")
 
         auto handler = [&registrationStatus](void* context, Status status) { registrationStatus = status; };
 
-        status = regHandler.registration(true,
-                                         [](void* context, RegHandler* handle, Status status) {
-                                             (*static_cast<decltype(handler)*>(context))(context, status);
-                                         },
-                                         &handler);
+        status = serverHandler.registration(true,
+                                            [](void* context, ServerHandler* handle, Status status) {
+                                                (*static_cast<decltype(handler)*>(context))(context, status);
+                                            },
+                                            &handler);
 
         REQUIRE(status == STS_OK);
 
@@ -294,16 +282,16 @@ TEST_CASE("test reghandler", "[reghandler]")
 
         CHECK_FALSE(registrationStatus == STS_OK);
 
-        CHECK(regHandler.getState() == RegHandler::STATE_DEREGISTERED);
+        CHECK(serverHandler.getState() == ServerHandler::STATE_DEREGISTERED);
     }
 
     SECTION("Failed registration with retry")
     {
-        regHandler.setId(1);
+        serverHandler.setId(1);
 
-        regHandler.init();
+        serverHandler.init();
 
-        status = regHandler.bind(&transport);
+        status = serverHandler.bind(&transport);
         REQUIRE(status == STS_OK);
 
         TestSession* session = transport.getLastSession();
@@ -314,15 +302,15 @@ TEST_CASE("test reghandler", "[reghandler]")
 
         Status registrationStatus = STS_OK;
 
-        auto inner = [&registrationStatus](void* context, RegHandler* handler, Status status) {
+        auto inner = [&registrationStatus](void* context, ServerHandler* handler, Status status) {
             registrationStatus = status;
         };
 
-        status = regHandler.registration(false,
-                                         [](void* context, RegHandler* handler, Status status) {
-                                             (*static_cast<decltype(inner)*>(context))(context, handler, status);
-                                         },
-                                         &inner);
+        status = serverHandler.registration(false,
+                                            [](void* context, ServerHandler* handler, Status status) {
+                                                (*static_cast<decltype(inner)*>(context))(context, handler, status);
+                                            },
+                                            &inner);
 
         REQUIRE(status == STS_OK);
 
@@ -340,8 +328,8 @@ TEST_CASE("test reghandler", "[reghandler]")
 
         CHECK_FALSE(registrationStatus == STS_OK);
 
-        CHECK(regHandler.getState() == RegHandler::STATE_DEREGISTERED);
+        CHECK(serverHandler.getState() == ServerHandler::STATE_DEREGISTERED);
     }
 
-    regHandler.release();
+    serverHandler.release();
 }

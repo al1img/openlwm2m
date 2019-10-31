@@ -1,2 +1,2 @@
-1. Create new storage class for coaptrasport requests
-2. Create object 
+1. Reimplement poll request mechanism: move to transport or poll client regularly.
+2. 

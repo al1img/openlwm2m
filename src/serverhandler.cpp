@@ -1,4 +1,4 @@
-#include "reghandler.hpp"
+#include "serverhandler.hpp"
 
 #include <cstdio>
 #include <cstring>
@@ -14,7 +14,8 @@ namespace openlwm2m {
  * Public
  ******************************************************************************/
 
-RegHandler::RegHandler(const char* clientName, bool queueMode, ObjectManager& objectManager, void (*pollRequest)())
+ServerHandler::ServerHandler(const char* clientName, bool queueMode, ObjectManager& objectManager,
+                             void (*pollRequest)())
     : ItemBase(NULL),
       mClientName(clientName),
       mQueueMode(queueMode),
@@ -26,11 +27,11 @@ RegHandler::RegHandler(const char* clientName, bool queueMode, ObjectManager& ob
 {
 }
 
-RegHandler::~RegHandler()
+ServerHandler::~ServerHandler()
 {
 }
 
-void RegHandler::init()
+void ServerHandler::init()
 {
     LOG_DEBUG("Create %d", getId());
 
@@ -39,7 +40,7 @@ void RegHandler::init()
     mState = STATE_INIT;
 }
 
-void RegHandler::release()
+void ServerHandler::release()
 {
     LOG_DEBUG("Delete %d", getId());
 
@@ -55,7 +56,7 @@ void RegHandler::release()
     mState = STATE_INIT;
 }
 
-Status RegHandler::bind(TransportItf* transport)
+Status ServerHandler::bind(TransportItf* transport)
 {
     mTransport = transport;
 
@@ -97,7 +98,7 @@ Status RegHandler::bind(TransportItf* transport)
     return status;
 }
 
-Status RegHandler::registration(bool ordered, RegistrationHandler handler, void* context)
+Status ServerHandler::registration(bool ordered, RegistrationHandler handler, void* context)
 {
     if (mState != STATE_INIT && mState != STATE_DEREGISTERED) {
         return STS_ERR_NOT_ALLOWED;
@@ -117,7 +118,7 @@ Status RegHandler::registration(bool ordered, RegistrationHandler handler, void*
 
     LOG_INFO("Start %d, delay: %lu", getId(), initDelayMs);
 
-    mTimer.start(initDelayMs, &RegHandler::timerCallback, this, true);
+    mTimer.start(initDelayMs, &ServerHandler::timerCallback, this, true);
 
     mState = STATE_INIT_DELAY;
     mOrdered = ordered;
@@ -125,7 +126,7 @@ Status RegHandler::registration(bool ordered, RegistrationHandler handler, void*
     return STS_OK;
 }
 
-Status RegHandler::deregistration(RegistrationHandler handler, void* context)
+Status ServerHandler::deregistration(RegistrationHandler handler, void* context)
 {
     Status status = STS_OK;
 
@@ -141,21 +142,21 @@ Status RegHandler::deregistration(RegistrationHandler handler, void* context)
 
     LOG_INFO("Send deregistration reqest");
 
-    if ((status = mTransport->deregistrationRequest(mSession, mLocation, &RegHandler::deregistrationCallback, this)) !=
-        STS_OK) {
+    if ((status = mTransport->deregistrationRequest(mSession, mLocation, &ServerHandler::deregistrationCallback,
+                                                    this)) != STS_OK) {
         return status;
     }
 
     return STS_OK;
 }
 
-Status RegHandler::updateRegistration()
+Status ServerHandler::updateRegistration()
 {
     if (mState != STATE_REGISTERED) {
         return STS_ERR_NOT_ALLOWED;
     }
 
-    mTimer.start(sUpdateRegistrationTimeout, &RegHandler::timerCallback, this, true);
+    mTimer.start(sUpdateRegistrationTimeout, &ServerHandler::timerCallback, this, true);
 
     return STS_OK;
 }
@@ -164,12 +165,12 @@ Status RegHandler::updateRegistration()
  * Private
  ******************************************************************************/
 
-Status RegHandler::timerCallback(void* context)
+Status ServerHandler::timerCallback(void* context)
 {
-    return static_cast<RegHandler*>(context)->onTimerCallback();
+    return static_cast<ServerHandler*>(context)->onTimerCallback();
 }
 
-Status RegHandler::onTimerCallback()
+Status ServerHandler::onTimerCallback()
 {
     switch (mState) {
         case STATE_INIT_DELAY:
@@ -185,12 +186,12 @@ Status RegHandler::onTimerCallback()
     }
 }
 
-void RegHandler::registrationCallback(void* context, void* data, Status status)
+void ServerHandler::registrationCallback(void* context, void* data, Status status)
 {
-    static_cast<RegHandler*>(context)->onRegistrationCallback(static_cast<char*>(data), status);
+    static_cast<ServerHandler*>(context)->onRegistrationCallback(static_cast<char*>(data), status);
 }
 
-void RegHandler::onRegistrationCallback(char* location, Status status)
+void ServerHandler::onRegistrationCallback(char* location, Status status)
 {
     if (mState != STATE_REGISTRATION) {
         return;
@@ -212,7 +213,7 @@ void RegHandler::onRegistrationCallback(char* location, Status status)
             mRegistrationContext.handler(mRegistrationContext.context, this, status);
         }
 
-        mTimer.start(mLifetime * CONFIG_LIFETIME_SCALE * 1000, &RegHandler::timerCallback, this, true);
+        mTimer.start(mLifetime * CONFIG_LIFETIME_SCALE * 1000, &ServerHandler::timerCallback, this, true);
     }
     else {
         LOG_ERROR("Registration failed %d, status: %d", getId(), status);
@@ -240,12 +241,12 @@ void RegHandler::onRegistrationCallback(char* location, Status status)
     }
 }
 
-void RegHandler::updateCallback(void* context, void* data, Status status)
+void ServerHandler::updateCallback(void* context, void* data, Status status)
 {
-    static_cast<RegHandler*>(context)->onUpdateCallback(status);
+    static_cast<ServerHandler*>(context)->onUpdateCallback(status);
 }
 
-void RegHandler::onUpdateCallback(Status status)
+void ServerHandler::onUpdateCallback(Status status)
 {
     uint64_t timeMs = mLifetime * CONFIG_LIFETIME_SCALE * 1000;
 
@@ -266,19 +267,19 @@ void RegHandler::onUpdateCallback(Status status)
         }
     }
 
-    mTimer.start(timeMs, &RegHandler::timerCallback, this, true);
+    mTimer.start(timeMs, &ServerHandler::timerCallback, this, true);
 
     if (mPollRequest) {
         mPollRequest();
     }
 }
 
-void RegHandler::deregistrationCallback(void* context, void* data, Status status)
+void ServerHandler::deregistrationCallback(void* context, void* data, Status status)
 {
-    static_cast<RegHandler*>(context)->onDeregistrationCallback(status);
+    static_cast<ServerHandler*>(context)->onDeregistrationCallback(status);
 }
 
-void RegHandler::onDeregistrationCallback(Status status)
+void ServerHandler::onDeregistrationCallback(Status status)
 {
     if (mState != STATE_DEREGISTRATION) {
         return;
@@ -303,7 +304,7 @@ void RegHandler::onDeregistrationCallback(Status status)
 }
 
 // TODO: move to object manager
-Status RegHandler::getObjectsStr(char* str, int maxSize)
+Status ServerHandler::getObjectsStr(char* str, int maxSize)
 {
     int ret = 0;
     int size = 0;
@@ -358,7 +359,7 @@ Status RegHandler::getObjectsStr(char* str, int maxSize)
     return STS_OK;
 }
 
-Status RegHandler::sendRegistration()
+Status ServerHandler::sendRegistration()
 {
     Status status = STS_OK;
 
@@ -376,16 +377,16 @@ Status RegHandler::sendRegistration()
     LOG_INFO("Send registration request %d, lifetime: %d, objects: %s, bindings: %s", getId(), mLifetime, mObjectsStr,
              mBindingStr);
 
-    if ((status =
-             mTransport->registrationRequest(mSession, mClientName, mLifetime, LWM2M_VERSION, mBindingStr, mQueueMode,
-                                             NULL, mObjectsStr, &RegHandler::registrationCallback, this)) != STS_OK) {
+    if ((status = mTransport->registrationRequest(mSession, mClientName, mLifetime, LWM2M_VERSION, mBindingStr,
+                                                  mQueueMode, NULL, mObjectsStr, &ServerHandler::registrationCallback,
+                                                  this)) != STS_OK) {
         return status;
     }
 
     return STS_OK;
 }
 
-Status RegHandler::sendUpdate()
+Status ServerHandler::sendUpdate()
 {
     Status status = STS_OK;
     int64_t* lifetimePtr = NULL;
@@ -422,14 +423,14 @@ Status RegHandler::sendUpdate()
              mBindingStr);
 
     if ((status = mTransport->registrationUpdate(mSession, mLocation, lifetimePtr, bindingPtr, NULL, objectsPtr,
-                                                 &RegHandler::updateCallback, this)) != STS_OK) {
+                                                 &ServerHandler::updateCallback, this)) != STS_OK) {
         return status;
     }
 
     return STS_OK;
 }
 
-bool RegHandler::setupRetry()
+bool ServerHandler::setupRetry()
 {
     // Table: 6.2.1.1-1 Registration Procedures Default Values
     uint64_t delay = 60 * 60 * 24;
@@ -447,7 +448,7 @@ bool RegHandler::setupRetry()
     }
 
     if (delay < ULONG_MAX && mCurrentSequence < count) {
-        mTimer.start(delay * 1000, &RegHandler::timerCallback, this, true);
+        mTimer.start(delay * 1000, &ServerHandler::timerCallback, this, true);
         mCurrentSequence++;
 
         return true;

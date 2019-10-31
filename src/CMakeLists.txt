@@ -15,9 +15,9 @@ set(SOURCES
 	object.cpp
 	objectinstance.cpp
 	objectmanager.cpp
-	reghandler.cpp
 	resource.cpp
 	resourceinstance.cpp
+	serverhandler.cpp
 	textconverter.cpp
 	timer.cpp
 	utils.cpp
