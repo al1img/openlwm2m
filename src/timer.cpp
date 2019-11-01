@@ -3,6 +3,7 @@
 #include <climits>
 
 #include "log.hpp"
+#include "platform.hpp"
 
 #define LOG_MODULE "Timer"
 
@@ -12,16 +13,16 @@ namespace openlwm2m {
  * Public
  ******************************************************************************/
 
-Status Timer::poll(uint64_t currentTimeMs, uint64_t* pollTimeMs)
+Status Timer::run()
 {
-    LOG_DEBUG("Poll, current time: %lu", currentTimeMs);
-
     Status retStatus = STS_OK;
+
+    uint64_t currentTimeMs = Platform::getCurrentTime();
 
     Node<Timer>* node = sTimerList.begin();
 
     while (node) {
-        Status status = node->get()->processTimer(currentTimeMs, pollTimeMs);
+        Status status = node->get()->processTimer(currentTimeMs);
 
         if (status != STS_OK && retStatus == STS_OK) {
             retStatus = status;
@@ -57,7 +58,7 @@ void Timer::start(uint64_t periodMs, TimerCallback callback, void* context, bool
     mContext = context;
     mOneShot = oneShot;
     mStarted = true;
-    mFireAt = 0;
+    mFireAt = Platform::getCurrentTime() + periodMs;
 }
 
 void Timer::stop()
@@ -73,19 +74,12 @@ void Timer::stop()
 
 List<Timer> Timer::sTimerList;
 
-Status Timer::processTimer(uint64_t currentTimeMs, uint64_t* poolTimeMs)
+Status Timer::processTimer(uint64_t currentTimeMs)
 {
     Status status = STS_OK;
 
     if (!mStarted) {
         return status;
-    }
-
-    // Initialize just started timer
-    if (mFireAt == 0) {
-        mFireAt = currentTimeMs + mPeriod;
-
-        LOG_DEBUG("Timer %d will fire at: %lu", mId, mFireAt);
     }
 
     if (currentTimeMs >= mFireAt) {
@@ -104,10 +98,6 @@ Status Timer::processTimer(uint64_t currentTimeMs, uint64_t* poolTimeMs)
         mFireAt = currentTimeMs + mPeriod;
 
         LOG_DEBUG("Timer %d will fire at: %lu", mId, mFireAt);
-    }
-
-    if (poolTimeMs && mFireAt < *poolTimeMs) {
-        *poolTimeMs = mFireAt;
     }
 
     return status;

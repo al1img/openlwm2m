@@ -14,13 +14,11 @@ namespace openlwm2m {
  * Public
  ******************************************************************************/
 
-ServerHandler::ServerHandler(const char* clientName, bool queueMode, ObjectManager& objectManager,
-                             void (*pollRequest)())
+ServerHandler::ServerHandler(const char* clientName, bool queueMode, ObjectManager& objectManager)
     : ItemBase(NULL),
       mClientName(clientName),
       mQueueMode(queueMode),
       mObjectManager(objectManager),
-      mPollRequest(pollRequest),
       mTransport(NULL),
       mSession(NULL),
       mTimer(INVALID_ID)
@@ -235,10 +233,6 @@ void ServerHandler::onRegistrationCallback(char* location, Status status)
             }
         }
     }
-
-    if (mPollRequest) {
-        mPollRequest();
-    }
 }
 
 void ServerHandler::updateCallback(void* context, void* data, Status status)
@@ -268,10 +262,6 @@ void ServerHandler::onUpdateCallback(Status status)
     }
 
     mTimer.start(timeMs, &ServerHandler::timerCallback, this, true);
-
-    if (mPollRequest) {
-        mPollRequest();
-    }
 }
 
 void ServerHandler::deregistrationCallback(void* context, void* data, Status status)
@@ -296,10 +286,6 @@ void ServerHandler::onDeregistrationCallback(Status status)
 
     if (mDeregistrationContext.handler) {
         mDeregistrationContext.handler(mDeregistrationContext.context, this, status);
-    }
-
-    if (mPollRequest) {
-        mPollRequest();
     }
 }
 

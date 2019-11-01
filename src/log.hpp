@@ -1,6 +1,8 @@
 #ifndef OPENLWM2M_LOG_HPP_
 #define OPENLWM2M_LOG_HPP_
 
+#include <cstddef>
+
 #include "config.hpp"
 
 #define LOG_LEVEL_NONE 0

@@ -25,7 +25,7 @@ public:
         STATE_DEREGISTERED
     };
 
-    ServerHandler(const char* clientName, bool queueMode, ObjectManager& objectManager, void (*pollRequest)());
+    ServerHandler(const char* clientName, bool queueMode, ObjectManager& objectManager);
     ~ServerHandler();
 
     void init();
@@ -49,7 +49,6 @@ private:
     const char* mClientName;
     bool mQueueMode;
     ObjectManager& mObjectManager;
-    void (*mPollRequest)();
 
     TransportItf* mTransport;
     void* mSession;

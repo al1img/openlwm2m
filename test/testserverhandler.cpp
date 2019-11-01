@@ -6,6 +6,8 @@
 #include "objectmanager.hpp"
 #include "serverhandler.hpp"
 
+#include "testplatform.hpp"
+
 using namespace openlwm2m;
 
 class TestSession {
@@ -136,20 +138,10 @@ private:
     TestSession* mLastSession;
 };
 
-bool sPoolRequested = false;
-
-void pollRequest()
+static void run(uint64_t currentTimeMs)
 {
-    sPoolRequested = true;
-}
-
-void setCurrentTime(uint64_t time)
-{
-    REQUIRE(Timer::poll(time) == STS_OK);
-    if (sPoolRequested) {
-        REQUIRE(Timer::poll(time) == STS_OK);
-        sPoolRequested = false;
-    }
+    setCurrentTime(currentTimeMs);
+    REQUIRE(Timer::run() == STS_OK);
 }
 
 void setupObjects(ObjectManager* objectManager)
@@ -190,7 +182,7 @@ TEST_CASE("test ServerHandler", "[ServerHandler]")
     ObjectManager objectManager;
     TestTransport transport;
 
-    ServerHandler serverHandler("TestClient", false, objectManager, pollRequest);
+    ServerHandler serverHandler("TestClient", false, objectManager);
 
     objectManager.init();
 
@@ -198,6 +190,8 @@ TEST_CASE("test ServerHandler", "[ServerHandler]")
 
     SECTION("Success registration")
     {
+        run(0);
+
         serverHandler.setId(1);
 
         serverHandler.init();
@@ -214,21 +208,21 @@ TEST_CASE("test ServerHandler", "[ServerHandler]")
         status = serverHandler.registration();
         REQUIRE(status == STS_OK);
 
-        setCurrentTime(0);
+        run(0);
 
         CHECK(session->getLifetime() == 30);
         CHECK(session->getBindingMode() == "U");
         CHECK(session->getObjects() == "</>;rt=\"oma.lwm2m\";ct=110,<1/0>,<3/0>");
 
-        setCurrentTime(10000);
+        run(10000);
 
         CHECK_FALSE(session->getUpdateReceived());
 
-        setCurrentTime(30000);
+        run(30000);
 
         CHECK(session->getUpdateReceived());
 
-        setCurrentTime(60000);
+        run(60000);
 
         CHECK(session->getUpdateReceived());
 
@@ -236,13 +230,13 @@ TEST_CASE("test ServerHandler", "[ServerHandler]")
 
         session->setStatus(STS_ERR);
 
-        setCurrentTime(90000);
+        run(90000);
 
         session->setStatus(STS_OK);
 
-        setCurrentTime(100000);
+        run(100000);
 
-        setCurrentTime(160000);
+        run(160000);
 
         status = serverHandler.deregistration(
             [](void* context, ServerHandler* handler, Status status) { REQUIRE(status == STS_OK); });
@@ -253,6 +247,8 @@ TEST_CASE("test ServerHandler", "[ServerHandler]")
 
     SECTION("Failed unordered registration")
     {
+        run(0);
+
         serverHandler.setId(1);
 
         serverHandler.init();
@@ -278,7 +274,7 @@ TEST_CASE("test ServerHandler", "[ServerHandler]")
 
         REQUIRE(status == STS_OK);
 
-        setCurrentTime(0);
+        run(0);
 
         CHECK_FALSE(registrationStatus == STS_OK);
 
@@ -287,6 +283,8 @@ TEST_CASE("test ServerHandler", "[ServerHandler]")
 
     SECTION("Failed registration with retry")
     {
+        run(0);
+
         serverHandler.setId(1);
 
         serverHandler.init();
@@ -314,17 +312,17 @@ TEST_CASE("test ServerHandler", "[ServerHandler]")
 
         REQUIRE(status == STS_OK);
 
-        setCurrentTime(0);
+        run(0);
 
-        setCurrentTime(60000);
-
-        CHECK(registrationStatus == STS_OK);
-
-        setCurrentTime(1200000);
+        run(60000);
 
         CHECK(registrationStatus == STS_OK);
 
-        setCurrentTime(1800000);
+        run(120000);
+
+        CHECK(registrationStatus == STS_OK);
+
+        run(180000);
 
         CHECK_FALSE(registrationStatus == STS_OK);
 

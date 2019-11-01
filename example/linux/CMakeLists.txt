@@ -4,7 +4,7 @@
 
 include(FindPkgConfig)
 
-pkg_check_modules(COAP REQUIRED libcoap-2)
+pkg_check_modules(COAP REQUIRED libcoap-2-openssl)
 
 ################################################################################
 # Includes

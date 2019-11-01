@@ -19,6 +19,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
 include_directories(
 	.
+	platform
 	../src
 )
 
@@ -37,6 +38,8 @@ set(TEST_SOURCES
 	testtimer.cpp
 )
 
+add_subdirectory(platform)
+
 ################################################################################
 # Targets
 ################################################################################
@@ -51,7 +54,7 @@ target_link_libraries(
 	unitTests
 	Catch2::Catch2
 	lwm2mclient
-	platform
+	testPlatform
 )
 
 include(CTest)

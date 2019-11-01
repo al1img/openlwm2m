@@ -15,13 +15,12 @@ namespace openlwm2m {
  * Client
  ******************************************************************************/
 
-Client::Client(const char* name, bool queueMode, PollRequest pollRequest)
-    : mName(name), mQueueMode(queueMode), mPollRequest(pollRequest), mState(STATE_INIT)
+Client::Client(const char* name, bool queueMode) : mName(name), mQueueMode(queueMode), mState(STATE_INIT)
 {
     LOG_DEBUG("Create client");
 
     for (int i = 0; i < CONFIG_NUM_SERVERS; i++) {
-        mServerHandlerStorage.pushItem(new ServerHandler(name, queueMode, mObjectManager, pollRequest));
+        mServerHandlerStorage.pushItem(new ServerHandler(name, queueMode, mObjectManager));
     }
 }
 
@@ -36,15 +35,11 @@ Client::~Client()
  * Public
  ******************************************************************************/
 
-Status Client::poll(uint64_t currentTimeMs, uint64_t* pollTimeMs)
+Status Client::run()
 {
-    if (pollTimeMs) {
-        *pollTimeMs = ULONG_MAX;
-    }
-
     Status status = STS_OK;
 
-    if ((status = Timer::poll(currentTimeMs, pollTimeMs)) != STS_OK) {
+    if ((status = Timer::run()) != STS_OK) {
         return status;
     }
 

@@ -9,14 +9,11 @@ namespace openlwm2m {
 class Timer {
 public:
     /**
-     * Polls all timers.
-     *
-     * @param[in]      currentTimeMs Current time in msec.
-     * @param[in, out] pollTimeMs      Indicates when to poll timers next time.
+     * Run all timers.
      *
      * @retval Status.
      */
-    static Status poll(uint64_t currentTimeMs, uint64_t* poolTimeMs = NULL);
+    static Status run();
 
     /**
      * Timer callback.
@@ -70,7 +67,7 @@ private:
     void* mContext;
     uint64_t mFireAt;
 
-    Status processTimer(uint64_t currentTimeMs, uint64_t* poolInMs);
+    Status processTimer(uint64_t currentTimeMs);
 };
 
 }  // namespace openlwm2m

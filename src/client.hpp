@@ -20,15 +20,13 @@ namespace openlwm2m {
  */
 class Client : public ClientItf {
 public:
-    typedef void (*PollRequest)();
-
     /**
      * Constructor.
      */
-    Client(const char* name, bool queueMode, PollRequest pollRequest);
+    Client(const char* name, bool queueMode);
     ~Client();
 
-    Status poll(uint64_t currentTimeMs, uint64_t* pollTimeMs);
+    Status run();
 
     /**
      * Creates lwm2m object.
@@ -103,7 +101,6 @@ private:
 
     const char* mName;
     bool mQueueMode;
-    PollRequest mPollRequest;
 
     TransportItf* mTransport;
 
