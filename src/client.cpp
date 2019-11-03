@@ -15,7 +15,8 @@ namespace openlwm2m {
  * Client
  ******************************************************************************/
 
-Client::Client(const char* name, bool queueMode) : mName(name), mQueueMode(queueMode), mState(STATE_INIT)
+Client::Client(const char* name, bool queueMode)
+    : mName(name), mQueueMode(queueMode), mBootstrapHandler(name, mObjectManager), mState(STATE_INIT)
 {
     LOG_DEBUG("Create client");
 
@@ -109,6 +110,10 @@ Status Client::init(TransportItf* transport)
     status = mObjectManager.getObjectById(OBJ_LWM2M_SERVER)
                  ->setResourceCallback(RES_LIFETIME, &Client::updateRegistration, this);
     ASSERT(status == STS_OK);
+
+    if ((mBootstrapHandler.bind(transport)) != STS_OK) {
+        return status;
+    }
 
     mState = STATE_INITIALIZED;
 

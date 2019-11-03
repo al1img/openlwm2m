@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 
+#include "bootstraphandler.hpp"
 #include "interface.hpp"
 #include "lwm2m.hpp"
 #include "object.hpp"
@@ -106,6 +107,7 @@ private:
 
     ObjectManager mObjectManager;
     ServerHandler::Storage mServerHandlerStorage;
+    BootstrapHandler mBootstrapHandler;
 
     ServerHandler* mCurrentHandler = NULL;
     State mState;

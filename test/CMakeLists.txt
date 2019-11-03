@@ -29,6 +29,7 @@ include_directories(
 
 set(TEST_SOURCES
 	main.cpp
+	testbootstraphandler.cpp
 	testconverter.cpp
 	testobject.cpp
 	testobjectinstance.cpp

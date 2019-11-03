@@ -11,6 +11,7 @@ include_directories(
 ################################################################################
 
 set(SOURCES
+	bootstraphandler.cpp
 	client.cpp
 	jsonconverter.cpp
 	object.cpp

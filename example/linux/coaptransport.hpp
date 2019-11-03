@@ -18,7 +18,8 @@ public:
     openlwm2m::Status deleteSession(void* session);
 
     // Bootstrap
-    void bootstrapRequest(void* session, RequestHandler handler, void* context);
+    openlwm2m::Status bootstrapRequest(void* session, const char* clientName, openlwm2m::DataFormat* preferredFormat,
+                                       RequestHandler handler, void* context);
 
     // Registration
     openlwm2m::Status registrationRequest(void* session, const char* clientName, int64_t lifetime, const char* version,

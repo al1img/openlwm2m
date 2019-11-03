@@ -71,8 +71,10 @@ Status CoapTransport::deleteSession(void* session)
 }
 
 // Bootstrap
-void CoapTransport::bootstrapRequest(void* session, RequestHandler handler, void* context)
+Status CoapTransport::bootstrapRequest(void* session, const char* clientName, openlwm2m::DataFormat* preferredFormat,
+                                       RequestHandler handler, void* context)
 {
+    return STS_OK;
 }
 
 // Registration

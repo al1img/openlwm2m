@@ -26,7 +26,8 @@ public:
 
     // Bootstrap
 
-    virtual void bootstrapRequest(void* session, RequestHandler handler, void* context) = 0;
+    virtual Status bootstrapRequest(void* session, const char* clientName, DataFormat* preferredFormat,
+                                    RequestHandler handler, void* context) = 0;
 
     // Registration
 
