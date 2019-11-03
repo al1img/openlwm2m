@@ -39,7 +39,7 @@ public:
     State getState() const { return mState; }
 
 private:
-    static const int sUpdateRegistrationTimeout = 1000;
+    static const int sUpdateRegistrationTimeoutMs = 1000;
 
     struct ContextHandler {
         RegistrationHandler handler;

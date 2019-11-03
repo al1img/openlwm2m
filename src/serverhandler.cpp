@@ -6,7 +6,7 @@
 #include "log.hpp"
 #include "utils.hpp"
 
-#define LOG_MODULE "RegHandler"
+#define LOG_MODULE "ServerHandler"
 
 namespace openlwm2m {
 
@@ -154,7 +154,7 @@ Status ServerHandler::updateRegistration()
         return STS_ERR_NOT_ALLOWED;
     }
 
-    mTimer.start(sUpdateRegistrationTimeout, &ServerHandler::timerCallback, this, true);
+    mTimer.start(sUpdateRegistrationTimeoutMs, &ServerHandler::timerCallback, this, true);
 
     return STS_OK;
 }
