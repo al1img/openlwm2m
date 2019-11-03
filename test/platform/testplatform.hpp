@@ -5,4 +5,4 @@
 
 extern void setCurrentTime(uint64_t currentTimeMs);
 
-#endif /* OPENLWM2M_PLATFORM_HPP_ */
+#endif /* OPENLWM2M_TESTPLATFORM_HPP_ */
