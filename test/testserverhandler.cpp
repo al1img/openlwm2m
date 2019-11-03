@@ -7,136 +7,9 @@
 #include "serverhandler.hpp"
 
 #include "testplatform.hpp"
+#include "testtransport.hpp"
 
 using namespace openlwm2m;
-
-class TestSession {
-public:
-    TestSession(const char* uri) : mUri(uri) {}
-
-    std::string getUri() const { return mUri; }
-
-    void registrationRequest(int64_t lifetime, const char* bindingMode, const char* smsNumber, const char* objects,
-                             TransportItf::RequestHandler handler, void* context)
-    {
-        mLifetime = lifetime;
-        mBindingMode = bindingMode;
-        mObjects = objects;
-
-        if (handler) {
-            handler(context, const_cast<char*>("/rd/0"), mStatus);
-        }
-    }
-
-    void registrationUpdate(const int64_t* lifetime, const char* bindingMode, const char* smsNumber,
-                            const char* objects, TransportItf::RequestHandler handler, void* context)
-    {
-        if (lifetime) {
-            mLifetime = *lifetime;
-        }
-
-        if (bindingMode) {
-            mBindingMode = bindingMode;
-        }
-
-        if (objects) {
-            mObjects = objects;
-        }
-
-        mUpdateReceived = true;
-
-        if (handler) {
-            handler(context, NULL, mStatus);
-        }
-    }
-
-    void deregistrationRequest(TransportItf::RequestHandler handler, void* context)
-    {
-        if (handler) {
-            handler(context, NULL, mStatus);
-        }
-    }
-
-    void setStatus(Status status) { mStatus = status; }
-
-    int64_t getLifetime() const { return mLifetime; }
-    std::string getBindingMode() const { return mBindingMode; }
-    std::string getObjects() const { return mObjects; }
-
-    bool getUpdateReceived()
-    {
-        bool updateReceived = mUpdateReceived;
-
-        mUpdateReceived = false;
-
-        return updateReceived;
-    }
-
-private:
-    std::string mUri;
-    Status mStatus;
-
-    int64_t mLifetime;
-    std::string mBindingMode;
-    std::string mObjects;
-
-    bool mUpdateReceived;
-};
-
-class TestTransport : public TransportItf {
-public:
-    TestTransport() : mLastSession(NULL) {}
-
-    void setClient(ClientItf* client) {}
-
-    void* createSession(const char* uri, Status* status = NULL)
-    {
-        mLastSession = new TestSession(uri);
-        return mLastSession;
-    }
-
-    Status deleteSession(void* session)
-    {
-        delete static_cast<TestSession*>(session);
-        return STS_OK;
-    }
-
-    void bootstrapRequest(void* session, RequestHandler handler, void* context) {}
-
-    Status registrationRequest(void* session, const char* clientName, int64_t lifetime, const char* version,
-                               const char* bindingMode, bool queueMode, const char* smsNumber, const char* objects,
-                               RequestHandler handler, void* context)
-    {
-        static_cast<TestSession*>(session)->registrationRequest(lifetime, bindingMode, smsNumber, objects, handler,
-                                                                context);
-
-        return STS_OK;
-    }
-
-    Status registrationUpdate(void* session, const char* location, const int64_t* lifetime, const char* bindingMode,
-                              const char* smsNumber, const char* objects, RequestHandler handler, void* context)
-    {
-        static_cast<TestSession*>(session)->registrationUpdate(lifetime, bindingMode, smsNumber, objects, handler,
-                                                               context);
-        return STS_OK;
-    }
-
-    Status deregistrationRequest(void* session, const char* location, RequestHandler handler, void* context)
-    {
-        static_cast<TestSession*>(session)->deregistrationRequest(handler, context);
-
-        return STS_OK;
-    }
-
-    void deviceSend(void* session, RequestHandler handler, void* context) {}
-
-    void reportingNotify(void* session, RequestHandler handler, void* context) {}
-
-    TestSession* getLastSession() const { return mLastSession; }
-
-private:
-    TestSession* mLastSession;
-};
 
 static void run(uint64_t currentTimeMs)
 {
@@ -144,7 +17,7 @@ static void run(uint64_t currentTimeMs)
     REQUIRE(Timer::run() == STS_OK);
 }
 
-void setupObjects(ObjectManager* objectManager)
+static void setupObjects(ObjectManager* objectManager)
 {
     Status status = STS_OK;
 
@@ -205,7 +78,8 @@ TEST_CASE("test ServerHandler", "[ServerHandler]")
 
         session->setStatus(STS_OK);
 
-        status = serverHandler.registration();
+        status = serverHandler.registration(
+            false, [](void* context, ServerHandler* handler, Status status) { CHECK(status == STS_OK); });
         REQUIRE(status == STS_OK);
 
         run(0);
@@ -239,7 +113,7 @@ TEST_CASE("test ServerHandler", "[ServerHandler]")
         run(160000);
 
         status = serverHandler.deregistration(
-            [](void* context, ServerHandler* handler, Status status) { REQUIRE(status == STS_OK); });
+            [](void* context, ServerHandler* handler, Status status) { CHECK(status == STS_OK); });
         REQUIRE(status == STS_OK);
 
         CHECK(serverHandler.getState() == ServerHandler::STATE_DEREGISTERED);
