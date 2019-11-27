@@ -91,6 +91,7 @@ private:
     Status writeObjlink(const char* item, Objlnk value);
     Status writeFloat(const char* item, double value);
     Status writeString(const char* item, char* value);
+    Status writeOpaque(const char* item, Opaque value);
     Status encodeValue(ResourceData* resourceData);
     Status encodeItem(char* baseName, char* name, ResourceData* resourceData);
 };

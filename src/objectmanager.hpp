@@ -21,10 +21,9 @@ public:
     Status bootstrapWrite(DataFormat dataFormat, void* data, size_t size, uint16_t objectId,
                           uint16_t objectInstanceId = INVALID_ID, uint16_t resourceId = INVALID_ID);
 
-    Status bootstrepRead(DataFormat* dataFormat, void* data, size_t* size, uint16_t objectId,
-                         uint16_t objectInstanceId = INVALID_ID);
-
     Status addConverter(DataConverter* converter);
+    DataConverter* getConverterById(uint16_t id);
+
     bool isFormatSupported(DataFormat format);
 
     ObjectInstance* getServerInstance(uint16_t shortServerId);
@@ -57,11 +56,6 @@ private:
                          bool replace = false);
     Status writeResourceInstance(ResourceInstance* resourceInstance, DataConverter* converter,
                                  bool checkOperation = false);
-
-    Status readResourceInstance(DataConverter* converter, ResourceInstance* resourceInstance);
-    Status readResource(DataConverter* converter, Resource* resource);
-    Status readObjectInstance(DataConverter* converter, ObjectInstance* objectInstance);
-    Status readObject(DataConverter* converter, Object* object);
 };
 
 }  // namespace openlwm2m

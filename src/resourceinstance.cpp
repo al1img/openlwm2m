@@ -297,6 +297,14 @@ Status ResourceInstance::read(DataConverter::ResourceData* resourceData)
             resourceData->boolValue = static_cast<ResourceBool*>(this)->getValue();
             break;
 
+            // TODO:
+            // opaque, objlink, corelink
+
+        case DATA_TYPE_OPAQUE:
+            resourceData->opaqueValue.data = NULL;
+            resourceData->opaqueValue.size = 0;
+            break;
+
         default:
             return STS_ERR;
     }

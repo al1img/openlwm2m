@@ -61,6 +61,13 @@ void Timer::start(uint64_t periodMs, TimerCallback callback, void* context, bool
     mFireAt = Platform::getCurrentTime() + periodMs;
 }
 
+void Timer::restart()
+{
+    LOG_DEBUG("Restart %d");
+
+    mFireAt = Platform::getCurrentTime() + mPeriod;
+}
+
 void Timer::stop()
 {
     LOG_DEBUG("Stop %d", mId);

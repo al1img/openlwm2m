@@ -46,10 +46,13 @@ public:
      * @param[in] callback Callback which will be called when the timer is fired.
      * @param[in] context  Context which will be passed to the callback.
      * @param[in] oneShot  If true, the timer will be fired only once.
-     *
-     * @retval Status.
      */
     void start(uint64_t periodMs, TimerCallback callback, void* context = NULL, bool oneShot = false);
+
+    /**
+     * Restarts the timer.
+     */
+    void restart();
 
     /**
      * Stops the timer.

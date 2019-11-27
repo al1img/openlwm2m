@@ -101,6 +101,66 @@ TEST_CASE("test BootstrapHandler", "[BootstrapHandler]")
         CHECK(retStatus == STS_OK);
     }
 
+    SECTION("Read")
+    {
+        const char* obj0Data =
+            "\
+[{\"bn\":\"/0/0/\",\"n\":\"0\",\"vs\":\"coap://bootstrap\"},\
+{\"n\":\"1\",\"vb\":true},\
+{\"n\":\"2\",\"v\":0},\
+{\"n\":\"3\",\"vd\":\"\"},\
+{\"n\":\"4\",\"vd\":\"\"},\
+{\"n\":\"5\",\"vd\":\"\"},\
+{\"bn\":\"/0/1/\",\"n\":\"0\",\"vs\":\"coap://lwm2mserver\"},\
+{\"n\":\"1\",\"vb\":false},{\"n\":\"2\",\"v\":0},\
+{\"n\":\"3\",\"vd\":\"\"},\
+{\"n\":\"4\",\"vd\":\"\"},\
+{\"n\":\"5\",\"vd\":\"\"},\
+{\"n\":\"10\",\"v\":5}]";
+
+        const char* obj0Ins1Data =
+            "\
+[{\"bn\":\"/0/1/\",\"n\":\"0\",\"vs\":\"coap://lwm2mserver\"},\
+{\"n\":\"1\",\"vb\":false},{\"n\":\"2\",\"v\":0},\
+{\"n\":\"3\",\"vd\":\"\"},\
+{\"n\":\"4\",\"vd\":\"\"},\
+{\"n\":\"5\",\"vd\":\"\"},\
+{\"n\":\"10\",\"v\":5}]";
+
+        size_t size = 1024;
+        char data[size];
+
+        DataFormat format = DATA_FMT_SENML_JSON;
+
+        status = bootstrapHandler.read(&format, static_cast<void*>(data), &size, OBJ_LWM2M_SECURITY);
+        CHECK(status == STS_OK);
+
+        data[size] = '\0';
+
+        printf("%s\n", data);
+        printf("%s\n", obj0Data);
+
+        CHECK(strcmp(obj0Data, data) == 0);
+
+        status = bootstrapHandler.read(&format, static_cast<void*>(data), &size, OBJ_LWM2M_SECURITY, 1);
+        CHECK(status == STS_OK);
+
+        data[size] = '\0';
+
+        printf("%s\n", data);
+        printf("%s\n", obj0Ins1Data);
+
+        CHECK(strcmp(obj0Ins1Data, data) == 0);
+
+        status = bootstrapHandler.read(&format, static_cast<void*>(data), &size, OBJ_DEVICE);
+        CHECK(status == STS_ERR_NOT_ALLOWED);
+
+        status = bootstrapHandler.bootstrapFinish();
+        CHECK(status == STS_OK);
+
+        CHECK(retStatus == STS_OK);
+    }
+
 #if 0
         serverHandler.setId(1);
 

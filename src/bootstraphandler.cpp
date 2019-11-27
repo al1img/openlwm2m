@@ -111,7 +111,9 @@ Status BootstrapHandler::discover(char* data, size_t* size, uint16_t objectId)
         return STS_ERR_NOT_ALLOWED;
     }
 
-    LOG_INFO("Bootstrap discover");
+    LOG_INFO("Bootstrap discover /%d", objectId);
+
+    mTimer.restart();
 
     int ret = snprintf(data, *size, "lwm2m=\"%s\"", LWM2M_VERSION);
 
@@ -152,6 +154,59 @@ Status BootstrapHandler::discover(char* data, size_t* size, uint16_t objectId)
     *size = curSize;
 
     return STS_OK;
+}
+
+Status BootstrapHandler::read(DataFormat* dataFormat, void* data, size_t* size, uint16_t objectId,
+                              uint16_t objectInstanceId)
+{
+    Status status = STS_OK;
+
+    if (mState != STATE_BOOTSTRAPING) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    if (objectId != OBJ_LWM2M_SECURITY && objectId != OBJ_LWM2M_SERVER) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    LOG_INFO("Bootstrap read /%d/%d", objectId, objectInstanceId);
+
+    if (*dataFormat == DATA_FMT_ANY) {
+        *dataFormat = CONFIG_DEFAULT_DATA_FORMAT;
+    }
+
+    mTimer.restart();
+
+    DataConverter* outConverter = mObjectManager.getConverterById(*dataFormat);
+
+    if (outConverter == NULL) {
+        return STS_ERR_NOT_FOUND;
+    }
+
+    if ((status = outConverter->startEncoding(data, *size)) != STS_OK) {
+        return status;
+    }
+
+    Object* object = mObjectManager.getObjectById(objectId);
+
+    if (!object) {
+        return STS_ERR_NOT_FOUND;
+    }
+
+    if (objectInstanceId == INVALID_ID) {
+        if ((status = object->read(outConverter)) != STS_OK) {
+            return status;
+        }
+    }
+    else {
+        ObjectInstance* objectInstance = object->getInstanceById(objectInstanceId);
+
+        if ((status = objectInstance->read(outConverter)) != STS_OK) {
+            return status;
+        }
+    }
+
+    return outConverter->finishEncoding(size);
 }
 
 /*******************************************************************************

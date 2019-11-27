@@ -682,6 +682,26 @@ Status JsonConverter::writeObjlink(const char* item, Objlnk value)
     return STS_OK;
 }
 
+Status JsonConverter::writeOpaque(const char* item, Opaque value)
+{
+    Status status = STS_OK;
+
+    if ((status = checkFirstItem()) != STS_OK) {
+        return status;
+    }
+
+    int ret = 0;
+
+    // TODO: implement base64 encoding
+    if ((ret = snprintf(mEncodingPos, mEncodingEndPos - mEncodingPos, "\"%s\":\"\"", item)) < 0) {
+        return STS_ERR_NO_MEM;
+    }
+
+    mEncodingPos += ret;
+
+    return STS_OK;
+}
+
 Status JsonConverter::writeFloat(const char* item, double value)
 {
     Status status = STS_OK;
@@ -744,6 +764,9 @@ Status JsonConverter::encodeValue(ResourceData* resourceData)
 
         case DATA_TYPE_OBJLINK:
             return writeObjlink(JSON_ITEM_OBJECT_LINK_VALUE, resourceData->objlnkValue);
+
+        case DATA_TYPE_OPAQUE:
+            return writeOpaque(JSON_ITEM_OPAQUE_VALUE, resourceData->opaqueValue);
 
         default:
             return STS_ERR_INVALID_VALUE;
