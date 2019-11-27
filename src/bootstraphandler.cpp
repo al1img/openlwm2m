@@ -1,6 +1,9 @@
 #include "bootstraphandler.hpp"
 
+#include <cstdio>
+
 #include "log.hpp"
+#include "utils.hpp"
 
 #define LOG_MODULE "BootstrapHandler"
 
@@ -85,6 +88,72 @@ Status BootstrapHandler::bootstrapRequest(RequestHandler handler, void* context)
     return STS_OK;
 }
 
+Status BootstrapHandler::bootstrapFinish()
+{
+    Status status = STS_OK;
+
+    if (mState != STATE_BOOTSTRAPING) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    LOG_INFO("Bootstrap finish");
+
+    bootstrapFinish(status);
+
+    return status;
+}
+
+Status BootstrapHandler::discover(char* data, size_t* size, uint16_t objectId)
+{
+    size_t curSize = 0;
+
+    if (mState != STATE_BOOTSTRAPING) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    LOG_INFO("Bootstrap discover");
+
+    int ret = snprintf(data, *size, "lwm2m=\"%s\"", LWM2M_VERSION);
+
+    if (ret < 0) {
+        return STS_ERR_NO_MEM;
+    }
+
+    curSize += ret;
+
+    if (objectId == INVALID_ID) {
+        for (Object* object = mObjectManager.getFirstObject(); object != NULL;
+             object = mObjectManager.getNextObject()) {
+            ret = discoverObject(&data[curSize], *size - curSize, object);
+
+            if (ret < 0) {
+                return STS_ERR_NO_MEM;
+            }
+
+            curSize += ret;
+        }
+    }
+    else {
+        Object* object = mObjectManager.getObjectById(objectId);
+
+        if (!object) {
+            return STS_ERR_NOT_FOUND;
+        }
+
+        ret = discoverObject(&data[curSize], *size - curSize, object);
+
+        if (ret < 0) {
+            return STS_ERR_NO_MEM;
+        }
+
+        curSize += ret;
+    }
+
+    *size = curSize;
+
+    return STS_OK;
+}
+
 /*******************************************************************************
  * Private
  ******************************************************************************/
@@ -134,6 +203,35 @@ void BootstrapHandler::bootstrapFinish(Status status)
     if (mRequestHandler) {
         mRequestHandler(mRequestContext, this, status);
     }
+}
+
+int BootstrapHandler::discoverObject(char* data, size_t maxSize, Object* object)
+{
+    char buf[16];
+    int curSize = 0;
+
+    for (ObjectInstance* instance = object->getFirstInstance(); instance != NULL;
+         instance = object->getNextInstance()) {
+        int ret = Utils::makePath(buf, sizeof(buf), object->getId(), instance->getId());
+        if (ret < 0) {
+            return -1;
+        }
+
+        if (object->getId() == OBJ_LWM2M_SECURITY &&
+            !static_cast<ResourceBool*>(instance->getResourceInstance(RES_BOOTSTRAP_SERVER))->getValue()) {
+            ret = snprintf(
+                &data[curSize], maxSize - curSize, ",<%s>;ssid=%ld;uri=%s", buf,
+                static_cast<ResourceInt*>(instance->getResourceInstance(RES_SECURITY_SHORT_SERVER_ID))->getValue(),
+                static_cast<ResourceString*>(instance->getResourceInstance(RES_LWM2M_SERVER_URI))->getValue());
+        }
+        else {
+            ret = snprintf(&data[curSize], maxSize - curSize, ",<%s>", buf);
+        }
+
+        curSize += ret;
+    }
+
+    return curSize;
 }
 
 #if 0

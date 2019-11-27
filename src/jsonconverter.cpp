@@ -160,8 +160,8 @@ Status JsonConverter::nextEncoding(ResourceData* resourceData)
         mHasItems = true;
     }
 
-    if (Utils::makePath(resourceData->objectId, resourceData->objectInstanceId, resourceData->resourceId,
-                        resourceData->resourceInstanceId, name, sStringSize) < 0) {
+    if (Utils::makePath(name, sStringSize, resourceData->objectId, resourceData->objectInstanceId,
+                        resourceData->resourceId, resourceData->resourceInstanceId) < 0) {
         return STS_ERR_NO_MEM;
     }
 

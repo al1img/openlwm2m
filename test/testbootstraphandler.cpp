@@ -27,10 +27,21 @@ static void setupObjects(ObjectManager* objectManager)
     ObjectInstance* instance = object->createInstance();
     REQUIRE(instance);
 
-    status = static_cast<ResourceString*>(instance->getResourceInstance(RES_LWM2M_SERVER_URI))->setValue("coap://test");
+    status =
+        static_cast<ResourceString*>(instance->getResourceInstance(RES_LWM2M_SERVER_URI))->setValue("coap://bootstrap");
     CHECK(status == STS_OK);
 
     status = static_cast<ResourceBool*>(instance->getResourceInstance(RES_BOOTSTRAP_SERVER))->setValue(1);
+    CHECK(status == STS_OK);
+
+    instance = object->createInstance();
+    REQUIRE(instance);
+
+    status = static_cast<ResourceString*>(instance->getResourceInstance(RES_LWM2M_SERVER_URI))
+                 ->setValue("coap://lwm2mserver");
+    CHECK(status == STS_OK);
+
+    status = static_cast<ResourceInt*>(instance->getResourceInstance(RES_SECURITY_SHORT_SERVER_ID))->setValue(5);
     CHECK(status == STS_OK);
 }
 
@@ -48,17 +59,46 @@ TEST_CASE("test BootstrapHandler", "[BootstrapHandler]")
 
     setupObjects(&objectManager);
 
+    Status retStatus = STS_ERR;
+
+    auto requestHandler = [&](Status status) { retStatus = status; };
+
+    run(0);
+
+    status = bootstrapHandler.bootstrapRequest(
+        [](void* context, BootstrapHandler* handler, Status status) {
+            (*static_cast<decltype(requestHandler)*>(context))(status);
+        },
+        &requestHandler);
+    REQUIRE(status == STS_OK);
+
+    TestSession* session = transport.getLastSession();
+    REQUIRE(session);
+    CHECK(session->getUri() == "coap://bootstrap");
+
+    SECTION("Timeout")
+    {
+        run(60000);
+
+        CHECK(retStatus == STS_ERR_TIMEOUT);
+    }
+
     SECTION("Discover")
     {
-        run(0);
+        size_t size = 1024;
+        char result[size];
 
-        status = bootstrapHandler.bootstrapRequest(
-            [](void* context, BootstrapHandler* handler, Status status) { CHECK(status == STS_OK); });
+        status = bootstrapHandler.discover(result, &size);
         CHECK(status == STS_OK);
 
-        TestSession* session = transport.getLastSession();
-        REQUIRE(session);
-        CHECK(session->getUri() == "coap://test");
+        result[size] = '\0';
+
+        CHECK(strcmp(result, "lwm2m=\"1.1\",</0/0>,</0/1>;ssid=5;uri=coap://lwm2mserver,</3/0>") == 0);
+
+        status = bootstrapHandler.bootstrapFinish();
+        CHECK(status == STS_OK);
+
+        CHECK(retStatus == STS_OK);
     }
 
 #if 0

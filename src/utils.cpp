@@ -4,8 +4,6 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "lwm2m.hpp"
-
 namespace openlwm2m {
 
 /*******************************************************************************
@@ -73,8 +71,8 @@ int Utils::convertPath(const char* path, uint16_t* objectId, uint16_t* objectIns
     return 0;
 }
 
-int Utils::makePath(uint16_t objectId, uint16_t objectInstanceId, uint16_t resourceId, uint16_t resourceInstanceId,
-                    char* path, size_t len)
+int Utils::makePath(char* path, size_t len, uint16_t objectId, uint16_t objectInstanceId, uint16_t resourceId,
+                    uint16_t resourceInstanceId)
 {
     uint16_t values[4] = {objectId, objectInstanceId, resourceId, resourceInstanceId};
     size_t size = 0;
@@ -85,7 +83,7 @@ int Utils::makePath(uint16_t objectId, uint16_t objectInstanceId, uint16_t resou
     }
 
     for (int i = 0; i < 4; i++) {
-        if (values[i] == UINT16_MAX) {
+        if (values[i] == INVALID_ID) {
             break;
         }
 

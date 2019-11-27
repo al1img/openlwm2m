@@ -18,6 +18,8 @@ public:
 
     Status bind(TransportItf* transport);
     Status bootstrapRequest(RequestHandler handler = NULL, void* context = NULL);
+    Status bootstrapFinish();
+    Status discover(char* data, size_t* size, uint16_t objectId = INVALID_ID);
 
     State getState() const { return mState; }
 
@@ -43,6 +45,7 @@ private:
     void onBootstrapRequestCallback(Status status);
 
     void bootstrapFinish(Status status);
+    int discoverObject(char* data, size_t maxSize, Object* object);
 };
 
 }  // namespace openlwm2m
