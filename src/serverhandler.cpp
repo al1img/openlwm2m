@@ -196,7 +196,7 @@ void ServerHandler::onRegistrationCallback(char* location, Status status)
     }
 
     if (location) {
-        Utils::strCopy(mLocation, location, CONFIG_DEFAULT_STRING_LEN);
+        Utils::strCopy(mLocation, location, sizeof(mLocation));
     }
     else {
         mLocation[0] = '\0';
@@ -298,7 +298,7 @@ Status ServerHandler::getObjectsStr(char* str, int maxSize)
     if (mObjectManager.isFormatSupported(DATA_FMT_SENML_JSON)) {
         ret = snprintf(&str[size], maxSize, "</>;rt=\"oma.lwm2m\";ct=%d,", DATA_FMT_SENML_JSON);
 
-        if (ret < 0) {
+        if (ret < 0 || ret >= maxSize) {
             return STS_ERR;
         }
 
@@ -323,7 +323,7 @@ Status ServerHandler::getObjectsStr(char* str, int maxSize)
             }
 
             if (ret < 0) {
-                return STS_ERR;
+                return STS_ERR_INVALID_VALUE;
             }
 
             if (ret >= (maxSize - size)) {
@@ -356,9 +356,12 @@ Status ServerHandler::sendRegistration()
     }
 
     mLifetime = static_cast<ResourceInt*>(mServerInstance->getResourceInstance(RES_LIFETIME))->getValue();
-    strncpy(mBindingStr, static_cast<ResourceString*>(mServerInstance->getResourceInstance(RES_BINDING))->getValue(),
-            CONFIG_BINDING_STR_MAX_LEN);
-    mBindingStr[CONFIG_BINDING_STR_MAX_LEN] = '\0';
+
+    if (Utils::strCopy(mBindingStr,
+                       static_cast<ResourceString*>(mServerInstance->getResourceInstance(RES_BINDING))->getValue(),
+                       sizeof(mBindingStr)) < 0) {
+        return STS_ERR_NO_MEM;
+    }
 
     LOG_INFO("Send registration request %d, lifetime: %d, objects: %s, bindings: %s", getId(), mLifetime, mObjectsStr,
              mBindingStr);
@@ -386,17 +389,21 @@ Status ServerHandler::sendUpdate()
     }
 
     if (strcmp(mObjectsStr, objectsStr) != 0) {
-        strncpy(mObjectsStr, objectsStr, CONFIG_DEFAULT_STRING_LEN);
-        mObjectsStr[CONFIG_DEFAULT_STRING_LEN] = '\n';
+        if (Utils::strCopy(mObjectsStr, objectsStr, sizeof(mObjectsStr)) < 0) {
+            return STS_ERR_NO_MEM;
+        }
+
         objectsPtr = mObjectsStr;
     }
 
     if (strcmp(mBindingStr,
                static_cast<ResourceString*>(mServerInstance->getResourceInstance(RES_BINDING))->getValue()) != 0) {
-        strncpy(mBindingStr,
-                static_cast<ResourceString*>(mServerInstance->getResourceInstance(RES_BINDING))->getValue(),
-                CONFIG_BINDING_STR_MAX_LEN);
-        mBindingStr[CONFIG_BINDING_STR_MAX_LEN] = '\n';
+        if (Utils::strCopy(mBindingStr,
+                           static_cast<ResourceString*>(mServerInstance->getResourceInstance(RES_BINDING))->getValue(),
+                           sizeof(mBindingStr)) < 0) {
+            return STS_ERR_NO_MEM;
+        }
+
         bindingPtr = mBindingStr;
     }
 

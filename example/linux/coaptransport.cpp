@@ -96,20 +96,36 @@ Status CoapTransport::registrationRequest(void* session, const char* clientName,
     // Client name
     if (clientName) {
         ret = snprintf(buf, sizeof(buf), "ep=%s", clientName);
+        if (ret < 0 || static_cast<size_t>(ret) >= sizeof(buf)) {
+            return STS_ERR_NO_MEM;
+        }
+
         coap_insert_optlist(&optList,
                             coap_new_optlist(COAP_OPTION_URI_QUERY, ret, reinterpret_cast<const uint8_t*>(buf)));
     }
 
     // Version
     ret = snprintf(buf, sizeof(buf), "lwm2m=%s", version);
+    if (ret < 0 || static_cast<size_t>(ret) >= sizeof(buf)) {
+        return STS_ERR_NO_MEM;
+    }
+
     coap_insert_optlist(&optList, coap_new_optlist(COAP_OPTION_URI_QUERY, ret, reinterpret_cast<const uint8_t*>(buf)));
 
     // Lifetime
     ret = snprintf(buf, sizeof(buf), "lt=%ld", lifetime);
+    if (ret < 0 || static_cast<size_t>(ret) >= sizeof(buf)) {
+        return STS_ERR_NO_MEM;
+    }
+
     coap_insert_optlist(&optList, coap_new_optlist(COAP_OPTION_URI_QUERY, ret, reinterpret_cast<const uint8_t*>(buf)));
 
     // Binding
     ret = snprintf(buf, sizeof(buf), "b=%s", bindingMode);
+    if (ret < 0 || static_cast<size_t>(ret) >= sizeof(buf)) {
+        return STS_ERR_NO_MEM;
+    }
+
     coap_insert_optlist(&optList, coap_new_optlist(COAP_OPTION_URI_QUERY, ret, reinterpret_cast<const uint8_t*>(buf)));
 
     // Queue mode
@@ -121,6 +137,10 @@ Status CoapTransport::registrationRequest(void* session, const char* clientName,
     // SMS number
     if (smsNumber) {
         ret = snprintf(buf, sizeof(buf), "sms=%s", smsNumber);
+        if (ret < 0 || static_cast<size_t>(ret) >= sizeof(buf)) {
+            return STS_ERR_NO_MEM;
+        }
+
         coap_insert_optlist(&optList,
                             coap_new_optlist(COAP_OPTION_URI_QUERY, ret, reinterpret_cast<const uint8_t*>(buf)));
     }
@@ -167,6 +187,10 @@ Status CoapTransport::registrationUpdate(void* session, const char* location, co
     // Lifetime
     if (lifetime) {
         ret = snprintf(buf, sizeof(buf), "lt=%ld", *lifetime);
+        if (ret < 0 || static_cast<size_t>(ret) >= sizeof(buf)) {
+            return STS_ERR_NO_MEM;
+        }
+
         coap_insert_optlist(&optList,
                             coap_new_optlist(COAP_OPTION_URI_QUERY, ret, reinterpret_cast<const uint8_t*>(buf)));
     }
@@ -174,6 +198,10 @@ Status CoapTransport::registrationUpdate(void* session, const char* location, co
     // Binding
     if (bindingMode) {
         ret = snprintf(buf, sizeof(buf), "b=%s", bindingMode);
+        if (ret < 0 || static_cast<size_t>(ret) >= sizeof(buf)) {
+            return STS_ERR_NO_MEM;
+        }
+
         coap_insert_optlist(&optList,
                             coap_new_optlist(COAP_OPTION_URI_QUERY, ret, reinterpret_cast<const uint8_t*>(buf)));
     }
@@ -181,6 +209,10 @@ Status CoapTransport::registrationUpdate(void* session, const char* location, co
     // SMS number
     if (smsNumber) {
         ret = snprintf(buf, sizeof(buf), "sms=%s", smsNumber);
+        if (ret < 0 || static_cast<size_t>(ret) >= sizeof(buf)) {
+            return STS_ERR_NO_MEM;
+        }
+
         coap_insert_optlist(&optList,
                             coap_new_optlist(COAP_OPTION_URI_QUERY, ret, reinterpret_cast<const uint8_t*>(buf)));
     }
@@ -411,7 +443,7 @@ void CoapTransport::onGetReceived(coap_resource_t* resource, coap_session_t* ses
     if ((status = getAccept(request, &reqFormat)) != STS_OK) {
         response->code = status2Code(status);
     }
-    else if ((status = getUriPath(request, uri, CONFIG_DEFAULT_STRING_LEN)) != STS_OK) {
+    else if ((status = getUriPath(request, uri, sizeof(uri))) != STS_OK) {
         response->code = status2Code(status);
     }
 
@@ -541,7 +573,7 @@ Status CoapTransport::getLocationPath(coap_pdu_t* pdu, char* location, size_t si
     while (option) {
         location[curSize++] = '/';
 
-        if (curSize == size || curSize + coap_opt_length(option) > size) {
+        if (curSize == size || curSize + coap_opt_length(option) + 1 > size) {
             return STS_ERR_NO_MEM;
         }
 
@@ -568,7 +600,7 @@ Status CoapTransport::getUriPath(coap_pdu_t* pdu, char* uri, size_t size)
     while (option) {
         uri[curSize++] = '/';
 
-        if (curSize == size || curSize + coap_opt_length(option) > size) {
+        if (curSize == size || curSize + coap_opt_length(option) + 1 > size) {
             return STS_ERR_NO_MEM;
         }
 
@@ -613,7 +645,7 @@ void CoapTransport::registrationResponse(coap_pdu_t* received, Request* request)
     char location[CONFIG_DEFAULT_STRING_LEN + 1];
 
     if (status == STS_OK) {
-        status = getLocationPath(received, location, CONFIG_DEFAULT_STRING_LEN);
+        status = getLocationPath(received, location, sizeof(location));
     }
 
     request->getHandler()(request->getContext(), location, status);

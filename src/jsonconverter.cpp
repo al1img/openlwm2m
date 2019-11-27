@@ -160,7 +160,7 @@ Status JsonConverter::nextEncoding(ResourceData* resourceData)
         mHasItems = true;
     }
 
-    if (Utils::makePath(name, sStringSize, resourceData->objectId, resourceData->objectInstanceId,
+    if (Utils::makePath(name, sizeof(name), resourceData->objectId, resourceData->objectInstanceId,
                         resourceData->resourceId, resourceData->resourceInstanceId) < 0) {
         return STS_ERR_NO_MEM;
     }
@@ -176,7 +176,7 @@ Status JsonConverter::nextEncoding(ResourceData* resourceData)
             namePos++;
         }
 
-        if (Utils::strCopy(prevName, baseNamePos, sStringSize) < 0) {
+        if (Utils::strCopy(prevName, baseNamePos, sizeof(prevName)) < 0) {
             return STS_ERR_NO_MEM;
         }
 
@@ -190,7 +190,7 @@ Status JsonConverter::nextEncoding(ResourceData* resourceData)
     }
     else if (mEncodingBaseName[0] == '\0' || strncmp(mEncodingBaseName, name, strlen(mEncodingBaseName)) != 0) {
         // Store resource data to determine basename
-        if (Utils::strCopy(mEncodingBaseName, name, sStringSize) < 0) {
+        if (Utils::strCopy(mEncodingBaseName, name, sizeof(mEncodingBaseName)) < 0) {
             return STS_ERR_NO_MEM;
         }
 
@@ -465,7 +465,7 @@ Status JsonConverter::decodeName(ResourceData* resourceData)
     Status status = STS_OK;
     char name[sStringSize];
 
-    int len = Utils::strCopy(name, mDecodingBaseName, sStringSize);
+    int len = Utils::strCopy(name, mDecodingBaseName, sizeof(name));
     if (len < 0) {
         return STS_ERR_NO_MEM;
     }
@@ -653,7 +653,9 @@ Status JsonConverter::writeBool(const char* item, uint8_t value)
         strValue = "false";
     }
 
-    if ((ret = snprintf(mEncodingPos, mEncodingEndPos - mEncodingPos, "\"%s\":%s", item, strValue)) < 0) {
+    ret = snprintf(mEncodingPos, mEncodingEndPos - mEncodingPos, "\"%s\":%s", item, strValue);
+
+    if (ret < 0 || ret >= mEncodingEndPos - mEncodingPos) {
         return STS_ERR_NO_MEM;
     }
 
@@ -672,8 +674,10 @@ Status JsonConverter::writeObjlink(const char* item, Objlnk value)
 
     int ret = 0;
 
-    if ((ret = snprintf(mEncodingPos, mEncodingEndPos - mEncodingPos, "\"%s\":\"%d:%d\"", item, value.objectId,
-                        value.objectInstanceId)) < 0) {
+    ret = snprintf(mEncodingPos, mEncodingEndPos - mEncodingPos, "\"%s\":\"%d:%d\"", item, value.objectId,
+                   value.objectInstanceId);
+
+    if (ret < 0 || ret >= mEncodingEndPos - mEncodingPos) {
         return STS_ERR_NO_MEM;
     }
 
@@ -693,7 +697,9 @@ Status JsonConverter::writeOpaque(const char* item, Opaque value)
     int ret = 0;
 
     // TODO: implement base64 encoding
-    if ((ret = snprintf(mEncodingPos, mEncodingEndPos - mEncodingPos, "\"%s\":\"\"", item)) < 0) {
+    ret = snprintf(mEncodingPos, mEncodingEndPos - mEncodingPos, "\"%s\":\"\"", item);
+
+    if (ret < 0 || ret >= mEncodingEndPos - mEncodingPos) {
         return STS_ERR_NO_MEM;
     }
 
@@ -712,7 +718,9 @@ Status JsonConverter::writeFloat(const char* item, double value)
 
     int ret = 0;
 
-    if ((ret = snprintf(mEncodingPos, mEncodingEndPos - mEncodingPos, "\"%s\":%.16g", item, value)) < 0) {
+    ret = snprintf(mEncodingPos, mEncodingEndPos - mEncodingPos, "\"%s\":%.16g", item, value);
+
+    if (ret < 0 || ret >= mEncodingEndPos - mEncodingPos) {
         return STS_ERR_NO_MEM;
     }
 
@@ -731,7 +739,9 @@ Status JsonConverter::writeString(const char* item, char* value)
 
     int ret = 0;
 
-    if ((ret = snprintf(mEncodingPos, mEncodingEndPos - mEncodingPos, "\"%s\":\"%s\"", item, value)) < 0) {
+    ret = snprintf(mEncodingPos, mEncodingEndPos - mEncodingPos, "\"%s\":\"%s\"", item, value);
+
+    if (ret < 0 || ret >= mEncodingEndPos - mEncodingPos) {
         return STS_ERR_NO_MEM;
     }
 

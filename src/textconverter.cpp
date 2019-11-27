@@ -95,7 +95,7 @@ Status TextConverter::nextEncoding(ResourceData* resourceData)
             break;
 
         case DATA_TYPE_STRING:
-            ret = Utils::strCopy(reinterpret_cast<char*>(mBuffer), resourceData->strValue, sBufferSize);
+            ret = Utils::strCopy(reinterpret_cast<char*>(mBuffer), resourceData->strValue, sizeof(mBuffer));
             break;
 
         default:
@@ -106,7 +106,7 @@ Status TextConverter::nextEncoding(ResourceData* resourceData)
         return STS_ERR_INVALID_VALUE;
     }
 
-    if (ret > sBufferSize) {
+    if (ret >= sBufferSize) {
         return STS_ERR_NO_MEM;
     }
 

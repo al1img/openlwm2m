@@ -88,14 +88,12 @@ int Utils::makePath(char* path, size_t len, uint16_t objectId, uint16_t objectIn
         }
 
         ret = snprintf(&path[size], len - size, "/%d", values[i]);
-        if (ret < 0) {
+        if (ret < 0 || static_cast<size_t>(ret) >= len - size) {
             return -1;
         }
 
         size += ret;
     }
-
-    path[size] = '\0';
 
     return size;
 }

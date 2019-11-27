@@ -116,8 +116,7 @@ Status BootstrapHandler::discover(char* data, size_t* size, uint16_t objectId)
     mTimer.restart();
 
     int ret = snprintf(data, *size, "lwm2m=\"%s\"", LWM2M_VERSION);
-
-    if (ret < 0) {
+    if (ret < 0 || static_cast<size_t>(ret) >= *size) {
         return STS_ERR_NO_MEM;
     }
 
@@ -283,165 +282,14 @@ int BootstrapHandler::discoverObject(char* data, size_t maxSize, Object* object)
             ret = snprintf(&data[curSize], maxSize - curSize, ",<%s>", buf);
         }
 
+        if (ret < 0 || static_cast<size_t>(ret) >= maxSize - curSize) {
+            return -1;
+        }
+
         curSize += ret;
     }
 
     return curSize;
 }
-
-#if 0
-Status ServerHandler::getObjectsStr(char* str, int maxSize)
-{
-    int ret = 0;
-    int size = 0;
-
-    if (mObjectManager.isFormatSupported(DATA_FMT_SENML_JSON)) {
-        ret = snprintf(&str[size], maxSize, "</>;rt=\"oma.lwm2m\";ct=%d,", DATA_FMT_SENML_JSON);
-
-        if (ret < 0) {
-            return STS_ERR;
-        }
-
-        size += ret;
-    }
-
-    for (Object* object = mObjectManager.getFirstObject(); object; object = mObjectManager.getNextObject()) {
-        if (object->getId() == OBJ_LWM2M_SECURITY || object->getId() == OBJ_OSCORE) {
-            continue;
-        }
-
-        ObjectInstance* instance = object->getFirstInstance();
-
-        for (;;) {
-            if (!instance) {
-                ret = snprintf(&str[size], maxSize - size, "<%d>,", object->getId());
-            }
-            else {
-                ret = snprintf(&str[size], maxSize - size, "<%d/%d>,", object->getId(), instance->getId());
-
-                instance = object->getNextInstance();
-            }
-
-            if (ret < 0) {
-                return STS_ERR;
-            }
-
-            if (ret >= (maxSize - size)) {
-                return STS_ERR_NO_MEM;
-            }
-
-            size += ret;
-
-            if (!instance) {
-                break;
-            }
-        }
-    }
-
-    if (size > 0 && str[size - 1] == ',') {
-        str[size - 1] = 0;
-    }
-
-    return STS_OK;
-}
-
-Status ServerHandler::sendRegistration()
-{
-    Status status = STS_OK;
-
-    mState = STATE_REGISTRATION;
-
-    if ((status = getObjectsStr(mObjectsStr, CONFIG_DEFAULT_STRING_LEN)) != STS_OK) {
-        return status;
-    }
-
-    mLifetime = static_cast<ResourceInt*>(mServerInstance->getResourceInstance(RES_LIFETIME))->getValue();
-    strncpy(mBindingStr, static_cast<ResourceString*>(mServerInstance->getResourceInstance(RES_BINDING))->getValue(),
-            CONFIG_BINDING_STR_MAX_LEN);
-    mBindingStr[CONFIG_BINDING_STR_MAX_LEN] = '\0';
-
-    LOG_INFO("Send registration request %d, lifetime: %d, objects: %s, bindings: %s", getId(), mLifetime, mObjectsStr,
-             mBindingStr);
-
-    if ((status = mTransport->registrationRequest(mSession, mClientName, mLifetime, LWM2M_VERSION, mBindingStr,
-                                                  mQueueMode, NULL, mObjectsStr, &ServerHandler::registrationCallback,
-                                                  this)) != STS_OK) {
-        return status;
-    }
-
-    return STS_OK;
-}
-
-Status ServerHandler::sendUpdate()
-{
-    Status status = STS_OK;
-    int64_t* lifetimePtr = NULL;
-    char* bindingPtr = NULL;
-    char* objectsPtr = NULL;
-
-    char objectsStr[CONFIG_DEFAULT_STRING_LEN + 1];
-
-    if ((status = getObjectsStr(objectsStr, CONFIG_DEFAULT_STRING_LEN)) != STS_OK) {
-        return status;
-    }
-
-    if (strcmp(mObjectsStr, objectsStr) != 0) {
-        strncpy(mObjectsStr, objectsStr, CONFIG_DEFAULT_STRING_LEN);
-        mObjectsStr[CONFIG_DEFAULT_STRING_LEN] = '\n';
-        objectsPtr = mObjectsStr;
-    }
-
-    if (strcmp(mBindingStr,
-               static_cast<ResourceString*>(mServerInstance->getResourceInstance(RES_BINDING))->getValue()) != 0) {
-        strncpy(mBindingStr,
-                static_cast<ResourceString*>(mServerInstance->getResourceInstance(RES_BINDING))->getValue(),
-                CONFIG_BINDING_STR_MAX_LEN);
-        mBindingStr[CONFIG_BINDING_STR_MAX_LEN] = '\n';
-        bindingPtr = mBindingStr;
-    }
-
-    if (mLifetime != static_cast<ResourceInt*>(mServerInstance->getResourceInstance(RES_LIFETIME))->getValue()) {
-        mLifetime = static_cast<ResourceInt*>(mServerInstance->getResourceInstance(RES_LIFETIME))->getValue();
-        lifetimePtr = &mLifetime;
-    }
-
-    LOG_INFO("Send registration update %d, lifetime: %d, objects: %s, bindings: %s", getId(), mLifetime, mObjectsStr,
-             mBindingStr);
-
-    if ((status = mTransport->registrationUpdate(mSession, mLocation, lifetimePtr, bindingPtr, NULL, objectsPtr,
-                                                 &ServerHandler::updateCallback, this)) != STS_OK) {
-        return status;
-    }
-
-    return STS_OK;
-}
-
-bool ServerHandler::setupRetry()
-{
-    // Table: 6.2.1.1-1 Registration Procedures Default Values
-    uint64_t delay = 60 * 60 * 24;
-    uint64_t count = 1;
-
-    ResourceInstance* timerInstance = mServerInstance->getResourceInstance(RES_SEQUENCE_DELAY_TIMER);
-    ResourceInstance* countInstance = mServerInstance->getResourceInstance(RES_SEQUENCE_RETRY_COUNT);
-
-    if (countInstance) {
-        count = static_cast<ResourceUint*>(countInstance)->getValue();
-    }
-
-    if (timerInstance) {
-        delay = static_cast<ResourceUint*>(timerInstance)->getValue();
-    }
-
-    if (delay < ULONG_MAX && mCurrentSequence < count) {
-        mTimer.start(delay * 1000, &ServerHandler::timerCallback, this, true);
-        mCurrentSequence++;
-
-        return true;
-    }
-
-    return false;
-}
-#endif
 
 }  // namespace openlwm2m

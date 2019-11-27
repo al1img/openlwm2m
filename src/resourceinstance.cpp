@@ -6,6 +6,7 @@
 #include <cstring>
 
 #include "log.hpp"
+#include "utils.hpp"
 
 #define LOG_MODULE "ResourceInstance"
 
@@ -355,8 +356,9 @@ Status ResourceString::setValue(const char* value)
         return STS_OK;
     }
 
-    strncpy(mValue, value, mSize);
-    mValue[mSize] = '\0';
+    if (Utils::strCopy(mValue, value, mSize + 1) < 0) {
+        return STS_ERR_NO_MEM;
+    }
 
     valueChanged();
 
