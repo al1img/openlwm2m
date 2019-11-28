@@ -132,7 +132,7 @@ Status Resource::write(DataConverter* converter, bool checkOperation, bool repla
     Status status = STS_OK;
     DataConverter::ResourceData resourceData;
 
-    LOG_DEBUG("Write /%d", getId());
+    LOG_DEBUG("Write /%d/%d/%d", getParent()->getParent()->getId(), getParent()->getId(), getId());
 
     if (replace) {
         release();

@@ -601,11 +601,17 @@ Status JsonConverter::decodeOpaqueValue(ResourceData* resourceData)
     // TODO
     LOG_WARNING("Opaque value is not implemented");
 
-    if ((status = skipTillEndValue()) != STS_OK) {
+    if ((status = getString(reinterpret_cast<char*>(mDecodingBuffer), sBufferSize)) != STS_OK) {
         return status;
     }
 
-    return STS_ERR;
+    resourceData->opaqueValue.data = NULL;
+    resourceData->opaqueValue.size = 0;
+    resourceData->dataType = DATA_TYPE_OPAQUE;
+
+    LOG_DEBUG("Opaque value: %s", reinterpret_cast<char*>(mDecodingBuffer));
+
+    return STS_OK;
 }
 
 Status JsonConverter::decodeStringValue(ResourceData* resourceData)

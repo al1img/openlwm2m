@@ -22,6 +22,8 @@ public:
     Status discover(char* data, size_t* size, uint16_t objectId = INVALID_ID);
     Status read(DataFormat* dataFormat, void* data, size_t* size, uint16_t objectId,
                 uint16_t objectInstanceId = INVALID_ID);
+    Status write(DataFormat dataFormat, void* data, size_t size, uint16_t objectId,
+                 uint16_t objectInstanceId = INVALID_ID, uint16_t resourceId = INVALID_ID);
 
     State getState() const { return mState; }
 

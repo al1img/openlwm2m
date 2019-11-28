@@ -48,14 +48,12 @@ private:
     Status storeResource(Resource* resoure);
     Status restoreResource(Resource* resource);
 
-    Status writeObject(Object* object, DataConverter* converter, bool checkOperation = false, bool ignoreMissing = true,
-                       bool replace = false);
-    Status writeObjectInstance(ObjectInstance* objectInstance, DataConverter* converter, bool checkOperation = false,
-                               bool ignoreMissing = true, bool replace = false);
-    Status writeResource(Resource* resource, DataConverter* converter, bool checkOperation = false,
+    Status writeObject(Object* object, DataConverter* converter, bool store = true, bool checkOperation = false,
+                       bool ignoreMissing = true, bool replace = false);
+    Status writeObjectInstance(ObjectInstance* objectInstance, DataConverter* converter, bool store = true,
+                               bool checkOperation = false, bool ignoreMissing = true, bool replace = false);
+    Status writeResource(Resource* resource, DataConverter* converter, bool store = true, bool checkOperation = false,
                          bool replace = false);
-    Status writeResourceInstance(ResourceInstance* resourceInstance, DataConverter* converter,
-                                 bool checkOperation = false);
 };
 
 }  // namespace openlwm2m

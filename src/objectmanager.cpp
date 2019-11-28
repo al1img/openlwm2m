@@ -88,7 +88,7 @@ Status ObjectManager::bootstrapWrite(DataFormat dataFormat, void* data, size_t s
         return STS_ERR_FORMAT;
     }
 
-    if ((converter->startDecoding(data, size)) != STS_OK) {
+    if ((status = converter->startDecoding(data, size)) != STS_OK) {
         return status;
     }
 
@@ -99,7 +99,7 @@ Status ObjectManager::bootstrapWrite(DataFormat dataFormat, void* data, size_t s
     }
 
     if (objectInstanceId == INVALID_ID) {
-        if ((writeObject(object, converter)) != STS_OK) {
+        if ((status = writeObject(object, converter)) != STS_OK) {
             return status;
         }
 
@@ -109,7 +109,7 @@ Status ObjectManager::bootstrapWrite(DataFormat dataFormat, void* data, size_t s
     bool instanceCreated = false;
     ObjectInstance* objectInstance = object->getInstanceById(objectInstanceId);
 
-    if (!objectInstanceId) {
+    if (!objectInstance) {
         objectInstance = object->createInstance(objectInstanceId, &status);
         if (!objectInstance) {
             return status;
@@ -119,7 +119,7 @@ Status ObjectManager::bootstrapWrite(DataFormat dataFormat, void* data, size_t s
     }
 
     if (resourceId == INVALID_ID) {
-        if ((writeObjectInstance(objectInstance, converter)) != STS_OK) {
+        if ((status = writeObjectInstance(objectInstance, converter)) != STS_OK) {
             if (instanceCreated) {
                 object->deleteInstance(objectInstanceId);
             }
@@ -139,7 +139,7 @@ Status ObjectManager::bootstrapWrite(DataFormat dataFormat, void* data, size_t s
         return STS_ERR_NOT_FOUND;
     }
 
-    if ((writeResource(resource, converter)) != STS_OK) {
+    if ((status = writeResource(resource, converter)) != STS_OK) {
         if (instanceCreated) {
             object->deleteInstance(objectInstanceId);
         }
@@ -328,12 +328,12 @@ Status ObjectManager::restoreResource(Resource* resource)
     return STS_OK;
 }
 
-Status ObjectManager::writeObject(Object* object, DataConverter* converter, bool checkOperation, bool ignoreMissing,
-                                  bool replace)
+Status ObjectManager::writeObject(Object* object, DataConverter* converter, bool store, bool checkOperation,
+                                  bool ignoreMissing, bool replace)
 {
     Status status = STS_OK;
 
-    if ((status = storeObject(object)) != STS_OK) {
+    if (store && (status = storeObject(object)) != STS_OK) {
         LOG_ERROR("Can't store object: /%d, status: %d", object->getId(), status);
         return status;
     }
@@ -341,11 +341,13 @@ Status ObjectManager::writeObject(Object* object, DataConverter* converter, bool
     if ((status = object->write(converter, checkOperation, ignoreMissing, replace)) != STS_OK) {
         LOG_ERROR("Can't write object: /%d, status: %d", object->getId(), status);
 
-        Status restoreStatus = restoreObject(object);
+        if (store) {
+            Status restoreStatus = restoreObject(object);
 
-        if (restoreStatus != STS_OK) {
-            LOG_ERROR("Can't restore object: /%d, status: %d", object->getId(), status);
-            status = restoreStatus;
+            if (restoreStatus != STS_OK) {
+                LOG_ERROR("Can't restore object: /%d, status: %d", object->getId(), status);
+                status = restoreStatus;
+            }
         }
 
         return status;
@@ -354,12 +356,12 @@ Status ObjectManager::writeObject(Object* object, DataConverter* converter, bool
     return STS_OK;
 }
 
-Status ObjectManager::writeObjectInstance(ObjectInstance* objectInstance, DataConverter* converter, bool checkOperation,
-                                          bool ignoreMissing, bool replace)
+Status ObjectManager::writeObjectInstance(ObjectInstance* objectInstance, DataConverter* converter, bool store,
+                                          bool checkOperation, bool ignoreMissing, bool replace)
 {
     Status status = STS_OK;
 
-    if ((status = storeObjectInstance(objectInstance)) != STS_OK) {
+    if (store && (status = storeObjectInstance(objectInstance)) != STS_OK) {
         LOG_ERROR("Can't store object instance: /%d/%d, status: %d", objectInstance->getParent()->getId(),
                   objectInstance->getId(), status);
         return status;
@@ -369,12 +371,14 @@ Status ObjectManager::writeObjectInstance(ObjectInstance* objectInstance, DataCo
         LOG_ERROR("Can't write object instance: /%d/%d, status: %d", objectInstance->getParent()->getId(),
                   objectInstance->getId(), status);
 
-        Status restoreStatus = restoreObjectInstance(objectInstance);
+        if (store) {
+            Status restoreStatus = restoreObjectInstance(objectInstance);
 
-        if (restoreStatus != STS_OK) {
-            LOG_ERROR("Can't restore object instance: /%d/%d, status: %d", objectInstance->getParent()->getId(),
-                      objectInstance->getId(), status);
-            status = restoreStatus;
+            if (restoreStatus != STS_OK) {
+                LOG_ERROR("Can't restore object instance: /%d/%d, status: %d", objectInstance->getParent()->getId(),
+                          objectInstance->getId(), status);
+                status = restoreStatus;
+            }
         }
 
         return status;
@@ -383,29 +387,12 @@ Status ObjectManager::writeObjectInstance(ObjectInstance* objectInstance, DataCo
     return STS_OK;
 }
 
-Status ObjectManager::writeResource(Resource* resource, DataConverter* converter, bool checkOperation, bool replace)
+Status ObjectManager::writeResource(Resource* resource, DataConverter* converter, bool store, bool checkOperation,
+                                    bool replace)
 {
     Status status = STS_OK;
 
-    if (resource)
-
-        if (resource->getInfo().isSingle()) {
-            ResourceInstance* resourceInstance = resource->getFirstInstance();
-
-            if (!resourceInstance) {
-                resourceInstance = resource->createInstance(0, &status);
-
-                if (!resourceInstance) {
-                    return status;
-                }
-            }
-
-            if ((writeResourceInstance(resourceInstance, converter, checkOperation)) != STS_OK) {
-                return status;
-            }
-        }
-
-    if ((status = storeResource(resource)) != STS_OK) {
+    if (store && (status = storeResource(resource)) != STS_OK) {
         LOG_ERROR("Can't store resource: /%d/%d/%d, status: %d", resource->getParent()->getParent()->getId(),
                   resource->getParent()->getId(), resource->getId(), status);
         return status;
@@ -415,40 +402,20 @@ Status ObjectManager::writeResource(Resource* resource, DataConverter* converter
         LOG_ERROR("Can't write resource: /%d/%d/%d, status: %d", resource->getParent()->getParent()->getId(),
                   resource->getParent()->getId(), resource->getId(), status);
 
-        Status restoreStatus = restoreResource(resource);
+        if (store) {
+            Status restoreStatus = restoreResource(resource);
 
-        if (restoreStatus != STS_OK) {
-            LOG_ERROR("Can't restore resource: /%d/%d/%d, status: %d", resource->getParent()->getParent()->getId(),
-                      resource->getParent()->getId(), resource->getId(), status);
-            status = restoreStatus;
+            if (restoreStatus != STS_OK) {
+                LOG_ERROR("Can't restore resource: /%d/%d/%d, status: %d", resource->getParent()->getParent()->getId(),
+                          resource->getParent()->getId(), resource->getId(), status);
+                status = restoreStatus;
+            }
         }
 
         return status;
     }
 
     return STS_OK;
-}
-
-Status ObjectManager::writeResourceInstance(ResourceInstance* resourceInstance, DataConverter* converter,
-                                            bool checkOperation)
-{
-    if (checkOperation && !resourceInstance->getResource()->getInfo().checkOperation(OP_WRITE)) {
-        return STS_ERR_NOT_ALLOWED;
-    }
-
-    DataConverter::ResourceData data;
-
-    Status status = converter->nextDecoding(&data);
-
-    if (status != STS_OK) {
-        if (status == STS_ERR_NOT_FOUND) {
-            return STS_ERR_FORMAT;
-        }
-
-        return status;
-    }
-
-    return resourceInstance->write(&data);
 }
 
 ObjectInstance* ObjectManager::getServerInstance(uint16_t shortServerId)

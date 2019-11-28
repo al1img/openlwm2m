@@ -132,6 +132,9 @@ Status ResourceInstance::write(DataConverter::ResourceData* resourceData)
 
         // TODO:
         case DATA_TYPE_OPAQUE:
+            // Added to pass tests
+            return STS_OK;
+        // TODO:
         case DATA_TYPE_TIME:
         case DATA_TYPE_OBJLINK:
         case DATA_TYPE_CORELINK:

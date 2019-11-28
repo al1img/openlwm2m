@@ -96,7 +96,7 @@ Status BootstrapHandler::bootstrapFinish()
         return STS_ERR_NOT_ALLOWED;
     }
 
-    LOG_INFO("Bootstrap finish");
+    LOG_DEBUG("Bootstrap finish");
 
     bootstrapFinish(status);
 
@@ -111,9 +111,9 @@ Status BootstrapHandler::discover(char* data, size_t* size, uint16_t objectId)
         return STS_ERR_NOT_ALLOWED;
     }
 
-    LOG_INFO("Bootstrap discover /%d", objectId);
-
     mTimer.restart();
+
+    LOG_DEBUG("Bootstrap discover /%d", objectId);
 
     int ret = snprintf(data, *size, "lwm2m=\"%s\"", LWM2M_VERSION);
     if (ret < 0 || static_cast<size_t>(ret) >= *size) {
@@ -164,17 +164,17 @@ Status BootstrapHandler::read(DataFormat* dataFormat, void* data, size_t* size, 
         return STS_ERR_NOT_ALLOWED;
     }
 
+    mTimer.restart();
+
+    LOG_DEBUG("Bootstrap read /%d/%d", objectId, objectInstanceId);
+
     if (objectId != OBJ_LWM2M_SECURITY && objectId != OBJ_LWM2M_SERVER) {
         return STS_ERR_NOT_ALLOWED;
     }
 
-    LOG_INFO("Bootstrap read /%d/%d", objectId, objectInstanceId);
-
     if (*dataFormat == DATA_FMT_ANY) {
         *dataFormat = CONFIG_DEFAULT_DATA_FORMAT;
     }
-
-    mTimer.restart();
 
     DataConverter* outConverter = mObjectManager.getConverterById(*dataFormat);
 
@@ -206,6 +206,27 @@ Status BootstrapHandler::read(DataFormat* dataFormat, void* data, size_t* size, 
     }
 
     return outConverter->finishEncoding(size);
+}
+
+Status BootstrapHandler::write(DataFormat dataFormat, void* data, size_t size, uint16_t objectId,
+                               uint16_t objectInstanceId, uint16_t resourceId)
+{
+    Status status = STS_OK;
+
+    if (mState != STATE_BOOTSTRAPING) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    mTimer.restart();
+
+    LOG_DEBUG("Bootstrap write /%d/%d/%d", objectId, objectInstanceId, resourceId);
+
+    if ((status = mObjectManager.bootstrapWrite(dataFormat, data, size, objectId, objectInstanceId, resourceId)) !=
+        STS_OK) {
+        return status;
+    }
+
+    return STS_OK;
 }
 
 /*******************************************************************************
@@ -264,8 +285,26 @@ int BootstrapHandler::discoverObject(char* data, size_t maxSize, Object* object)
     char buf[16];
     int curSize = 0;
 
-    for (ObjectInstance* instance = object->getFirstInstance(); instance != NULL;
-         instance = object->getNextInstance()) {
+    ObjectInstance* instance = object->getFirstInstance();
+
+    if (!instance) {
+        int ret = Utils::makePath(buf, sizeof(buf), object->getId());
+        if (ret < 0) {
+            return -1;
+        }
+
+        ret = snprintf(&data[curSize], maxSize - curSize, ",<%s>", buf);
+
+        if (ret < 0 || static_cast<size_t>(ret) >= maxSize - curSize) {
+            return -1;
+        }
+
+        curSize += ret;
+
+        return curSize;
+    }
+
+    for (; instance != NULL; instance = object->getNextInstance()) {
         int ret = Utils::makePath(buf, sizeof(buf), object->getId(), instance->getId());
         if (ret < 0) {
             return -1;

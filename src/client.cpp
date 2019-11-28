@@ -169,7 +169,7 @@ Status Client::bootstrapWriteJSON(const char* path, const char* dataJSON)
 Status Client::bootstrapWrite(DataFormat dataFormat, void* data, size_t size, uint16_t objectId,
                               uint16_t objectInstanceId, uint16_t resourceId)
 {
-    return mObjectManager.bootstrapWrite(dataFormat, data, size, objectId, objectInstanceId, resourceId);
+    return mBootstrapHandler.write(dataFormat, data, size, objectId, objectInstanceId, resourceId);
 }
 
 void Client::bootstrapDelete()
