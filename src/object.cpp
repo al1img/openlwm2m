@@ -135,6 +135,8 @@ Status Object::deleteInstance(uint16_t id)
         return STS_ERR_NOT_ALLOWED;
     }
 
+    LOG_DEBUG("Delete instance /%d/%d", getId(), id);
+
     if (mSingle && mMandatory) {
         return STS_ERR_NOT_ALLOWED;
     }

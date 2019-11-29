@@ -59,7 +59,7 @@ public:
     Status setResourceCallback(uint16_t resourceId, ResourceInfo::Callback callback, void* context);
 
     ObjectInstance* createInstance(uint16_t id = INVALID_ID, Status* status = NULL);
-    Status deleteInstance(uint16_t id);
+    Status deleteInstance(uint16_t id = 0);
     ObjectInstance* getInstanceById(uint16_t id) { return mInstanceStorage.getItemById(id); }
     ObjectInstance* getFirstInstance() { return mInstanceStorage.getFirstItem(); }
     ObjectInstance* getNextInstance() { return mInstanceStorage.getNextItem(); }

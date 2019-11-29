@@ -24,6 +24,7 @@ public:
                 uint16_t objectInstanceId = INVALID_ID);
     Status write(DataFormat dataFormat, void* data, size_t size, uint16_t objectId,
                  uint16_t objectInstanceId = INVALID_ID, uint16_t resourceId = INVALID_ID);
+    Status deleteInstance(uint16_t objectId = INVALID_ID, uint16_t objectInstanceId = INVALID_ID);
 
     State getState() const { return mState; }
 
@@ -50,6 +51,9 @@ private:
 
     void bootstrapFinish(Status status);
     int discoverObject(char* data, size_t maxSize, Object* object);
+    Status deleteAllObjectInstances();
+    Status deleteObjectAllInstances(Object* object);
+    Status deleteObjectInstance(ObjectInstance* instance);
 };
 
 }  // namespace openlwm2m

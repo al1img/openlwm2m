@@ -294,4 +294,77 @@ TEST_CASE("test BootstrapHandler", "[BootstrapHandler]")
 
         CHECK(retStatus == STS_OK);
     }
+
+    SECTION("Delete")
+    {
+        char discover[1024];
+        size_t size;
+
+        Object* object = objectManager.getObjectById(OBJ_LWM2M_SERVER);
+        REQUIRE(object);
+
+        ObjectInstance* instance = object->createInstance();
+        REQUIRE(instance);
+
+        instance = object->createInstance();
+        REQUIRE(instance);
+
+        // Delete object instance
+        status = bootstrapHandler.deleteInstance(OBJ_LWM2M_SERVER, 1);
+        CHECK(status == STS_OK);
+
+        size = sizeof(discover);
+
+        status = bootstrapHandler.discover(discover, &size);
+        CHECK(status == STS_OK);
+
+        discover[size] = '\0';
+
+        printf("%s\n", discover);
+
+        CHECK(strcmp(discover, "lwm2m=\"1.1\",</0/0>,</0/1>;ssid=5;uri=coap://lwm2mserver,</1/0>,</3/0>") == 0);
+
+        // Delete object
+        status = bootstrapHandler.deleteInstance(OBJ_LWM2M_SERVER);
+        CHECK(status == STS_OK);
+
+        size = sizeof(discover);
+
+        status = bootstrapHandler.discover(discover, &size);
+        CHECK(status == STS_OK);
+
+        discover[size] = '\0';
+
+        printf("%s\n", discover);
+
+        CHECK(strcmp(discover, "lwm2m=\"1.1\",</0/0>,</0/1>;ssid=5;uri=coap://lwm2mserver,</1>,</3/0>") == 0);
+
+        // Delete all
+        status = bootstrapHandler.deleteInstance();
+        CHECK(status == STS_OK);
+
+        size = sizeof(discover);
+
+        status = bootstrapHandler.discover(discover, &size);
+        CHECK(status == STS_OK);
+
+        discover[size] = '\0';
+
+        printf("%s\n", discover);
+
+        CHECK(strcmp(discover, "lwm2m=\"1.1\",</0/0>,</1>,</3/0>") == 0);
+
+        // Delete device object
+        status = bootstrapHandler.deleteInstance(OBJ_DEVICE);
+        CHECK(status == STS_ERR_NOT_ALLOWED);
+
+        // Delete Bootstrap-Server Account
+        status = bootstrapHandler.deleteInstance(OBJ_LWM2M_SECURITY, 0);
+        CHECK(status == STS_ERR_NOT_ALLOWED);
+
+        status = bootstrapHandler.bootstrapFinish();
+        CHECK(status == STS_OK);
+
+        CHECK(retStatus == STS_OK);
+    }
 }

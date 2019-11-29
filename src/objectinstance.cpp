@@ -1,4 +1,5 @@
 #include "objectinstance.hpp"
+
 #include "log.hpp"
 #include "object.hpp"
 #include "resource.hpp"
@@ -31,6 +32,11 @@ void ObjectInstance::release()
     mResourceStorage.release();
 
     LOG_DEBUG("Delete /%d/%d", getParent()->getId(), getId());
+}
+
+Object* ObjectInstance::getObject() const
+{
+    return static_cast<Object*>(getParent());
 }
 
 Status ObjectInstance::addResource(ResourceInfo& info)

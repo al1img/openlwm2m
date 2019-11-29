@@ -21,6 +21,8 @@ public:
     void init();
     void release();
 
+    Object* getObject() const;
+
     Status addResource(ResourceInfo& info);
 
     Resource* getResourceById(uint16_t id) { return mResourceStorage.getItemById(id); }

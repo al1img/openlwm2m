@@ -229,6 +229,39 @@ Status BootstrapHandler::write(DataFormat dataFormat, void* data, size_t size, u
     return STS_OK;
 }
 
+Status BootstrapHandler::deleteInstance(uint16_t objectId, uint16_t objectInstanceId)
+{
+    if (mState != STATE_BOOTSTRAPING) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    mTimer.restart();
+
+    LOG_DEBUG("Bootstrap delete /%d/%d", objectId, objectInstanceId);
+
+    if (objectId == INVALID_ID) {
+        return deleteAllObjectInstances();
+    }
+
+    Object* object = mObjectManager.getObjectById(objectId);
+
+    if (!object) {
+        return STS_ERR_NOT_FOUND;
+    }
+
+    if (objectInstanceId == INVALID_ID) {
+        return deleteObjectAllInstances(object);
+    }
+
+    ObjectInstance* instance = object->getInstanceById(objectInstanceId);
+
+    if (!instance) {
+        return STS_ERR_NOT_FOUND;
+    }
+
+    return deleteObjectInstance(instance);
+}
+
 /*******************************************************************************
  * Private
  ******************************************************************************/
@@ -329,6 +362,64 @@ int BootstrapHandler::discoverObject(char* data, size_t maxSize, Object* object)
     }
 
     return curSize;
+}
+
+Status BootstrapHandler::deleteAllObjectInstances()
+{
+    for (Object* object = mObjectManager.getFirstObject(); object; object = mObjectManager.getNextObject()) {
+        Status status = deleteObjectAllInstances(object);
+
+        if (status != STS_OK && status != STS_ERR_NOT_ALLOWED) {
+            return status;
+        }
+    }
+
+    return STS_OK;
+}
+
+Status BootstrapHandler::deleteObjectAllInstances(Object* object)
+{
+    if (object->getId() == OBJ_DEVICE) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    ObjectInstance* instance = object->getFirstInstance();
+
+    while (instance) {
+        // Use next instance to delete while iterate
+        ObjectInstance* nextInstance = object->getNextInstance();
+
+        Status status = deleteObjectInstance(instance);
+
+        if (status != STS_OK && status != STS_ERR_NOT_ALLOWED) {
+            return status;
+        }
+
+        instance = nextInstance;
+    }
+
+    return STS_OK;
+}
+
+Status BootstrapHandler::deleteObjectInstance(ObjectInstance* instance)
+{
+    Object* object = instance->getObject();
+
+    // 6.1.7.6
+    // The two exceptions are the LwM2M Bootstrap-Server Account,potentially including an associated Instance of
+    // an OSCORE Object ID:21, and the single Instance of the Mandatory DeviceObject (ID:3) which are not affected
+    // by any Delete operation
+    // TODO: associated Instance of an OSCORE Object ID:21
+    if (object->getId() == OBJ_DEVICE) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    if (object->getId() == OBJ_LWM2M_SECURITY &&
+        static_cast<ResourceBool*>(instance->getResourceInstance(RES_BOOTSTRAP_SERVER))->getValue()) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    return object->deleteInstance(instance->getId());
 }
 
 }  // namespace openlwm2m
