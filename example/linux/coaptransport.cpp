@@ -74,6 +74,54 @@ Status CoapTransport::deleteSession(void* session)
 Status CoapTransport::bootstrapRequest(void* session, const char* clientName, openlwm2m::DataFormat* preferredFormat,
                                        RequestHandler handler, void* context)
 {
+    coap_optlist_t* optList = NULL;
+    char buf[CONFIG_DEFAULT_STRING_LEN + 1];
+    int ret;
+
+    coap_insert_optlist(&optList, coap_new_optlist(COAP_OPTION_URI_PATH, 2, reinterpret_cast<const uint8_t*>("bs")));
+
+    // Client name
+    if (clientName) {
+        ret = snprintf(buf, sizeof(buf), "ep=%s", clientName);
+        if (ret < 0 || static_cast<size_t>(ret) >= sizeof(buf)) {
+            return STS_ERR_NO_MEM;
+        }
+
+        coap_insert_optlist(&optList,
+                            coap_new_optlist(COAP_OPTION_URI_QUERY, ret, reinterpret_cast<const uint8_t*>(buf)));
+    }
+
+    // Preffered content formats
+    if (preferredFormat) {
+        ret = snprintf(buf, sizeof(buf), "pct=%d", *preferredFormat);
+        if (ret < 0 || static_cast<size_t>(ret) >= sizeof(buf)) {
+            return STS_ERR_NO_MEM;
+        }
+
+        coap_insert_optlist(&optList,
+                            coap_new_optlist(COAP_OPTION_URI_QUERY, ret, reinterpret_cast<const uint8_t*>(buf)));
+    }
+
+    coap_pdu_t* pdu =
+        coap_pdu_init(COAP_MESSAGE_CON, COAP_REQUEST_POST, coap_new_message_id(static_cast<coap_session_t*>(session)),
+                      coap_session_max_pdu_size(static_cast<coap_session_t*>(session)));
+
+    Status status = sendPdu(static_cast<coap_session_t*>(session), pdu, &optList, NULL, 0);
+
+    if (status != STS_OK) {
+        return status;
+    }
+
+    Request* request = mReqStorage.allocateItem(pdu->tid);
+
+    if (!request) {
+        return STS_ERR_NO_MEM;
+    }
+
+    request->set(Request::BOOTSTRAP, handler, context);
+
+    LOG_DEBUG("Send bootstrap request, tid: %d", pdu->tid);
+
     return STS_OK;
 }
 
@@ -459,7 +507,12 @@ void CoapTransport::onGetReceived(coap_resource_t* resource, coap_session_t* ses
             }
         }
         else {
-            // TODO: discover
+            outFormat = DATA_FMT_CORE;
+
+            if ((status = mClient->discover(session, uri, data, &size)) != STS_OK) {
+                response->code = status2Code(status);
+                size = 0;
+            }
         }
     }
 

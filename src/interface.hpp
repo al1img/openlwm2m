@@ -50,6 +50,9 @@ public:
 
 class ClientItf {
 public:
+    // Rework
+    virtual Status discover(void* session, const char* path, void* data, size_t* size) = 0;
+
     // Bootstrap
     virtual void bootstrapDiscover() = 0;
     virtual void bootstrapRead() = 0;

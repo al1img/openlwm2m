@@ -44,7 +44,7 @@ private:
 
     class Request : public openlwm2m::ItemBase {
     public:
-        enum RequestType { REGISTRATION, UPDATE, DEREGISTRATION };
+        enum RequestType { REGISTRATION, UPDATE, DEREGISTRATION, BOOTSTRAP };
 
         Request() : openlwm2m::ItemBase(NULL) {}
 

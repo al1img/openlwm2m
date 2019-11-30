@@ -120,6 +120,23 @@ Status Client::init(TransportItf* transport)
     return STS_OK;
 }
 
+Status Client::start(bool bootstrap)
+{
+    if (mState != STATE_INITIALIZED) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    if (bootstrap) {
+        LOG_INFO("Start bootstrap");
+
+        mState = STATE_BOOTSTRAP;
+
+        mBootstrapHandler.bootstrapRequest(&Client::bootstrapFinished, this);
+    }
+
+    return STS_OK;
+}
+
 Status Client::registration()
 {
     LOG_DEBUG("Register client");
@@ -142,6 +159,35 @@ Status Client::registration()
     mState = STATE_REGISTRATION;
 
     return status;
+}
+
+Status Client::discover(void* session, const char* path, void* data, size_t* size)
+{
+    uint16_t objectId, objectInstanceId, resourceId, resourceInstanceId;
+
+    LOG_INFO("Discover, path: %s", path);
+
+    if (Utils::convertPath(path, &objectId, &objectInstanceId, &resourceId, &resourceInstanceId) < 0) {
+        LOG_ERROR("Session not found");
+        return STS_ERR_NOT_FOUND;
+    }
+
+    if (session == mBootstrapHandler.getSession()) {
+        if (resourceInstanceId != INVALID_ID || resourceId != INVALID_ID || objectInstanceId != INVALID_ID) {
+            LOG_ERROR("Path not found");
+            return STS_ERR_NOT_FOUND;
+        }
+
+        Status status = mBootstrapHandler.discover(data, size, objectId);
+
+        if (status != STS_OK) {
+            LOG_ERROR("Bootstrap discover error: %d", status);
+        }
+
+        return status;
+    }
+
+    return STS_ERR_NOT_FOUND;
 }
 
 void Client::bootstrapDiscover()
@@ -226,6 +272,21 @@ void Client::reportingCancelObserveComposite()
 /*******************************************************************************
  * Private
  ******************************************************************************/
+
+void Client::bootstrapFinished(void* context, BootstrapHandler* handler, Status status)
+{
+    static_cast<Client*>(context)->onBootstrapFinished(status);
+}
+
+void Client::onBootstrapFinished(Status status)
+{
+    if (status == STS_OK) {
+        LOG_INFO("Bootstrap finished");
+    }
+    else {
+        LOG_ERROR("Bootstrap failed, status: %d", status);
+    }
+}
 
 void Client::updateRegistration(void* context, ResourceInstance* resInstance)
 {

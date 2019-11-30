@@ -66,7 +66,13 @@ public:
 
     Status init(TransportItf* transport);
 
+    Status start(bool bootstrap);
+
+    // TODO: remove leave only start
     Status registration();
+
+    // Rework
+    Status discover(void* session, const char* path, void* data, size_t* size);
 
     // Bootstrap
 
@@ -111,6 +117,9 @@ private:
 
     ServerHandler* mCurrentHandler = NULL;
     State mState;
+
+    static void bootstrapFinished(void* context, BootstrapHandler* handler, Status status);
+    void onBootstrapFinished(Status status);
 
     static void updateRegistration(void* context, ResourceInstance* resInstance);
     void onUpdateRegistration(ResourceInstance* resInstance);

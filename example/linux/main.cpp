@@ -49,12 +49,13 @@ int main()
     status = client.bootstrapWriteJSON("/0/0",
                                        "\
 [\
-{\"bn\":\"/0/0/\",\"n\":\"0\",\"vs\":\"coap://::1:5683\"},\
-{\"n\":\"10\",\"v\":1}\
+{\"bn\":\"/0/0/\",\"n\":\"0\",\"vs\":\"coap://::1:5685\"},\
+{\"n\":\"1\",\"vb\":true}\
 ]\
 ");
     ASSERT_MESSAGE(status == STS_OK, "Can't write bootstrap");
 
+#if 0
     status = client.bootstrapWriteJSON("/1/0",
                                        "\
 [\
@@ -66,9 +67,10 @@ int main()
 ]\
 ");
     ASSERT_MESSAGE(status == STS_OK, "Can't write bootstrap");
+#endif
 
-    status = client.registration();
-    ASSERT_MESSAGE(status == STS_OK, "Registration failed");
+    status = client.start(true);
+    ASSERT_MESSAGE(status == STS_OK, "Start failed");
 
     while (!sTerminate) {
         status = client.run();

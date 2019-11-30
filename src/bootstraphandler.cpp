@@ -65,7 +65,7 @@ Status BootstrapHandler::bootstrapRequest(RequestHandler handler, void* context)
     const char* serverUri =
         static_cast<ResourceString*>(securityInstance->getResourceInstance(RES_LWM2M_SERVER_URI))->getValue();
 
-    LOG_INFO("Bootstrap request to: %s", serverUri);
+    LOG_DEBUG("Bootstrap request to: %s", serverUri);
 
     mSession = mTransport->createSession(serverUri, &status);
 
@@ -103,7 +103,7 @@ Status BootstrapHandler::bootstrapFinish()
     return status;
 }
 
-Status BootstrapHandler::discover(char* data, size_t* size, uint16_t objectId)
+Status BootstrapHandler::discover(void* data, size_t* size, uint16_t objectId)
 {
     size_t curSize = 0;
 
@@ -115,7 +115,7 @@ Status BootstrapHandler::discover(char* data, size_t* size, uint16_t objectId)
 
     LOG_DEBUG("Bootstrap discover /%d", objectId);
 
-    int ret = snprintf(data, *size, "lwm2m=\"%s\"", LWM2M_VERSION);
+    int ret = snprintf(static_cast<char*>(data), *size, "lwm2m=\"%s\"", LWM2M_VERSION);
     if (ret < 0 || static_cast<size_t>(ret) >= *size) {
         return STS_ERR_NO_MEM;
     }
@@ -125,7 +125,7 @@ Status BootstrapHandler::discover(char* data, size_t* size, uint16_t objectId)
     if (objectId == INVALID_ID) {
         for (Object* object = mObjectManager.getFirstObject(); object != NULL;
              object = mObjectManager.getNextObject()) {
-            ret = discoverObject(&data[curSize], *size - curSize, object);
+            ret = discoverObject(&static_cast<char*>(data)[curSize], *size - curSize, object);
 
             if (ret < 0) {
                 return STS_ERR_NO_MEM;
@@ -141,7 +141,7 @@ Status BootstrapHandler::discover(char* data, size_t* size, uint16_t objectId)
             return STS_ERR_NOT_FOUND;
         }
 
-        ret = discoverObject(&data[curSize], *size - curSize, object);
+        ret = discoverObject(&static_cast<char*>(data)[curSize], *size - curSize, object);
 
         if (ret < 0) {
             return STS_ERR_NO_MEM;
@@ -286,7 +286,7 @@ void BootstrapHandler::bootstrapRequstCallback(void* context, void* data, Status
 void BootstrapHandler::onBootstrapRequestCallback(Status status)
 {
     if (status == STS_OK) {
-        LOG_INFO("Bootstrap request success");
+        LOG_DEBUG("Bootstrap request success");
 
         mTimer.start(sBootstrapTimeoutMs, &BootstrapHandler::timerCallback, this, true);
     }
@@ -297,13 +297,6 @@ void BootstrapHandler::onBootstrapRequestCallback(Status status)
 
 void BootstrapHandler::bootstrapFinish(Status status)
 {
-    if (status == STS_OK) {
-        LOG_INFO("Bootstrap finished");
-    }
-    else {
-        LOG_ERROR("Bootstrap failed, status: %d", status);
-    }
-
     mState = STATE_BOOTSTAPPED;
     mTimer.stop();
     mTransport->deleteSession(mSession);
