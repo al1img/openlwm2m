@@ -53,6 +53,7 @@ public:
     // Rework
     virtual Status discover(void* session, const char* path, void* data, size_t* size) = 0;
     virtual Status read(void* session, const char* path, DataFormat* format, void* data, size_t* size) = 0;
+    virtual Status write(void* session, const char* path, DataFormat format, void* data, size_t size) = 0;
 
     // Bootstrap
     virtual void bootstrapDiscover() = 0;

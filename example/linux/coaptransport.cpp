@@ -481,46 +481,52 @@ void CoapTransport::getReceived(coap_context_t* context, coap_resource_t* resour
 void CoapTransport::onGetReceived(coap_resource_t* resource, coap_session_t* session, coap_pdu_t* request,
                                   coap_binary_t* token, coap_string_t* query, coap_pdu_t* response)
 {
-    char uri[CONFIG_DEFAULT_STRING_LEN + 1];
+    char path[CONFIG_DEFAULT_STRING_LEN + 1];
     uint8_t data[sDataSize];
     DataFormat format = DATA_FMT_ANY;
     Status status = STS_OK;
 
     response->code = COAP_RESPONSE_CODE(205);
 
-    if ((status = getAccept(request, &format)) != STS_OK) {
-        response->code = status2Code(status);
-    }
-    else if ((status = getUriPath(request, uri, sizeof(uri))) != STS_OK) {
-        response->code = status2Code(status);
+    coap_opt_iterator_t optIter;
+    coap_opt_t* option;
+
+    if ((option = coap_check_option(request, COAP_OPTION_ACCEPT, &optIter)) != NULL) {
+        format = static_cast<DataFormat>(coap_decode_var_bytes(coap_opt_value(option), coap_opt_length(option)));
     }
 
-    LOG_DEBUG("GET received, uri: %s, format: %d", uri, format);
+    if ((status = getUriPath(request, path, sizeof(path))) != STS_OK) {
+        response->code = status2Code(status);
+        return;
+    }
+
+    if (!mClient) {
+        response->code = status2Code(STS_ERR_NOT_FOUND);
+        return;
+    }
+
+    LOG_DEBUG("GET received, path: %s, format: %d", path, format);
 
     size_t size = sDataSize;
 
-    if (mClient && status == STS_OK) {
-        if (format != DATA_FMT_CORE) {
-            if ((status = mClient->read(session, uri, &format, data, &size)) != STS_OK) {
-                response->code = status2Code(status);
-                size = 0;
-            }
+    if (format != DATA_FMT_CORE) {
+        if ((status = mClient->read(session, path, &format, data, &size)) != STS_OK) {
+            response->code = status2Code(status);
+            size = 0;
         }
-        else {
-            if ((status = mClient->discover(session, uri, data, &size)) != STS_OK) {
-                response->code = status2Code(status);
-                size = 0;
-            }
+    }
+    else {
+        if ((status = mClient->discover(session, path, data, &size)) != STS_OK) {
+            response->code = status2Code(status);
+            size = 0;
         }
     }
 
     coap_add_option(response, COAP_OPTION_CONTENT_TYPE,
-                    coap_encode_var_safe(reinterpret_cast<uint8_t*>(uri), sizeof(uri), format),
-                    reinterpret_cast<uint8_t*>(uri));
+                    coap_encode_var_safe(reinterpret_cast<uint8_t*>(path), sizeof(path), format),
+                    reinterpret_cast<uint8_t*>(path));
 
     coap_add_data(response, size, data);
-
-    //    coap_add_data_blocked_response(resource, session, request, response, token, outFormat, -1, 0, NULL);
 }
 
 void CoapTransport::putReceived(coap_context_t* context, coap_resource_t* resource, coap_session_t* session,
@@ -532,9 +538,41 @@ void CoapTransport::putReceived(coap_context_t* context, coap_resource_t* resour
 void CoapTransport::onPutReceived(coap_resource_t* resource, coap_session_t* session, coap_pdu_t* request,
                                   coap_binary_t* token, coap_string_t* query, coap_pdu_t* response)
 {
-    response->code = COAP_RESPONSE_CODE(205);
+    char path[CONFIG_DEFAULT_STRING_LEN + 1];
+    DataFormat format = DATA_FMT_TEXT;
+    Status status = STS_OK;
 
-    coap_add_data_blocked_response(resource, session, request, response, token, COAP_MEDIATYPE_TEXT_PLAIN, -1, 0, NULL);
+    response->code = COAP_RESPONSE_CODE(204);
+
+    coap_opt_iterator_t optIter;
+    coap_opt_t* option;
+
+    if ((option = coap_check_option(request, COAP_OPTION_CONTENT_TYPE, &optIter)) != NULL) {
+        format = static_cast<DataFormat>(coap_decode_var_bytes(coap_opt_value(option), coap_opt_length(option)));
+    }
+
+    if ((status = getUriPath(request, path, sizeof(path))) != STS_OK) {
+        response->code = status2Code(status);
+    }
+
+    if (!mClient) {
+        response->code = status2Code(STS_ERR_NOT_FOUND);
+        return;
+    }
+
+    LOG_DEBUG("PUT received, path: %s, format: %d", path, format);
+
+    size_t size;
+    uint8_t* data;
+
+    if (coap_get_data(request, &size, &data)) {
+        if ((status = mClient->write(session, path, format, data, size)) != STS_OK) {
+            response->code = status2Code(status);
+        }
+    }
+    else {
+        response->code = status2Code(STS_ERR_FORMAT);
+    }
 }
 
 Status CoapTransport::code2Status(uint8_t code)
@@ -587,32 +625,6 @@ uint8_t CoapTransport::status2Code(Status status)
     }
 }
 
-Status CoapTransport::getAccept(coap_pdu_t* pdu, DataFormat* data)
-{
-    coap_opt_iterator_t optIter;
-    coap_opt_t* option = coap_check_option(pdu, COAP_OPTION_ACCEPT, &optIter);
-
-    *data = DATA_FMT_ANY;
-
-    if (option) {
-        switch (coap_opt_length(option)) {
-            case 1:
-                *data = static_cast<DataFormat>(*coap_opt_value(option));
-                break;
-
-            case 2:
-                *data =
-                    static_cast<DataFormat>(*reinterpret_cast<uint16_t*>(const_cast<uint8_t*>(coap_opt_value(option))));
-                break;
-
-            default:
-                return STS_ERR_INVALID_VALUE;
-        }
-    }
-
-    return STS_OK;
-}
-
 Status CoapTransport::getLocationPath(coap_pdu_t* pdu, char* location, size_t size)
 {
     size_t curSize = 0;
@@ -646,8 +658,6 @@ Status CoapTransport::getUriPath(coap_pdu_t* pdu, char* uri, size_t size)
     coap_opt_iterator_t optIter;
     coap_opt_t* option = coap_check_option(pdu, COAP_OPTION_URI_PATH, &optIter);
 
-    uri[curSize] = '\0';
-
     while (option) {
         uri[curSize++] = '/';
 
@@ -660,6 +670,10 @@ Status CoapTransport::getUriPath(coap_pdu_t* pdu, char* uri, size_t size)
         curSize += coap_opt_length(option);
 
         option = coap_option_next(&optIter);
+    }
+
+    if (curSize == 0) {
+        uri[curSize++] = '/';
     }
 
     uri[curSize] = '\0';

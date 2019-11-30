@@ -74,6 +74,7 @@ public:
     // Rework
     Status discover(void* session, const char* path, void* data, size_t* size);
     Status read(void* session, const char* path, DataFormat* format, void* data, size_t* size);
+    Status write(void* session, const char* path, DataFormat format, void* data, size_t size);
 
     // Bootstrap
 

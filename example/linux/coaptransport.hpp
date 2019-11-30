@@ -106,7 +106,6 @@ private:
 
     openlwm2m::Status getLocationPath(coap_pdu_t* pdu, char* location, size_t size);
     openlwm2m::Status getUriPath(coap_pdu_t* pdu, char* location, size_t size);
-    openlwm2m::Status getAccept(coap_pdu_t* pdu, openlwm2m::DataFormat* data);
 
     void insertLocation(const char* location, coap_optlist_t** optList);
 

@@ -59,6 +59,10 @@ int Utils::convertPath(const char* path, uint16_t* objectId, uint16_t* objectIns
 
         pos++;
 
+        if (*pos == '\0') {
+            return 0;
+        }
+
         uint64_t value = strtol(pos, &pos, 0);
 
         if (value > UINT16_MAX) {
