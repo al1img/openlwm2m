@@ -168,7 +168,7 @@ Status Client::discover(void* session, const char* path, void* data, size_t* siz
     LOG_INFO("Discover, path: %s", path);
 
     if (Utils::convertPath(path, &objectId, &objectInstanceId, &resourceId, &resourceInstanceId) < 0) {
-        LOG_ERROR("Session not found");
+        LOG_ERROR("Path not found");
         return STS_ERR_NOT_FOUND;
     }
 
@@ -186,6 +186,39 @@ Status Client::discover(void* session, const char* path, void* data, size_t* siz
 
         return status;
     }
+
+    LOG_ERROR("Session not found");
+
+    return STS_ERR_NOT_FOUND;
+}
+
+Status Client::read(void* session, const char* path, DataFormat* format, void* data, size_t* size)
+{
+    uint16_t objectId, objectInstanceId, resourceId, resourceInstanceId;
+
+    LOG_INFO("Read, path: %s", path);
+
+    if (Utils::convertPath(path, &objectId, &objectInstanceId, &resourceId, &resourceInstanceId) < 0) {
+        LOG_ERROR("Path not found");
+        return STS_ERR_NOT_FOUND;
+    }
+
+    if (session == mBootstrapHandler.getSession()) {
+        if (resourceInstanceId != INVALID_ID || resourceId != INVALID_ID) {
+            LOG_ERROR("Path not found");
+            return STS_ERR_NOT_FOUND;
+        }
+
+        Status status = mBootstrapHandler.read(format, data, size, objectId, objectInstanceId);
+
+        if (status != STS_OK) {
+            LOG_ERROR("Bootstrap read error: %d", status);
+        }
+
+        return status;
+    }
+
+    LOG_ERROR("Session not found");
 
     return STS_ERR_NOT_FOUND;
 }

@@ -20,10 +20,10 @@ public:
     Status bootstrapRequest(RequestHandler handler = NULL, void* context = NULL);
     Status bootstrapFinish();
     Status discover(void* data, size_t* size, uint16_t objectId = INVALID_ID);
-    Status read(DataFormat* dataFormat, void* data, size_t* size, uint16_t objectId,
+    Status read(DataFormat* format, void* data, size_t* size, uint16_t objectId,
                 uint16_t objectInstanceId = INVALID_ID);
-    Status write(DataFormat dataFormat, void* data, size_t size, uint16_t objectId,
-                 uint16_t objectInstanceId = INVALID_ID, uint16_t resourceId = INVALID_ID);
+    Status write(DataFormat format, void* data, size_t size, uint16_t objectId, uint16_t objectInstanceId = INVALID_ID,
+                 uint16_t resourceId = INVALID_ID);
     Status deleteInstance(uint16_t objectId = INVALID_ID, uint16_t objectInstanceId = INVALID_ID);
 
     State getState() const { return mState; }

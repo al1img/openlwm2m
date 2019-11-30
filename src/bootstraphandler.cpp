@@ -155,7 +155,7 @@ Status BootstrapHandler::discover(void* data, size_t* size, uint16_t objectId)
     return STS_OK;
 }
 
-Status BootstrapHandler::read(DataFormat* dataFormat, void* data, size_t* size, uint16_t objectId,
+Status BootstrapHandler::read(DataFormat* format, void* data, size_t* size, uint16_t objectId,
                               uint16_t objectInstanceId)
 {
     Status status = STS_OK;
@@ -172,11 +172,11 @@ Status BootstrapHandler::read(DataFormat* dataFormat, void* data, size_t* size, 
         return STS_ERR_NOT_ALLOWED;
     }
 
-    if (*dataFormat == DATA_FMT_ANY) {
-        *dataFormat = CONFIG_DEFAULT_DATA_FORMAT;
+    if (*format == DATA_FMT_ANY) {
+        *format = CONFIG_DEFAULT_DATA_FORMAT;
     }
 
-    DataConverter* outConverter = mObjectManager.getConverterById(*dataFormat);
+    DataConverter* outConverter = mObjectManager.getConverterById(*format);
 
     if (outConverter == NULL) {
         return STS_ERR_NOT_FOUND;
@@ -208,8 +208,8 @@ Status BootstrapHandler::read(DataFormat* dataFormat, void* data, size_t* size, 
     return outConverter->finishEncoding(size);
 }
 
-Status BootstrapHandler::write(DataFormat dataFormat, void* data, size_t size, uint16_t objectId,
-                               uint16_t objectInstanceId, uint16_t resourceId)
+Status BootstrapHandler::write(DataFormat format, void* data, size_t size, uint16_t objectId, uint16_t objectInstanceId,
+                               uint16_t resourceId)
 {
     Status status = STS_OK;
 
@@ -221,7 +221,7 @@ Status BootstrapHandler::write(DataFormat dataFormat, void* data, size_t size, u
 
     LOG_DEBUG("Bootstrap write /%d/%d/%d", objectId, objectInstanceId, resourceId);
 
-    if ((status = mObjectManager.bootstrapWrite(dataFormat, data, size, objectId, objectInstanceId, resourceId)) !=
+    if ((status = mObjectManager.bootstrapWrite(format, data, size, objectId, objectInstanceId, resourceId)) !=
         STS_OK) {
         return status;
     }

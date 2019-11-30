@@ -483,32 +483,30 @@ void CoapTransport::onGetReceived(coap_resource_t* resource, coap_session_t* ses
 {
     char uri[CONFIG_DEFAULT_STRING_LEN + 1];
     uint8_t data[sDataSize];
-    DataFormat reqFormat = DATA_FMT_ANY, outFormat = DATA_FMT_TEXT;
+    DataFormat format = DATA_FMT_ANY;
     Status status = STS_OK;
 
     response->code = COAP_RESPONSE_CODE(205);
 
-    if ((status = getAccept(request, &reqFormat)) != STS_OK) {
+    if ((status = getAccept(request, &format)) != STS_OK) {
         response->code = status2Code(status);
     }
     else if ((status = getUriPath(request, uri, sizeof(uri))) != STS_OK) {
         response->code = status2Code(status);
     }
 
-    LOG_DEBUG("GET received, uri: %s, format: %d", uri, reqFormat);
+    LOG_DEBUG("GET received, uri: %s, format: %d", uri, format);
 
     size_t size = sDataSize;
 
     if (mClient && status == STS_OK) {
-        if (reqFormat != DATA_FMT_CORE) {
-            if ((status = mClient->deviceRead(uri, reqFormat, data, &size, &outFormat)) != STS_OK) {
+        if (format != DATA_FMT_CORE) {
+            if ((status = mClient->read(session, uri, &format, data, &size)) != STS_OK) {
                 response->code = status2Code(status);
                 size = 0;
             }
         }
         else {
-            outFormat = DATA_FMT_CORE;
-
             if ((status = mClient->discover(session, uri, data, &size)) != STS_OK) {
                 response->code = status2Code(status);
                 size = 0;
@@ -517,7 +515,7 @@ void CoapTransport::onGetReceived(coap_resource_t* resource, coap_session_t* ses
     }
 
     coap_add_option(response, COAP_OPTION_CONTENT_TYPE,
-                    coap_encode_var_safe(reinterpret_cast<uint8_t*>(uri), sizeof(uri), outFormat),
+                    coap_encode_var_safe(reinterpret_cast<uint8_t*>(uri), sizeof(uri), format),
                     reinterpret_cast<uint8_t*>(uri));
 
     coap_add_data(response, size, data);
