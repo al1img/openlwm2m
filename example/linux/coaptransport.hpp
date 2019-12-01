@@ -101,6 +101,12 @@ private:
     void onGetReceived(coap_resource_t* resource, coap_session_t* session, coap_pdu_t* request, coap_binary_t* token,
                        coap_string_t* query, coap_pdu_t* response);
 
+    static void deleteReceived(coap_context_t* context, coap_resource_t* resource, coap_session_t* session,
+                               coap_pdu_t* request, coap_binary_t* token, coap_string_t* query, coap_pdu_t* response);
+
+    void onDeleteReceived(coap_resource_t* resource, coap_session_t* session, coap_pdu_t* request, coap_binary_t* token,
+                          coap_string_t* query, coap_pdu_t* response);
+
     openlwm2m::Status code2Status(uint8_t code);
     uint8_t status2Code(openlwm2m::Status status);
 

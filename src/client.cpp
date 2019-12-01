@@ -254,6 +254,37 @@ Status Client::write(void* session, const char* path, DataFormat format, void* d
     return STS_ERR_NOT_FOUND;
 }
 
+Status Client::deleteInstance(void* session, const char* path)
+{
+    uint16_t objectId, objectInstanceId, resourceId, resourceInstanceId;
+
+    LOG_INFO("Delete, path: %s", path);
+
+    if (Utils::convertPath(path, &objectId, &objectInstanceId, &resourceId, &resourceInstanceId) < 0) {
+        LOG_ERROR("Path not found");
+        return STS_ERR_NOT_FOUND;
+    }
+
+    if (session == mBootstrapHandler.getSession()) {
+        if (resourceId != INVALID_ID || resourceInstanceId != INVALID_ID) {
+            LOG_ERROR("Path not found");
+            return STS_ERR_NOT_ALLOWED;
+        }
+
+        Status status = mBootstrapHandler.deleteInstance(objectId, objectInstanceId);
+
+        if (status != STS_OK) {
+            LOG_ERROR("Bootstrap delete error: %d", status);
+        }
+
+        return status;
+    }
+
+    LOG_ERROR("Session not found");
+
+    return STS_ERR_NOT_FOUND;
+}
+
 void Client::bootstrapDiscover()
 {
 }

@@ -200,6 +200,10 @@ Status BootstrapHandler::read(DataFormat* format, void* data, size_t* size, uint
     else {
         ObjectInstance* objectInstance = object->getInstanceById(objectInstanceId);
 
+        if (!objectInstance) {
+            return STS_ERR_NOT_FOUND;
+        }
+
         if ((status = objectInstance->read(outConverter)) != STS_OK) {
             return status;
         }
