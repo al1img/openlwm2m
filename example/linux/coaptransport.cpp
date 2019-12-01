@@ -29,6 +29,7 @@ CoapTransport::CoapTransport() : mClient(NULL)
     coap_resource_t* resource = coap_resource_unknown_init(&CoapTransport::putReceived);
     coap_register_handler(resource, COAP_REQUEST_GET, &CoapTransport::getReceived);
     coap_register_handler(resource, COAP_REQUEST_DELETE, &CoapTransport::deleteReceived);
+    coap_register_handler(resource, COAP_REQUEST_POST, &CoapTransport::postReceived);
     coap_add_resource(mContext, resource);
 
     coap_register_response_handler(mContext, &CoapTransport::responseHandler);
@@ -501,12 +502,12 @@ void CoapTransport::onGetReceived(coap_resource_t* resource, coap_session_t* ses
         return;
     }
 
+    LOG_DEBUG("GET received, path: %s, format: %d", path, format);
+
     if (!mClient) {
         response->code = status2Code(STS_ERR_NOT_FOUND);
         return;
     }
-
-    LOG_DEBUG("GET received, path: %s, format: %d", path, format);
 
     size_t size = sDataSize;
 
@@ -554,14 +555,15 @@ void CoapTransport::onPutReceived(coap_resource_t* resource, coap_session_t* ses
 
     if ((status = getUriPath(request, path, sizeof(path))) != STS_OK) {
         response->code = status2Code(status);
+        return;
     }
+
+    LOG_DEBUG("PUT received, path: %s, format: %d", path, format);
 
     if (!mClient) {
         response->code = status2Code(STS_ERR_NOT_FOUND);
         return;
     }
-
-    LOG_DEBUG("PUT received, path: %s, format: %d", path, format);
 
     size_t size;
     uint8_t* data;
@@ -593,6 +595,45 @@ void CoapTransport::onDeleteReceived(coap_resource_t* resource, coap_session_t* 
 
     if ((status = getUriPath(request, path, sizeof(path))) != STS_OK) {
         response->code = status2Code(status);
+        return;
+    }
+
+    LOG_DEBUG("DELETE received, path: %s", path);
+
+    if (!mClient) {
+        response->code = status2Code(STS_ERR_NOT_FOUND);
+        return;
+    }
+
+    if ((status = mClient->deleteInstance(session, path)) != STS_OK) {
+        response->code = status2Code(status);
+    }
+}
+
+void CoapTransport::postReceived(coap_context_t* context, coap_resource_t* resource, coap_session_t* session,
+                                 coap_pdu_t* request, coap_binary_t* token, coap_string_t* query, coap_pdu_t* response)
+{
+    static_cast<CoapTransport*>(context->app)->onPostReceived(resource, session, request, token, query, response);
+}
+
+void CoapTransport::onPostReceived(coap_resource_t* resource, coap_session_t* session, coap_pdu_t* request,
+                                   coap_binary_t* token, coap_string_t* query, coap_pdu_t* response)
+{
+    char path[CONFIG_DEFAULT_STRING_LEN + 1];
+    Status status = STS_OK;
+
+    response->code = COAP_RESPONSE_CODE(204);
+
+    if ((status = getUriPath(request, path, sizeof(path))) != STS_OK) {
+        response->code = status2Code(status);
+        return;
+    }
+
+    LOG_DEBUG("POST received, path: %s", path);
+
+    if (strcmp(path, "/bs") != 0) {
+        response->code = status2Code(STS_ERR_NOT_FOUND);
+        return;
     }
 
     if (!mClient) {
@@ -600,9 +641,7 @@ void CoapTransport::onDeleteReceived(coap_resource_t* resource, coap_session_t* 
         return;
     }
 
-    LOG_DEBUG("DELETE received, path: %s", path);
-
-    if ((status = mClient->deleteInstance(session, path)) != STS_OK) {
+    if ((status = mClient->bootstrapFinish(session)) != STS_OK) {
         response->code = status2Code(status);
     }
 }

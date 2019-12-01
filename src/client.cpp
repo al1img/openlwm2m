@@ -16,7 +16,13 @@ namespace openlwm2m {
  ******************************************************************************/
 
 Client::Client(const char* name, bool queueMode)
-    : mName(name), mQueueMode(queueMode), mBootstrapHandler(name, mObjectManager), mState(STATE_INIT)
+    : mName(name),
+      mQueueMode(queueMode),
+      mBootstrapHandler(name, mObjectManager),
+      mBootstrapCallback(NULL),
+      mBootstrapContext(NULL),
+      mCurrentHandler(NULL),
+      mState(STATE_INIT)
 {
     LOG_DEBUG("Create client");
 
@@ -120,11 +126,14 @@ Status Client::init(TransportItf* transport)
     return STS_OK;
 }
 
-Status Client::start(bool bootstrap)
+Status Client::start(bool bootstrap, BootstrapCallback bootstrapCallback, void* context)
 {
     if (mState != STATE_INITIALIZED) {
         return STS_ERR_NOT_ALLOWED;
     }
+
+    mBootstrapCallback = bootstrapCallback;
+    mBootstrapContext = context;
 
     if (bootstrap) {
         LOG_INFO("Start bootstrap");
@@ -285,6 +294,25 @@ Status Client::deleteInstance(void* session, const char* path)
     return STS_ERR_NOT_FOUND;
 }
 
+Status Client::bootstrapFinish(void* session)
+{
+    LOG_INFO("Boostrap finish");
+
+    if (session == mBootstrapHandler.getSession()) {
+        Status status = mBootstrapHandler.bootstrapFinish();
+
+        if (status != STS_OK) {
+            LOG_ERROR("Bootstrap finish error: %d", status);
+        }
+
+        return status;
+    }
+
+    LOG_ERROR("Session not found");
+
+    return STS_ERR_NOT_FOUND;
+}
+
 void Client::bootstrapDiscover()
 {
 }
@@ -380,6 +408,10 @@ void Client::onBootstrapFinished(Status status)
     }
     else {
         LOG_ERROR("Bootstrap failed, status: %d", status);
+    }
+
+    if (mBootstrapCallback) {
+        mBootstrapCallback(mBootstrapContext, status);
     }
 }
 

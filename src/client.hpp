@@ -21,6 +21,8 @@ namespace openlwm2m {
  */
 class Client : public ClientItf {
 public:
+    typedef void (*BootstrapCallback)(void* context, Status status);
+
     /**
      * Constructor.
      */
@@ -66,7 +68,7 @@ public:
 
     Status init(TransportItf* transport);
 
-    Status start(bool bootstrap);
+    Status start(bool bootstrap = false, BootstrapCallback bootstrapCallback = NULL, void* context = NULL);
 
     // TODO: remove leave only start
     Status registration();
@@ -76,6 +78,7 @@ public:
     Status read(void* session, const char* path, DataFormat* format, void* data, size_t* size);
     Status write(void* session, const char* path, DataFormat format, void* data, size_t size);
     Status deleteInstance(void* session, const char* path);
+    Status bootstrapFinish(void* session);
 
     // Bootstrap
 
@@ -118,7 +121,10 @@ private:
     ServerHandler::Storage mServerHandlerStorage;
     BootstrapHandler mBootstrapHandler;
 
-    ServerHandler* mCurrentHandler = NULL;
+    BootstrapCallback mBootstrapCallback;
+    void* mBootstrapContext;
+
+    ServerHandler* mCurrentHandler;
     State mState;
 
     static void bootstrapFinished(void* context, BootstrapHandler* handler, Status status);
