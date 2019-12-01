@@ -67,8 +67,7 @@ public:
     ResourceInstance* getResourceInstance(uint16_t objectInstanceId, uint16_t resourceId,
                                           uint16_t resourceInstanceId = 0);
 
-    Status write(DataConverter* converter, bool checkOperation = false, bool ignoreMissing = true,
-                 bool replace = false);
+    Status write(DataConverter* converter, bool checkOperation = false, bool ignoreMissing = true);
 
     Status read(DataConverter* converter, bool checkOperation = false);
 

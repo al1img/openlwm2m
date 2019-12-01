@@ -127,17 +127,12 @@ ResourceInstance* Resource::getNextInstance()
     return mInstanceStorage.getNextItem();
 }
 
-Status Resource::write(DataConverter* converter, bool checkOperation, bool replace)
+Status Resource::write(DataConverter* converter, bool checkOperation)
 {
     Status status = STS_OK;
     DataConverter::ResourceData resourceData;
 
     LOG_DEBUG("Write /%d/%d/%d", getParent()->getParent()->getId(), getParent()->getId(), getId());
-
-    if (replace) {
-        release();
-        init();
-    }
 
     while ((status = converter->nextDecoding(&resourceData)) == STS_OK) {
         if (resourceData.objectId != getParent()->getParent()->getId() ||

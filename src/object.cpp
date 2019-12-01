@@ -180,17 +180,12 @@ Status Object::setResourceCallback(uint16_t resourceId, ResourceInfo::Callback c
     return STS_OK;
 }
 
-Status Object::write(DataConverter* converter, bool checkOperation, bool ignoreMissing, bool replace)
+Status Object::write(DataConverter* converter, bool checkOperation, bool ignoreMissing)
 {
     Status status = STS_OK;
     DataConverter::ResourceData resourceData;
 
     LOG_DEBUG("Write /%d", getId());
-
-    if (replace) {
-        release();
-        init();
-    }
 
     while ((status = converter->nextDecoding(&resourceData)) == STS_OK) {
         if (resourceData.objectId != getId() || resourceData.objectInstanceId == INVALID_ID ||

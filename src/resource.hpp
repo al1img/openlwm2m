@@ -117,7 +117,7 @@ public:
 
     ResourceInfo& getInfo() const { return mInfo; }
 
-    Status write(DataConverter* converter, bool checkOperation = false, bool replace = false);
+    Status write(DataConverter* converter, bool checkOperation = false);
     Status write(DataConverter::ResourceData* resourceData, bool checkOperation = false);
 
     Status read(DataConverter* converter, bool checkOperation = false);

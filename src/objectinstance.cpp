@@ -55,17 +55,12 @@ ResourceInstance* ObjectInstance::getResourceInstance(uint16_t resId, uint16_t r
     return resource->getInstanceById(resInstanceId);
 }
 
-Status ObjectInstance::write(DataConverter* converter, bool checkOperation, bool ignoreMissing, bool replace)
+Status ObjectInstance::write(DataConverter* converter, bool checkOperation, bool ignoreMissing)
 {
     Status status = STS_OK;
     DataConverter::ResourceData resourceData;
 
     LOG_DEBUG("Write /%d", getId());
-
-    if (replace) {
-        release();
-        init();
-    }
 
     while ((status = converter->nextDecoding(&resourceData)) == STS_OK) {
         if (resourceData.objectId != getParent()->getId() || resourceData.objectInstanceId != getId() ||

@@ -288,11 +288,16 @@ void testReadWrite(Resource* resource, TestData* testData, size_t size, bool che
 
     for (size_t i = 0; i < size; i++) {
         if (testData[i].writeData != NULL) {
+            if (replace) {
+                resource->release();
+                resource->init();
+            }
+
             status = writeConverter.startDecoding(reinterpret_cast<void*>(const_cast<char*>(testData[i].writeData)),
                                                   strlen(testData[i].writeData));
             CHECK(status == STS_OK);
 
-            status = resource->write(&writeConverter, checkOperation, replace);
+            status = resource->write(&writeConverter, checkOperation);
             CHECK(status == testData[i].status);
         }
 

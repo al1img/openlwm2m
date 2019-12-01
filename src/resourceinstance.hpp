@@ -26,16 +26,15 @@ public:
     Status write(DataConverter::ResourceData* resourceData);
     Status read(DataConverter::ResourceData* resourceData);
 
-protected:
-    void valueChanged();
-
-private:
     Status writeString(char* value);
     Status writeInt(int64_t value);
     Status writeUint(uint64_t value);
     Status writeFloat(double value);
     Status writeBool(uint8_t value);
     // TODO: rest of types
+
+protected:
+    void valueChanged();
 };
 
 class ResourceString : public ResourceInstance {

@@ -1,2 +1,8 @@
-1. Reimplement poll request mechanism: move to transport or poll client regularly.
+TODO:
+
+1. 
 2. 
+
+QUESTIONS:
+
+1. Shall write operation be atomic?

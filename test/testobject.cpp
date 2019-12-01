@@ -167,8 +167,7 @@ struct TestData {
     Status status;
 };
 
-void testReadWrite(Object* object, TestData* testData, size_t size, bool checkOperation, bool ignoreMissing,
-                   bool replace)
+void testReadWrite(Object* object, TestData* testData, size_t size, bool checkOperation, bool ignoreMissing)
 {
     Status status = STS_OK;
     JsonConverter writeConverter, readConverter;
@@ -180,7 +179,7 @@ void testReadWrite(Object* object, TestData* testData, size_t size, bool checkOp
                                                   strlen(testData[i].writeData));
             CHECK(status == STS_OK);
 
-            status = object->write(&writeConverter, checkOperation, ignoreMissing, replace);
+            status = object->write(&writeConverter, checkOperation, ignoreMissing);
             CHECK(status == testData[i].status);
         }
 
@@ -364,7 +363,7 @@ TEST_CASE("test object write", "[object]")
              STS_OK},
         };
 
-        testReadWrite(&object, testData, sizeof(testData) / sizeof(TestData), false, true, false);
+        testReadWrite(&object, testData, sizeof(testData) / sizeof(TestData), false, true);
     }
 
     object.release();

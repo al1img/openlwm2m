@@ -7,7 +7,7 @@
 
 using namespace openlwm2m;
 
-TEST_CASE("test object instance", "[objectinstance]")
+TEST_CASE("test object instance", "[objectInstance]")
 {
     Status status = STS_OK;
 
@@ -99,11 +99,16 @@ void testReadWrite(ObjectInstance* objectInstance, TestData* testData, size_t si
 
     for (size_t i = 0; i < size; i++) {
         if (testData[i].writeData != NULL) {
+            if (replace) {
+                objectInstance->release();
+                objectInstance->init();
+            }
+
             status = writeConverter.startDecoding(reinterpret_cast<void*>(const_cast<char*>(testData[i].writeData)),
                                                   strlen(testData[i].writeData));
             CHECK(status == STS_OK);
 
-            status = objectInstance->write(&writeConverter, checkOperation, ignoreMissing, replace);
+            status = objectInstance->write(&writeConverter, checkOperation, ignoreMissing);
             CHECK(status == testData[i].status);
         }
 
@@ -128,7 +133,7 @@ void testReadWrite(ObjectInstance* objectInstance, TestData* testData, size_t si
     }
 }
 
-TEST_CASE("test object instance write", "[objectinstance]")
+TEST_CASE("test object instance write", "[objectInstance]")
 {
     Status status = STS_OK;
 
