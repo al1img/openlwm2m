@@ -128,6 +128,8 @@ Status Client::init(TransportItf* transport)
 
 Status Client::start(bool bootstrap, BootstrapCallback bootstrapCallback, void* context)
 {
+    Status status = STS_OK;
+
     if (mState != STATE_INITIALIZED) {
         return STS_ERR_NOT_ALLOWED;
     }
@@ -136,11 +138,14 @@ Status Client::start(bool bootstrap, BootstrapCallback bootstrapCallback, void* 
     mBootstrapContext = context;
 
     if (bootstrap) {
-        LOG_INFO("Start bootstrap");
-
-        mState = STATE_BOOTSTRAP;
-
-        mBootstrapHandler.bootstrapRequest(&Client::bootstrapFinished, this);
+        if ((status = startBootstrap()) != STS_OK) {
+            return status;
+        }
+    }
+    else {
+        if ((status = registration()) != STS_OK) {
+            return status;
+        }
     }
 
     return STS_OK;
@@ -167,7 +172,7 @@ Status Client::registration()
 
     mState = STATE_REGISTRATION;
 
-    return status;
+    return STS_OK;
 }
 
 Status Client::discover(void* session, const char* path, void* data, size_t* size)
@@ -413,6 +418,16 @@ void Client::onBootstrapFinished(Status status)
     if (mBootstrapCallback) {
         mBootstrapCallback(mBootstrapContext, status);
     }
+
+    mState = STATE_INITIALIZED;
+
+    if ((status = registration()) != STS_OK) {
+        LOG_ERROR("Can't start registration: %d", status);
+
+        if ((status = startBootstrap()) != STS_OK) {
+            LOG_ERROR("Can't start bootstrap: %d", status);
+        }
+    }
 }
 
 void Client::updateRegistration(void* context, ResourceInstance* resInstance)
@@ -436,6 +451,21 @@ void Client::onUpdateRegistration(ResourceInstance* resInstance)
             LOG_ERROR("Can't update registration, status %d", status);
         }
     }
+}
+
+Status Client::startBootstrap()
+{
+    Status status = STS_OK;
+
+    LOG_INFO("Start bootstrap");
+
+    if ((status = mBootstrapHandler.bootstrapRequest(&Client::bootstrapFinished, this)) != STS_OK) {
+        return status;
+    }
+
+    mState = STATE_BOOTSTRAP;
+
+    return STS_OK;
 }
 
 Status Client::createRegHandlers()

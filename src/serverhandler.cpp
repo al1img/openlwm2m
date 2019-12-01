@@ -66,7 +66,7 @@ Status ServerHandler::bind(TransportItf* transport)
 
     mSecurityInstance = object->getFirstInstance();
 
-    while (mSecurityInstance) {
+    for (; mSecurityInstance; mSecurityInstance = object->getNextInstance()) {
         if (static_cast<ResourceBool*>(mSecurityInstance->getResourceInstance(RES_BOOTSTRAP_SERVER))->getValue()) {
             continue;
         }
@@ -76,8 +76,6 @@ Status ServerHandler::bind(TransportItf* transport)
             static_cast<ResourceInt*>(mServerInstance->getResourceInstance(RES_SHORT_SERVER_ID))->getValue()) {
             break;
         }
-
-        mSecurityInstance = object->getNextInstance();
     }
 
     if (!mSecurityInstance) {

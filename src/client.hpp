@@ -70,9 +70,6 @@ public:
 
     Status start(bool bootstrap = false, BootstrapCallback bootstrapCallback = NULL, void* context = NULL);
 
-    // TODO: remove leave only start
-    Status registration();
-
     // Rework
     Status discover(void* session, const char* path, void* data, size_t* size);
     Status read(void* session, const char* path, DataFormat* format, void* data, size_t* size);
@@ -136,8 +133,9 @@ private:
     static void registrationStatus(void* context, ServerHandler* handler, Status status);
     void onRegistrationStatus(ServerHandler* handler, Status status);
 
+    Status startBootstrap();
     Status createRegHandlers();
-
+    Status registration();
     Status startNextRegistration();
 };
 

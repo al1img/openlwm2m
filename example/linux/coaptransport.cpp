@@ -324,14 +324,19 @@ void CoapTransport::run()
 
 Status CoapTransport::resolveAddress(const char* uri, coap_address_t* dst)
 {
+    char tmp[CONFIG_DEFAULT_STRING_LEN + 1];
     char* host;
     char* port;
 
-    if (0 == strncmp(uri, "coaps://", strlen("coaps://"))) {
-        host = const_cast<char*>(uri) + strlen("coaps://");
+    if (Utils::strCopy(tmp, uri, sizeof(tmp)) < 0) {
+        return STS_ERR_NO_MEM;
+    }
+
+    if (0 == strncmp(tmp, "coaps://", strlen("coaps://"))) {
+        host = tmp + strlen("coaps://");
     }
     else if (0 == strncmp(uri, "coap://", strlen("coap://"))) {
-        host = const_cast<char*>(uri) + strlen("coap://");
+        host = tmp + strlen("coap://");
     }
     else {
         return STS_ERR_INVALID_VALUE;
