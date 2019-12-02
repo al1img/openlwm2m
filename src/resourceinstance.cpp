@@ -316,6 +316,27 @@ Status ResourceInstance::read(DataConverter::ResourceData* resourceData)
     return STS_OK;
 }
 
+Status ResourceInstance::read(DataConverter* converter, bool checkOperation)
+{
+    Status status = STS_OK;
+    ResourceInfo& info = getResource()->getInfo();
+    DataConverter::ResourceData resourceData;
+
+    if (info.checkOperation(OP_EXECUTE) || (checkOperation && !info.checkOperation(OP_READ))) {
+        return STS_OK;
+    }
+
+    if ((status = read(&resourceData)) != STS_OK) {
+        return status;
+    }
+
+    if ((status = converter->nextEncoding(&resourceData)) != STS_OK) {
+        return status;
+    }
+
+    return STS_OK;
+}
+
 const char* ResourceInstance::getString()
 {
     return static_cast<ResourceString*>(this)->getValue();

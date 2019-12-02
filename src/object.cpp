@@ -156,15 +156,27 @@ Status Object::deleteInstance(uint16_t id)
     return status;
 }
 
-ResourceInstance* Object::getResourceInstance(uint16_t objInstanceId, uint16_t resId, uint16_t resInstanceId)
+ResourceInstance* Object::getResourceInstance(uint16_t objectInstanceId, uint16_t resourceId,
+                                              uint16_t resourceInstanceId)
 {
-    ObjectInstance* objInstance = getInstanceById(objInstanceId);
+    ObjectInstance* objectInstance = getInstanceById(objectInstanceId);
 
-    if (!objInstance) {
+    if (!objectInstance) {
         return NULL;
     }
 
-    return objInstance->getResourceInstance(resId, resInstanceId);
+    return objectInstance->getResourceInstance(resourceId, resourceInstanceId);
+}
+
+Resource* Object::getResource(uint16_t objectInstanceId, uint16_t resourceId)
+{
+    ObjectInstance* objectInstance = getInstanceById(objectInstanceId);
+
+    if (!objectInstance) {
+        return NULL;
+    }
+
+    return objectInstance->getResourceById(resourceId);
 }
 
 Status Object::setResourceCallback(uint16_t resourceId, ResourceInfo::Callback callback, void* context)

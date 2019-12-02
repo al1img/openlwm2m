@@ -225,6 +225,7 @@ Status Client::discover(void* session, const char* path, void* data, size_t* siz
 
 Status Client::read(void* session, const char* path, DataFormat* format, void* data, size_t* size)
 {
+    Status status = STS_OK;
     uint16_t objectId, objectInstanceId, resourceId, resourceInstanceId;
 
     LOG_INFO("Read, path: %s", path);
@@ -240,13 +241,25 @@ Status Client::read(void* session, const char* path, DataFormat* format, void* d
             return STS_ERR_NOT_FOUND;
         }
 
-        Status status = mBootstrapHandler.read(format, data, size, objectId, objectInstanceId);
-
-        if (status != STS_OK) {
+        if ((status = mBootstrapHandler.read(format, data, size, objectId, objectInstanceId)) != STS_OK) {
             LOG_ERROR("Bootstrap read error: %d", status);
+            return status;
         }
 
-        return status;
+        return STS_OK;
+    }
+
+    for (ServerHandler* handler = mServerHandlerStorage.getFirstItem(); handler;
+         handler = mServerHandlerStorage.getNextItem()) {
+        if (session == handler->getSession()) {
+            if ((status = handler->read(format, data, size, objectId, objectInstanceId, resourceId,
+                                        resourceInstanceId)) != STS_OK) {
+                LOG_ERROR("Device discover error: %d", status);
+                return status;
+            }
+
+            return STS_OK;
+        }
     }
 
     LOG_ERROR("Session not found");

@@ -26,6 +26,8 @@ public:
     Status write(DataConverter::ResourceData* resourceData);
     Status read(DataConverter::ResourceData* resourceData);
 
+    Status read(DataConverter* converter, bool checkOperation);
+
     Status setString(const char* value);
     Status setInt(int64_t value);
     Status setUint(uint64_t value);

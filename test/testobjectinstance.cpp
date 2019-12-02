@@ -116,7 +116,7 @@ void testReadWrite(ObjectInstance* objectInstance, TestData* testData, size_t si
             status = readConverter.startEncoding(readBuffer, sizeof(readBuffer) - 1);
             REQUIRE(status == STS_OK);
 
-            status = objectInstance->read(&readConverter);
+            status = objectInstance->read(&readConverter, false);
             CHECK(status == STS_OK);
 
             size_t size;

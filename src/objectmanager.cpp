@@ -99,7 +99,7 @@ Status ObjectManager::bootstrapWrite(DataFormat dataFormat, void* data, size_t s
     }
 
     if (objectInstanceId == INVALID_ID) {
-        if ((status = object->write(converter)) != STS_OK) {
+        if ((status = object->write(converter, false, true)) != STS_OK) {
             return status;
         }
 
@@ -116,7 +116,7 @@ Status ObjectManager::bootstrapWrite(DataFormat dataFormat, void* data, size_t s
     }
 
     if (resourceId == INVALID_ID) {
-        if ((status = objectInstance->write(converter)) != STS_OK) {
+        if ((status = objectInstance->write(converter, false, true)) != STS_OK) {
             return status;
         }
 
@@ -129,7 +129,7 @@ Status ObjectManager::bootstrapWrite(DataFormat dataFormat, void* data, size_t s
         return STS_ERR_NOT_FOUND;
     }
 
-    if ((status = resource->write(converter)) != STS_OK) {
+    if ((status = resource->write(converter, false)) != STS_OK) {
         return status;
     }
 

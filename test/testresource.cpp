@@ -305,7 +305,7 @@ void testReadWrite(Resource* resource, TestData* testData, size_t size, bool che
             status = readConverter.startEncoding(readBuffer, sizeof(readBuffer) - 1);
             REQUIRE(status == STS_OK);
 
-            status = resource->read(&readConverter);
+            status = resource->read(&readConverter, false);
             CHECK(status == STS_OK);
 
             size_t size;

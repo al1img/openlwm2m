@@ -187,7 +187,7 @@ void testReadWrite(Object* object, TestData* testData, size_t size, bool checkOp
             status = readConverter.startEncoding(readBuffer, sizeof(readBuffer) - 1);
             REQUIRE(status == STS_OK);
 
-            status = object->read(&readConverter);
+            status = object->read(&readConverter, false);
             CHECK(status == STS_OK);
 
             size_t size;

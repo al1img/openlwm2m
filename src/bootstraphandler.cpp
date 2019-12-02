@@ -192,7 +192,7 @@ Status BootstrapHandler::read(DataFormat* format, void* data, size_t* size, uint
     }
 
     if (objectInstanceId == INVALID_ID) {
-        if ((status = object->read(outConverter)) != STS_OK) {
+        if ((status = object->read(outConverter, false)) != STS_OK) {
             return status;
         }
     }
@@ -203,7 +203,7 @@ Status BootstrapHandler::read(DataFormat* format, void* data, size_t* size, uint
             return STS_ERR_NOT_FOUND;
         }
 
-        if ((status = objectInstance->read(outConverter)) != STS_OK) {
+        if ((status = objectInstance->read(outConverter, false)) != STS_OK) {
             return status;
         }
     }

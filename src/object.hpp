@@ -66,10 +66,11 @@ public:
 
     ResourceInstance* getResourceInstance(uint16_t objectInstanceId, uint16_t resourceId,
                                           uint16_t resourceInstanceId = 0);
+    Resource* getResource(uint16_t objectInstanceId, uint16_t resourceId);
 
-    Status write(DataConverter* converter, bool checkOperation = false, bool ignoreMissing = true);
+    Status write(DataConverter* converter, bool checkOperation, bool ignoreMissing);
 
-    Status read(DataConverter* converter, bool checkOperation = false);
+    Status read(DataConverter* converter, bool checkOperation);
 
     static bool isInstanceChanged()
     {

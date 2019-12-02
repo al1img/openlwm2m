@@ -218,6 +218,94 @@ Status ServerHandler::discover(void* data, size_t* size, uint16_t objectId, uint
     return STS_OK;
 }
 
+Status ServerHandler::read(DataFormat* format, void* data, size_t* size, uint16_t objectId, uint16_t objectInstanceId,
+                           uint16_t resourceId, uint16_t resourceInstanceId)
+{
+    Status status = STS_OK;
+
+    if (mState != STATE_REGISTERED) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    LOG_DEBUG("Device read /%d/%d/%d/%d", objectId, objectInstanceId, resourceId, resourceInstanceId);
+
+    if (objectId == OBJ_LWM2M_SECURITY && objectId == OBJ_OSCORE) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    if (*format == DATA_FMT_ANY) {
+        *format = CONFIG_DEFAULT_DATA_FORMAT;
+    }
+
+    DataConverter* outConverter = mObjectManager.getConverterById(*format);
+
+    if (outConverter == NULL) {
+        return STS_ERR_NOT_FOUND;
+    }
+
+    if ((status = outConverter->startEncoding(data, *size)) != STS_OK) {
+        return status;
+    }
+
+    Object* object = mObjectManager.getObjectById(objectId);
+
+    if (!object) {
+        return STS_ERR_NOT_FOUND;
+    }
+
+    if (objectInstanceId == INVALID_ID) {
+        if ((status = object->read(outConverter, true)) != STS_OK) {
+            return status;
+        }
+    }
+    else if (resourceId == INVALID_ID) {
+        ObjectInstance* objectInstance = object->getInstanceById(objectInstanceId);
+
+        if (!objectInstance) {
+            return STS_ERR_NOT_FOUND;
+        }
+
+        if ((status = objectInstance->read(outConverter, true)) != STS_OK) {
+            return status;
+        }
+    }
+    else if (resourceInstanceId == INVALID_ID) {
+        Resource* resource = object->getResource(objectInstanceId, resourceId);
+
+        if (!resource) {
+            return STS_ERR_NOT_FOUND;
+        }
+
+        if (!resource->getInfo().checkOperation(OP_READ)) {
+            return STS_ERR_NOT_ALLOWED;
+        }
+
+        if ((status = resource->read(outConverter, true)) != STS_OK) {
+            return status;
+        }
+    }
+    else {
+        ResourceInstance* resourceInstance =
+            object->getResourceInstance(objectInstanceId, resourceId, resourceInstanceId);
+
+        if (!resourceInstance) {
+            return STS_ERR_NOT_FOUND;
+        }
+
+        ResourceInfo& info = resourceInstance->getResource()->getInfo();
+
+        if (!info.checkOperation(OP_READ) || info.isSingle()) {
+            return STS_ERR_NOT_ALLOWED;
+        }
+
+        if ((status = resourceInstance->read(outConverter, true)) != STS_OK) {
+            return status;
+        }
+    }
+
+    return outConverter->finishEncoding(size);
+}
+
 /*******************************************************************************
  * Private
  ******************************************************************************/

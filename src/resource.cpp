@@ -197,22 +197,8 @@ Status Resource::read(DataConverter* converter, bool checkOperation)
 {
     Status status = STS_OK;
 
-    if (getInfo().checkOperation(OP_EXECUTE)) {
-        return STS_OK;
-    }
-
-    if (checkOperation && !getInfo().checkOperation(OP_READ)) {
-        return STS_ERR_NO_ACCESS;
-    }
-
     for (ResourceInstance* instance = getFirstInstance(); instance != NULL; instance = getNextInstance()) {
-        DataConverter::ResourceData resourceData;
-
-        if ((status = instance->read(&resourceData)) != STS_OK) {
-            return status;
-        }
-
-        if ((status = converter->nextEncoding(&resourceData)) != STS_OK) {
+        if ((status = instance->read(converter, checkOperation)) != STS_OK) {
             return status;
         }
     }
