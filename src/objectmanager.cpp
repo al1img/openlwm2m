@@ -274,7 +274,7 @@ void ObjectManager::resBootstrapChanged(void* context, ResourceInstance* resInst
     Resource* resShortServerId = securityObjectInstance->getResourceById(RES_SECURITY_SHORT_SERVER_ID);
     ASSERT(resShortServerId);
 
-    if (!static_cast<ResourceBool*>(resInstance)->getValue()) {
+    if (!resInstance->getBool()) {
         if (!resShortServerId->getFirstInstance()) {
             resShortServerId->createInstance();
         }
@@ -295,8 +295,7 @@ ObjectInstance* ObjectManager::getServerInstance(uint16_t shortServerId)
     ObjectInstance* objectInstance = object->getFirstInstance();
 
     while (objectInstance) {
-        if (static_cast<ResourceInt*>(objectInstance->getResourceInstance(RES_SHORT_SERVER_ID))->getValue() ==
-            shortServerId) {
+        if (objectInstance->getResourceInstance(RES_SHORT_SERVER_ID)->getInt() == shortServerId) {
             return objectInstance;
         }
 

@@ -455,9 +455,7 @@ void Client::updateRegistration(void* context, ResourceInstance* resInstance)
 void Client::onUpdateRegistration(ResourceInstance* resInstance)
 {
     uint16_t shortServerId =
-        static_cast<ResourceInt*>(
-            resInstance->getResource()->getObjectInstance()->getResourceInstance(RES_SHORT_SERVER_ID))
-            ->getValue();
+        resInstance->getResource()->getObjectInstance()->getResourceInstance(RES_SHORT_SERVER_ID)->getInt();
 
     ServerHandler* handler = mServerHandlerStorage.getItemById(shortServerId);
 
@@ -493,8 +491,8 @@ Status Client::createRegHandlers()
     ObjectInstance* serverInstance = object->getFirstInstance();
 
     while (serverInstance) {
-        ServerHandler* handler = mServerHandlerStorage.allocateItem(
-            static_cast<ResourceInt*>(serverInstance->getResourceInstance(RES_SHORT_SERVER_ID))->getValue());
+        ServerHandler* handler =
+            mServerHandlerStorage.allocateItem(serverInstance->getResourceInstance(RES_SHORT_SERVER_ID)->getInt());
         ASSERT(handler);
 
         Status status = STS_OK;
@@ -528,7 +526,7 @@ void Client::onRegistrationStatus(ServerHandler* handler, Status status)
         ResourceInstance* bootstrapOnFailure =
             mObjectManager.getServerInstance(handler->getId())->getResourceInstance(RES_BOOTSTRAP_ON_REG_FAILURE);
 
-        if (bootstrapOnFailure && static_cast<ResourceBool*>(bootstrapOnFailure)->getValue()) {
+        if (bootstrapOnFailure && bootstrapOnFailure->getBool()) {
             // TODO: start bootstrap and return
         }
     }
@@ -567,9 +565,9 @@ Status Client::startNextRegistration()
             continue;
         }
 
-        if (static_cast<ResourceUint*>(regPriority)->getValue() <= minPriority) {
+        if (regPriority->getUint() <= minPriority) {
             mCurrentHandler = handler;
-            minPriority = static_cast<ResourceUint*>(regPriority)->getValue();
+            minPriority = regPriority->getUint();
         }
     }
 
@@ -588,7 +586,7 @@ Status Client::startNextRegistration()
         ResourceInstance* failureBlock = serverInstance->getResourceInstance(RES_REG_FAILURE_BLOCK);
 
         if (regPriority && handler->getState() == ServerHandler::STATE_DEREGISTERED &&
-            (!failureBlock || !static_cast<ResourceBool*>(failureBlock)->getValue())) {
+            (!failureBlock || !failureBlock->getBool())) {
             mCurrentHandler = handler;
             return mCurrentHandler->registration(false, registrationStatus, this);
         }

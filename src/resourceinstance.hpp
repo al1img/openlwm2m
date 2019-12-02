@@ -26,11 +26,18 @@ public:
     Status write(DataConverter::ResourceData* resourceData);
     Status read(DataConverter::ResourceData* resourceData);
 
-    Status writeString(char* value);
-    Status writeInt(int64_t value);
-    Status writeUint(uint64_t value);
-    Status writeFloat(double value);
-    Status writeBool(uint8_t value);
+    Status setString(const char* value);
+    Status setInt(int64_t value);
+    Status setUint(uint64_t value);
+    Status setFloat(double value);
+    Status setBool(uint8_t value);
+
+    const char* getString();
+    int64_t getInt();
+    uint64_t getUint();
+    double getFloat();
+    uint8_t getBool();
+
     // TODO: rest of types
 
 protected:

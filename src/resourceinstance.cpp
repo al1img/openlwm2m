@@ -116,19 +116,19 @@ Status ResourceInstance::write(DataConverter::ResourceData* resourceData)
 
     switch (resourceData->dataType) {
         case DATA_TYPE_STRING:
-            return writeString(resourceData->strValue);
+            return setString(resourceData->strValue);
 
         case DATA_TYPE_INT:
-            return writeInt(resourceData->intValue);
+            return setInt(resourceData->intValue);
 
         case DATA_TYPE_UINT:
-            return writeUint(resourceData->uintValue);
+            return setUint(resourceData->uintValue);
 
         case DATA_TYPE_FLOAT:
-            return writeFloat(resourceData->floatValue);
+            return setFloat(resourceData->floatValue);
 
         case DATA_TYPE_BOOL:
-            return writeBool(resourceData->boolValue);
+            return setBool(resourceData->boolValue);
 
         // TODO:
         case DATA_TYPE_OPAQUE:
@@ -146,7 +146,7 @@ Status ResourceInstance::write(DataConverter::ResourceData* resourceData)
     return STS_OK;
 }
 
-Status ResourceInstance::writeString(char* value)
+Status ResourceInstance::setString(const char* value)
 {
     switch (getResource()->getInfo().getType()) {
         case DATA_TYPE_STRING:
@@ -207,7 +207,7 @@ Status ResourceInstance::writeString(char* value)
     }
 }
 
-Status ResourceInstance::writeInt(int64_t value)
+Status ResourceInstance::setInt(int64_t value)
 {
     if (getResource()->getInfo().getType() != DATA_TYPE_INT) {
         return STS_ERR_FORMAT;
@@ -216,7 +216,7 @@ Status ResourceInstance::writeInt(int64_t value)
     return static_cast<ResourceInt*>(this)->setValue(value);
 }
 
-Status ResourceInstance::writeUint(uint64_t value)
+Status ResourceInstance::setUint(uint64_t value)
 {
     if (getResource()->getInfo().getType() != DATA_TYPE_UINT) {
         return STS_ERR_FORMAT;
@@ -225,7 +225,7 @@ Status ResourceInstance::writeUint(uint64_t value)
     return static_cast<ResourceInt*>(this)->setValue(value);
 }
 
-Status ResourceInstance::writeFloat(double value)
+Status ResourceInstance::setFloat(double value)
 {
     switch (getResource()->getInfo().getType()) {
         case DATA_TYPE_INT: {
@@ -256,7 +256,7 @@ Status ResourceInstance::writeFloat(double value)
     }
 }
 
-Status ResourceInstance::writeBool(uint8_t value)
+Status ResourceInstance::setBool(uint8_t value)
 {
     if (getResource()->getInfo().getType() != DATA_TYPE_BOOL) {
         return STS_ERR_FORMAT;
@@ -282,23 +282,23 @@ Status ResourceInstance::read(DataConverter::ResourceData* resourceData)
 
     switch (resourceData->dataType) {
         case DATA_TYPE_STRING:
-            resourceData->strValue = const_cast<char*>(static_cast<ResourceString*>(this)->getValue());
+            resourceData->strValue = const_cast<char*>(getString());
             break;
 
         case DATA_TYPE_INT:
-            resourceData->intValue = static_cast<ResourceInt*>(this)->getValue();
+            resourceData->intValue = getInt();
             break;
 
         case DATA_TYPE_UINT:
-            resourceData->uintValue = static_cast<ResourceUint*>(this)->getValue();
+            resourceData->uintValue = getUint();
             break;
 
         case DATA_TYPE_FLOAT:
-            resourceData->floatValue = static_cast<ResourceFloat*>(this)->getValue();
+            resourceData->floatValue = getFloat();
             break;
 
         case DATA_TYPE_BOOL:
-            resourceData->boolValue = static_cast<ResourceBool*>(this)->getValue();
+            resourceData->boolValue = getBool();
             break;
 
             // TODO:
@@ -314,6 +314,31 @@ Status ResourceInstance::read(DataConverter::ResourceData* resourceData)
     }
 
     return STS_OK;
+}
+
+const char* ResourceInstance::getString()
+{
+    return static_cast<ResourceString*>(this)->getValue();
+}
+
+int64_t ResourceInstance::getInt()
+{
+    return static_cast<ResourceInt*>(this)->getValue();
+}
+
+uint64_t ResourceInstance::getUint()
+{
+    return static_cast<ResourceUint*>(this)->getValue();
+}
+
+double ResourceInstance::getFloat()
+{
+    return static_cast<ResourceFloat*>(this)->getValue();
+}
+
+uint8_t ResourceInstance::getBool()
+{
+    return static_cast<ResourceBool*>(this)->getValue();
 }
 
 /*******************************************************************************

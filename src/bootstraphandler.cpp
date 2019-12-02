@@ -52,7 +52,7 @@ Status BootstrapHandler::bootstrapRequest(RequestHandler handler, void* context)
     ObjectInstance* securityInstance = NULL;
 
     for (ObjectInstance* instance = object->getFirstInstance(); instance; instance = object->getNextInstance()) {
-        if (static_cast<ResourceBool*>(instance->getResourceInstance(RES_BOOTSTRAP_SERVER))->getValue()) {
+        if (instance->getResourceInstance(RES_BOOTSTRAP_SERVER)->getBool()) {
             securityInstance = instance;
             break;
         }
@@ -62,8 +62,7 @@ Status BootstrapHandler::bootstrapRequest(RequestHandler handler, void* context)
         return STS_ERR_NOT_FOUND;
     }
 
-    const char* serverUri =
-        static_cast<ResourceString*>(securityInstance->getResourceInstance(RES_LWM2M_SERVER_URI))->getValue();
+    const char* serverUri = securityInstance->getResourceInstance(RES_LWM2M_SERVER_URI)->getString();
 
     LOG_DEBUG("Bootstrap request to: %s", serverUri);
 
@@ -340,12 +339,10 @@ int BootstrapHandler::discoverObject(char* data, size_t maxSize, Object* object)
             return -1;
         }
 
-        if (object->getId() == OBJ_LWM2M_SECURITY &&
-            !static_cast<ResourceBool*>(instance->getResourceInstance(RES_BOOTSTRAP_SERVER))->getValue()) {
-            ret = snprintf(
-                &data[curSize], maxSize - curSize, ",<%s>;ssid=%ld;uri=%s", buf,
-                static_cast<ResourceInt*>(instance->getResourceInstance(RES_SECURITY_SHORT_SERVER_ID))->getValue(),
-                static_cast<ResourceString*>(instance->getResourceInstance(RES_LWM2M_SERVER_URI))->getValue());
+        if (object->getId() == OBJ_LWM2M_SECURITY && !instance->getResourceInstance(RES_BOOTSTRAP_SERVER)->getBool()) {
+            ret = snprintf(&data[curSize], maxSize - curSize, ",<%s>;ssid=%ld;uri=%s", buf,
+                           instance->getResourceInstance(RES_SECURITY_SHORT_SERVER_ID)->getInt(),
+                           instance->getResourceInstance(RES_LWM2M_SERVER_URI)->getString());
         }
         else {
             ret = snprintf(&data[curSize], maxSize - curSize, ",<%s>", buf);
@@ -411,8 +408,7 @@ Status BootstrapHandler::deleteObjectInstance(ObjectInstance* instance)
         return STS_ERR_NOT_ALLOWED;
     }
 
-    if (object->getId() == OBJ_LWM2M_SECURITY &&
-        static_cast<ResourceBool*>(instance->getResourceInstance(RES_BOOTSTRAP_SERVER))->getValue()) {
+    if (object->getId() == OBJ_LWM2M_SECURITY && instance->getResourceInstance(RES_BOOTSTRAP_SERVER)->getBool()) {
         return STS_ERR_NOT_ALLOWED;
     }
 

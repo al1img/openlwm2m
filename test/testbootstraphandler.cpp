@@ -27,21 +27,19 @@ static void setupObjects(ObjectManager* objectManager)
     ObjectInstance* instance = object->createInstance();
     REQUIRE(instance);
 
-    status =
-        static_cast<ResourceString*>(instance->getResourceInstance(RES_LWM2M_SERVER_URI))->setValue("coap://bootstrap");
+    status = instance->getResourceInstance(RES_LWM2M_SERVER_URI)->setString("coap://bootstrap");
     CHECK(status == STS_OK);
 
-    status = static_cast<ResourceBool*>(instance->getResourceInstance(RES_BOOTSTRAP_SERVER))->setValue(1);
+    status = instance->getResourceInstance(RES_BOOTSTRAP_SERVER)->setBool(1);
     CHECK(status == STS_OK);
 
     instance = object->createInstance();
     REQUIRE(instance);
 
-    status = static_cast<ResourceString*>(instance->getResourceInstance(RES_LWM2M_SERVER_URI))
-                 ->setValue("coap://lwm2mserver");
+    status = instance->getResourceInstance(RES_LWM2M_SERVER_URI)->setString("coap://lwm2mserver");
     CHECK(status == STS_OK);
 
-    status = static_cast<ResourceInt*>(instance->getResourceInstance(RES_SECURITY_SHORT_SERVER_ID))->setValue(5);
+    status = instance->getResourceInstance(RES_SECURITY_SHORT_SERVER_ID)->setInt(5);
     CHECK(status == STS_OK);
 }
 

@@ -67,13 +67,12 @@ Status ServerHandler::bind(TransportItf* transport)
     mSecurityInstance = object->getFirstInstance();
 
     for (; mSecurityInstance; mSecurityInstance = object->getNextInstance()) {
-        if (static_cast<ResourceBool*>(mSecurityInstance->getResourceInstance(RES_BOOTSTRAP_SERVER))->getValue()) {
+        if (mSecurityInstance->getResourceInstance(RES_BOOTSTRAP_SERVER)->getBool()) {
             continue;
         }
 
-        if (static_cast<ResourceInt*>(mSecurityInstance->getResourceInstance(RES_SECURITY_SHORT_SERVER_ID))
-                ->getValue() ==
-            static_cast<ResourceInt*>(mServerInstance->getResourceInstance(RES_SHORT_SERVER_ID))->getValue()) {
+        if (mSecurityInstance->getResourceInstance(RES_SECURITY_SHORT_SERVER_ID)->getInt() ==
+            mServerInstance->getResourceInstance(RES_SHORT_SERVER_ID)->getInt()) {
             break;
         }
     }
@@ -82,8 +81,7 @@ Status ServerHandler::bind(TransportItf* transport)
         return STS_ERR_NOT_FOUND;
     }
 
-    const char* serverUri =
-        static_cast<ResourceString*>(mSecurityInstance->getResourceInstance(RES_LWM2M_SERVER_URI))->getValue();
+    const char* serverUri = mSecurityInstance->getResourceInstance(RES_LWM2M_SERVER_URI)->getString();
 
     LOG_INFO("Bind %d to: %s", getId(), serverUri);
 
@@ -109,7 +107,7 @@ Status ServerHandler::registration(bool ordered, RegistrationHandler handler, vo
     uint64_t initDelayMs = 0;
 
     if (initRegDelay) {
-        initDelayMs = static_cast<ResourceUint*>(initRegDelay)->getValue() * 1000;
+        initDelayMs = initRegDelay->getUint() * 1000;
     }
 
     LOG_INFO("Start %d, delay: %lu", getId(), initDelayMs);
@@ -279,7 +277,7 @@ void ServerHandler::onRegistrationCallback(char* location, Status status)
 
         ResourceInstance* failureBlock = mServerInstance->getResourceInstance(RES_REG_FAILURE_BLOCK);
 
-        if (mOrdered && (!failureBlock || !static_cast<ResourceBool*>(failureBlock)->getValue())) {
+        if (mOrdered && (!failureBlock || !failureBlock->getBool())) {
             mState = STATE_DEREGISTERED;
 
             if (mRegistrationContext.handler) {
@@ -416,10 +414,9 @@ Status ServerHandler::sendRegistration()
         return status;
     }
 
-    mLifetime = static_cast<ResourceInt*>(mServerInstance->getResourceInstance(RES_LIFETIME))->getValue();
+    mLifetime = mServerInstance->getResourceInstance(RES_LIFETIME)->getInt();
 
-    if (Utils::strCopy(mBindingStr,
-                       static_cast<ResourceString*>(mServerInstance->getResourceInstance(RES_BINDING))->getValue(),
+    if (Utils::strCopy(mBindingStr, mServerInstance->getResourceInstance(RES_BINDING)->getString(),
                        sizeof(mBindingStr)) < 0) {
         return STS_ERR_NO_MEM;
     }
@@ -457,10 +454,8 @@ Status ServerHandler::sendUpdate()
         objectsPtr = mObjectsStr;
     }
 
-    if (strcmp(mBindingStr,
-               static_cast<ResourceString*>(mServerInstance->getResourceInstance(RES_BINDING))->getValue()) != 0) {
-        if (Utils::strCopy(mBindingStr,
-                           static_cast<ResourceString*>(mServerInstance->getResourceInstance(RES_BINDING))->getValue(),
+    if (strcmp(mBindingStr, mServerInstance->getResourceInstance(RES_BINDING)->getString()) != 0) {
+        if (Utils::strCopy(mBindingStr, mServerInstance->getResourceInstance(RES_BINDING)->getString(),
                            sizeof(mBindingStr)) < 0) {
             return STS_ERR_NO_MEM;
         }
@@ -468,8 +463,8 @@ Status ServerHandler::sendUpdate()
         bindingPtr = mBindingStr;
     }
 
-    if (mLifetime != static_cast<ResourceInt*>(mServerInstance->getResourceInstance(RES_LIFETIME))->getValue()) {
-        mLifetime = static_cast<ResourceInt*>(mServerInstance->getResourceInstance(RES_LIFETIME))->getValue();
+    if (mLifetime != mServerInstance->getResourceInstance(RES_LIFETIME)->getInt()) {
+        mLifetime = mServerInstance->getResourceInstance(RES_LIFETIME)->getInt();
         lifetimePtr = &mLifetime;
     }
 
@@ -494,11 +489,11 @@ bool ServerHandler::setupRetry()
     ResourceInstance* countInstance = mServerInstance->getResourceInstance(RES_SEQUENCE_RETRY_COUNT);
 
     if (countInstance) {
-        count = static_cast<ResourceUint*>(countInstance)->getValue();
+        count = countInstance->getUint();
     }
 
     if (timerInstance) {
-        delay = static_cast<ResourceUint*>(timerInstance)->getValue();
+        delay = timerInstance->getUint();
     }
 
     if (delay < ULONG_MAX && mCurrentSequence < count) {
