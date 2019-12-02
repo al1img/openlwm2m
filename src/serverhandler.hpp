@@ -36,6 +36,10 @@ public:
     Status deregistration(RegistrationHandler handler = NULL, void* context = NULL);
     Status updateRegistration();
 
+    Status discover(void* data, size_t* size, uint16_t objectId, uint16_t objectInstanceId = INVALID_ID,
+                    uint16_t resourceId = INVALID_ID);
+
+    void* getSession() const { return mSession; }
     State getState() const { return mState; }
 
 private:
@@ -87,6 +91,10 @@ private:
     Status sendUpdate();
 
     bool setupRetry();
+
+    int discoverObject(char* data, size_t maxSize, Object* object);
+    int discoverObjectInstance(char* data, size_t maxSize, ObjectInstance* instance);
+    int discoverResource(char* data, size_t maxSize, Resource* resource, bool includeInstances = false);
 };
 
 }  // namespace openlwm2m

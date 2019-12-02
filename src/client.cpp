@@ -177,6 +177,7 @@ Status Client::registration()
 
 Status Client::discover(void* session, const char* path, void* data, size_t* size)
 {
+    Status status = STS_OK;
     uint16_t objectId, objectInstanceId, resourceId, resourceInstanceId;
 
     LOG_INFO("Discover, path: %s", path);
@@ -189,16 +190,32 @@ Status Client::discover(void* session, const char* path, void* data, size_t* siz
     if (session == mBootstrapHandler.getSession()) {
         if (resourceInstanceId != INVALID_ID || resourceId != INVALID_ID || objectInstanceId != INVALID_ID) {
             LOG_ERROR("Path not found");
-            return STS_ERR_NOT_ALLOWED;
+            return STS_ERR_NOT_FOUND;
         }
 
-        Status status = mBootstrapHandler.discover(data, size, objectId);
-
-        if (status != STS_OK) {
+        if ((status = mBootstrapHandler.discover(data, size, objectId)) != STS_OK) {
             LOG_ERROR("Bootstrap discover error: %d", status);
+            return status;
         }
 
-        return status;
+        return STS_OK;
+    }
+
+    for (ServerHandler* handler = mServerHandlerStorage.getFirstItem(); handler;
+         handler = mServerHandlerStorage.getNextItem()) {
+        if (session == handler->getSession()) {
+            if (resourceInstanceId != INVALID_ID) {
+                LOG_ERROR("Path not found");
+                return STS_ERR_NOT_FOUND;
+            }
+
+            if ((status = handler->discover(data, size, objectId, objectInstanceId, resourceId)) != STS_OK) {
+                LOG_ERROR("Device discover error: %d", status);
+                return status;
+            }
+
+            return STS_OK;
+        }
     }
 
     LOG_ERROR("Session not found");
@@ -220,7 +237,7 @@ Status Client::read(void* session, const char* path, DataFormat* format, void* d
     if (session == mBootstrapHandler.getSession()) {
         if (resourceInstanceId != INVALID_ID || resourceId != INVALID_ID) {
             LOG_ERROR("Path not found");
-            return STS_ERR_NOT_ALLOWED;
+            return STS_ERR_NOT_FOUND;
         }
 
         Status status = mBootstrapHandler.read(format, data, size, objectId, objectInstanceId);
@@ -251,7 +268,7 @@ Status Client::write(void* session, const char* path, DataFormat format, void* d
     if (session == mBootstrapHandler.getSession()) {
         if (resourceInstanceId != INVALID_ID) {
             LOG_ERROR("Path not found");
-            return STS_ERR_NOT_ALLOWED;
+            return STS_ERR_NOT_FOUND;
         }
 
         Status status = mBootstrapHandler.write(format, data, size, objectId, objectInstanceId, resourceId);
@@ -282,7 +299,7 @@ Status Client::deleteInstance(void* session, const char* path)
     if (session == mBootstrapHandler.getSession()) {
         if (resourceId != INVALID_ID || resourceInstanceId != INVALID_ID) {
             LOG_ERROR("Path not found");
-            return STS_ERR_NOT_ALLOWED;
+            return STS_ERR_NOT_FOUND;
         }
 
         Status status = mBootstrapHandler.deleteInstance(objectId, objectInstanceId);

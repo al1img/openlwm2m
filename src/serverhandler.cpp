@@ -157,6 +157,69 @@ Status ServerHandler::updateRegistration()
     return STS_OK;
 }
 
+Status ServerHandler::discover(void* data, size_t* size, uint16_t objectId, uint16_t objectInstanceId,
+                               uint16_t resourceId)
+{
+    if (mState != STATE_REGISTERED) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    LOG_DEBUG("Device discover /%d/%d/%d", objectId, objectInstanceId, resourceId);
+
+    int ret;
+
+    if (objectId == OBJ_LWM2M_SECURITY || objectId == OBJ_OSCORE) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    Object* object = mObjectManager.getObjectById(objectId);
+
+    if (!object) {
+        return STS_ERR_NOT_FOUND;
+    }
+
+    if (objectInstanceId == INVALID_ID) {
+        if ((ret = discoverObject(static_cast<char*>(data), *size, object)) < 0) {
+            return STS_ERR_NO_MEM;
+        }
+
+        *size = ret;
+
+        return STS_OK;
+    }
+
+    ObjectInstance* objectInstance = object->getInstanceById(objectInstanceId);
+
+    if (!objectInstance) {
+        return STS_ERR_NOT_FOUND;
+    }
+
+    if (resourceId == INVALID_ID) {
+        if ((ret = discoverObjectInstance(static_cast<char*>(data), *size, objectInstance)) < 0) {
+            return STS_ERR_NO_MEM;
+        }
+
+        *size = ret;
+
+        return STS_OK;
+    }
+
+    Resource* resource = objectInstance->getResourceById(resourceId);
+
+    // Only instanciated resources
+    if (!resource || !resource->getFirstInstance()) {
+        return STS_ERR_NOT_FOUND;
+    }
+
+    if ((ret = discoverResource(static_cast<char*>(data), *size, resource)) < 0) {
+        return STS_ERR_NO_MEM;
+    }
+
+    *size = ret;
+
+    return STS_OK;
+}
+
 /*******************************************************************************
  * Private
  ******************************************************************************/
@@ -446,6 +509,131 @@ bool ServerHandler::setupRetry()
     }
 
     return false;
+}
+
+int ServerHandler::discoverObject(char* data, size_t maxSize, Object* object)
+{
+    size_t curSize = 0;
+
+    if (maxSize == 0) {
+        return -1;
+    }
+
+    data[curSize++] = '<';
+    if (curSize >= maxSize) {
+        return -1;
+    }
+
+    int ret = Utils::makePath(&data[curSize], maxSize - curSize, object->getId());
+
+    if (ret < 0) {
+        return -1;
+    }
+
+    curSize += ret;
+
+    data[curSize++] = '>';
+    if (curSize >= maxSize) {
+        return -1;
+    }
+
+    if (object->getFirstInstance()) {
+        data[curSize++] = ',';
+        if (curSize >= maxSize) {
+            return -1;
+        }
+    }
+
+    for (ObjectInstance* instance = object->getFirstInstance(); instance != NULL;
+         instance = object->getNextInstance()) {
+        if ((ret = discoverObjectInstance(&data[curSize], maxSize - curSize, instance)) < 0) {
+            return -1;
+        }
+
+        curSize += ret;
+    }
+
+    return curSize;
+}
+
+int ServerHandler::discoverObjectInstance(char* data, size_t maxSize, ObjectInstance* instance)
+{
+    char buf[16];
+    size_t curSize = 0;
+
+    int ret = Utils::makePath(buf, sizeof(buf), instance->getParent()->getId(), instance->getId());
+
+    if (ret < 0) {
+        return -1;
+    }
+
+    ret = snprintf(&data[curSize], maxSize - curSize, "<%s>", buf);
+
+    if (ret < 0 || static_cast<size_t>(ret) >= maxSize - curSize) {
+        return -1;
+    }
+
+    curSize += ret;
+
+    for (Resource* resource = instance->getFirstResource(); resource != NULL; resource = instance->getNextResource()) {
+        if (resource->getFirstInstance()) {
+            data[curSize++] = ',';
+            if (curSize >= maxSize) {
+                return -1;
+            }
+        }
+
+        if ((ret = discoverResource(&data[curSize], maxSize - curSize, resource)) < 0) {
+            return -1;
+        }
+
+        curSize += ret;
+    }
+
+    return curSize;
+}
+
+int ServerHandler::discoverResource(char* data, size_t maxSize, Resource* resource, bool includeInstances)
+{
+    char buf[16];
+    int curSize = 0;
+
+    int ret = Utils::makePath(buf, sizeof(buf), resource->getParent()->getParent()->getId(),
+                              resource->getParent()->getId(), resource->getId());
+
+    if (ret < 0) {
+        return -1;
+    }
+
+    ret = snprintf(&data[curSize], maxSize - curSize, "<%s>", buf);
+
+    if (ret < 0 || static_cast<size_t>(ret) >= maxSize - curSize) {
+        return -1;
+    }
+
+    curSize += ret;
+
+    if (includeInstances && !resource->getInfo().isSingle() && resource->getFirstInstance()) {
+        for (ResourceInstance* instance = resource->getFirstInstance(); instance;
+             instance = resource->getNextInstance()) {
+            int ret = Utils::makePath(buf, sizeof(buf), resource->getParent()->getParent()->getId(),
+                                      resource->getParent()->getId(), resource->getId(), instance->getId());
+
+            if (ret < 0) {
+                return -1;
+            }
+
+            ret = snprintf(&data[curSize], maxSize - curSize, ",<%s>", buf);
+
+            if (ret < 0 || static_cast<size_t>(ret) >= maxSize - curSize) {
+                return -1;
+            }
+
+            curSize += ret;
+        }
+    }
+
+    return curSize;
 }
 
 }  // namespace openlwm2m
