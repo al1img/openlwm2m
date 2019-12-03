@@ -158,7 +158,7 @@ Status Resource::write(DataConverter::ResourceData* resourceData, bool checkOper
 {
     Status status = STS_OK;
 
-    if (checkOperation && !getInfo().checkOperation(OP_WRITE)) {
+    if (getInfo().checkOperation(OP_EXECUTE) || (checkOperation && !getInfo().checkOperation(OP_WRITE))) {
         return STS_ERR_NOT_ALLOWED;
     }
 
