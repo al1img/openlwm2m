@@ -41,6 +41,12 @@ int main()
 
     Status status = STS_OK;
 
+    Object* object = client.createObject(100, true, true);
+    ASSERT(object);
+
+    status = object->createResourceInt(2, OP_READWRITE, false, false, 10);
+    ASSERT(status == STS_OK);
+
     status = client.init(&transport);
     ASSERT_MESSAGE(status == STS_OK, "Can't initialize client");
 

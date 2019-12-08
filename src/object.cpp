@@ -204,7 +204,7 @@ Status Object::write(DataConverter* converter, bool checkOperation, bool ignoreM
             resourceData.resourceId == INVALID_ID) {
             LOG_ERROR("Unexpected path: /%d/%d/%d", resourceData.objectId, resourceData.objectInstanceId,
                       resourceData.resourceId);
-            return STS_ERR_FORMAT;
+            return STS_ERR_NOT_FOUND;
         }
 
         ObjectInstance* objectInstance = getInstanceById(resourceData.objectInstanceId);

@@ -18,7 +18,7 @@ public:
     Object* getFirstObject();
     Object* getNextObject();
 
-    Status bootstrapWrite(DataFormat dataFormat, void* data, size_t size, uint16_t objectId,
+    Status bootstrapWrite(DataFormat format, void* data, size_t size, uint16_t objectId,
                           uint16_t objectInstanceId = INVALID_ID, uint16_t resourceId = INVALID_ID);
 
     Status addConverter(DataConverter* converter);

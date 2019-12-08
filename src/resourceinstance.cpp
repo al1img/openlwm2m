@@ -142,6 +142,41 @@ Status ResourceInstance::write(DataConverter::ResourceData* resourceData)
     return STS_OK;
 }
 
+Status ResourceInstance::write(DataConverter* converter, bool checkOperation)
+{
+    Status status = STS_OK;
+    DataConverter::ResourceData resourceData;
+
+    LOG_DEBUG("Write /%d/%d/%d/%d", getParent()->getParent()->getParent()->getId(), getParent()->getParent()->getId(),
+              getParent()->getId(), getId());
+
+    ResourceInfo& info = getResource()->getInfo();
+
+    if (info.isSingle() || info.checkOperation(OP_EXECUTE) || (checkOperation && !info.checkOperation(OP_WRITE))) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    while ((status = converter->nextDecoding(&resourceData)) == STS_OK) {
+        if (resourceData.objectId != getParent()->getParent()->getParent()->getId() ||
+            resourceData.objectInstanceId != getParent()->getParent()->getId() ||
+            resourceData.resourceId != getParent()->getId() || resourceData.resourceInstanceId != getId()) {
+            LOG_ERROR("Unexpected path: /%d/%d/%d/%d", resourceData.objectId, resourceData.objectInstanceId,
+                      resourceData.resourceId, resourceData.resourceInstanceId);
+            return STS_ERR_NOT_FOUND;
+        }
+
+        if ((status = write(&resourceData)) != STS_OK) {
+            return status;
+        }
+    }
+
+    if (status != STS_ERR_NOT_FOUND) {
+        return status;
+    }
+
+    return STS_OK;
+}
+
 Status ResourceInstance::setString(const char* value)
 {
     switch (getResource()->getInfo().getType()) {

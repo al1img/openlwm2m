@@ -76,13 +76,13 @@ Status ObjectManager::addConverter(DataConverter* converter)
     return mConverterStorage.pushItem(converter);
 }
 
-Status ObjectManager::bootstrapWrite(DataFormat dataFormat, void* data, size_t size, uint16_t objectId,
+Status ObjectManager::bootstrapWrite(DataFormat format, void* data, size_t size, uint16_t objectId,
                                      uint16_t objectInstanceId, uint16_t resourceId)
 {
     // 6.1.7.5. BOOTSTRAP WRITE
 
     Status status = STS_OK;
-    DataConverter* converter = mConverterStorage.getItemById(dataFormat);
+    DataConverter* converter = mConverterStorage.getItemById(format);
 
     if (converter == NULL) {
         return STS_ERR_FORMAT;

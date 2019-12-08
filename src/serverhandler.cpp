@@ -223,13 +223,13 @@ Status ServerHandler::read(DataFormat* format, void* data, size_t* size, uint16_
 {
     Status status = STS_OK;
 
+    LOG_DEBUG("Device read /%d/%d/%d/%d", objectId, objectInstanceId, resourceId, resourceInstanceId);
+
     if (mState != STATE_REGISTERED) {
         return STS_ERR_NOT_ALLOWED;
     }
 
-    LOG_DEBUG("Device read /%d/%d/%d/%d", objectId, objectInstanceId, resourceId, resourceInstanceId);
-
-    if (objectId == OBJ_LWM2M_SECURITY && objectId == OBJ_OSCORE) {
+    if (objectId == OBJ_LWM2M_SECURITY || objectId == OBJ_OSCORE) {
         return STS_ERR_NOT_ALLOWED;
     }
 
@@ -304,6 +304,74 @@ Status ServerHandler::read(DataFormat* format, void* data, size_t* size, uint16_
     }
 
     return outConverter->finishEncoding(size);
+}
+
+Status ServerHandler::write(DataFormat format, void* data, size_t size, uint16_t objectId, uint16_t objectInstanceId,
+                            uint16_t resourceId, uint16_t resourceInstanceId)
+{
+    Status status = STS_OK;
+
+    LOG_DEBUG("Device write /%d/%d/%d/%d", objectId, objectInstanceId, resourceId, resourceInstanceId);
+
+    if (mState != STATE_REGISTERED) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    if (objectId == OBJ_LWM2M_SECURITY || objectId == OBJ_OSCORE) {
+        return STS_ERR_NOT_ALLOWED;
+    }
+
+    DataConverter* converter = mObjectManager.getConverterById(format);
+
+    if (converter == NULL) {
+        return STS_ERR_FORMAT;
+    }
+
+    if ((status = converter->startDecoding(data, size)) != STS_OK) {
+        return status;
+    }
+
+    Object* object = mObjectManager.getObjectById(objectId);
+
+    if (!object) {
+        return STS_ERR_NOT_FOUND;
+    }
+
+    ObjectInstance* objectInstance = object->getInstanceById(objectInstanceId);
+
+    if (!objectInstance) {
+        return STS_ERR_NOT_FOUND;
+    }
+
+    if (resourceId == INVALID_ID) {
+        if ((status = objectInstance->write(converter, true, false)) != STS_OK) {
+            return status;
+        }
+
+        return STS_OK;
+    }
+
+    Resource* resource = objectInstance->getResourceById(resourceId);
+
+    if (!resource) {
+        return STS_ERR_NOT_FOUND;
+    }
+
+    if (resourceInstanceId == INVALID_ID) {
+        if ((status = resource->write(converter, true)) != STS_OK) {
+            return status;
+        }
+
+        return STS_OK;
+    }
+
+    ResourceInstance* resourceInstance = resource->getInstanceById(resourceInstanceId);
+
+    if (!resourceInstance) {
+        return STS_ERR_NOT_FOUND;
+    }
+
+    return resourceInstance->write(converter, true);
 }
 
 /*******************************************************************************

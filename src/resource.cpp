@@ -135,13 +135,16 @@ Status Resource::write(DataConverter* converter, bool checkOperation)
     LOG_DEBUG("Write /%d/%d/%d", getParent()->getParent()->getId(), getParent()->getId(), getId());
 
     while ((status = converter->nextDecoding(&resourceData)) == STS_OK) {
+        // Do not perform this check for text encoder.
+        // Text encoder doesn't provide ids.
+#if 0
         if (resourceData.objectId != getParent()->getParent()->getId() ||
             resourceData.objectInstanceId != getParent()->getId() || resourceData.resourceId != getId()) {
             LOG_ERROR("Unexpected path: /%d/%d/%d", resourceData.objectId, resourceData.objectInstanceId,
                       resourceData.resourceId);
-            return STS_ERR_FORMAT;
+            return STS_ERR_NOT_FOUND;
         }
-
+#endif
         if ((status = write(&resourceData, checkOperation)) != STS_OK) {
             return status;
         }
@@ -170,6 +173,13 @@ Status Resource::write(DataConverter::ResourceData* resourceData, bool checkOper
         }
         else {
             resourceData->resourceInstanceId = 0;
+        }
+    }
+    else {
+        if (resourceData->resourceInstanceId == INVALID_ID) {
+            LOG_ERROR("Address multiple resource as single: /%d/%d/%d", resourceData->objectId,
+                      resourceData->objectInstanceId, resourceData->resourceId);
+            return STS_ERR_NOT_FOUND;
         }
     }
 

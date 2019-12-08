@@ -254,7 +254,7 @@ Status Client::read(void* session, const char* path, DataFormat* format, void* d
         if (session == handler->getSession()) {
             if ((status = handler->read(format, data, size, objectId, objectInstanceId, resourceId,
                                         resourceInstanceId)) != STS_OK) {
-                LOG_ERROR("Device discover error: %d", status);
+                LOG_ERROR("Device read error: %d", status);
                 return status;
             }
 
@@ -269,6 +269,7 @@ Status Client::read(void* session, const char* path, DataFormat* format, void* d
 
 Status Client::write(void* session, const char* path, DataFormat format, void* data, size_t size)
 {
+    Status status = STS_OK;
     uint16_t objectId, objectInstanceId, resourceId, resourceInstanceId;
 
     LOG_INFO("Write, path: %s", path);
@@ -284,13 +285,25 @@ Status Client::write(void* session, const char* path, DataFormat format, void* d
             return STS_ERR_NOT_FOUND;
         }
 
-        Status status = mBootstrapHandler.write(format, data, size, objectId, objectInstanceId, resourceId);
-
-        if (status != STS_OK) {
+        if ((status = mBootstrapHandler.write(format, data, size, objectId, objectInstanceId, resourceId)) != STS_OK) {
             LOG_ERROR("Bootstrap write error: %d", status);
+            return status;
         }
 
-        return status;
+        return STS_OK;
+    }
+
+    for (ServerHandler* handler = mServerHandlerStorage.getFirstItem(); handler;
+         handler = mServerHandlerStorage.getNextItem()) {
+        if (session == handler->getSession()) {
+            if ((status = handler->write(format, data, size, objectId, objectInstanceId, resourceId,
+                                        resourceInstanceId)) != STS_OK) {
+                LOG_ERROR("Device write error: %d", status);
+                return status;
+            }
+
+            return STS_OK;
+        }
     }
 
     LOG_ERROR("Session not found");

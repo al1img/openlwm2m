@@ -40,6 +40,8 @@ public:
                     uint16_t resourceId = INVALID_ID);
     Status read(DataFormat* format, void* data, size_t* size, uint16_t objectId, uint16_t objectInstanceId = INVALID_ID,
                 uint16_t resourceId = INVALID_ID, uint16_t resourceInstanceId = INVALID_ID);
+    Status write(DataFormat format, void* data, size_t size, uint16_t objectId, uint16_t objectInstanceId,
+                 uint16_t resourceId = INVALID_ID, uint16_t resourceInstanceId = INVALID_ID);
 
     void* getSession() const { return mSession; }
     State getState() const { return mState; }

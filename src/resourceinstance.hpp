@@ -25,7 +25,7 @@ public:
 
     Status write(DataConverter::ResourceData* resourceData);
     Status read(DataConverter::ResourceData* resourceData);
-
+    Status write(DataConverter* converter, bool checkOperation);
     Status read(DataConverter* converter, bool checkOperation);
 
     Status setString(const char* value);
